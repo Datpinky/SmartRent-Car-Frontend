@@ -1,0 +1,269 @@
+/* ====================== FILTER BAR ====================== */
+.filter-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    position: sticky;
+    top: 64px;
+    z-index: 100;
+}
+
+.filter-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 20px;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all var(--transition);
+    border: 1.5px solid var(--gray-200);
+    color: var(--gray-600);
+    background: var(--white);
+    flex-shrink: 0;
+}
+
+.filter-chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+.filter-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 177, 79, 0.3);
+}
+
+.filter-chip svg {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.filter-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--gray-200);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.sort-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all var(--transition);
+    border: 1.5px solid var(--gray-200);
+    color: var(--gray-600);
+    background: var(--white);
+    flex-shrink: 0;
+}
+
+.sort-chip:hover {
+    border-color: var(--gray-400);
+    color: var(--gray-800);
+}
+
+.sort-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 177, 79, 0.3);
+}
+
+/* ====================== POPUP OVERLAY ====================== */
+.filter-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 999;
+    animation: fadeIn 0.2s ease;
+}
+
+/* ====================== POPUP ====================== */
+.filter-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: var(--white);
+    border-radius: 16px;
+    width: 420px;
+    max-width: 92vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+    animation: popIn 0.25s cubic-bezier(.4, 0, .2, 1);
+    overflow: hidden;
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Header */
+.filter-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.filter-popup-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.filter-popup-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    color: var(--gray-500);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-popup-close:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+/* Body – danh sách options */
+.filter-popup-body {
+    padding: 8px 12px;
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+/* Mỗi option */
+.filter-popup-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 12px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.filter-popup-option:last-child {
+    border-bottom: none;
+}
+
+.filter-popup-option:hover {
+    background: var(--gray-50, #f9fafb);
+}
+
+/* Radio */
+.filter-radio {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--gray-300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+}
+
+.filter-radio.checked {
+    border-color: var(--primary);
+}
+
+.filter-radio-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: dotPop 0.2s cubic-bezier(.4, 0, .2, 1);
+}
+
+@keyframes dotPop {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}
+
+.filter-option-label {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+/* Nút Áp dụng */
+.filter-popup-apply {
+    display: block;
+    width: calc(100% - 48px);
+    margin: 12px 24px 20px;
+    padding: 13px 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--primary);
+    color: var(--white);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px rgba(0, 177, 79, 0.3);
+}
+
+.filter-popup-apply:hover {
+    background: var(--primary-dark, #009e47);
+    box-shadow: 0 6px 20px rgba(0, 177, 79, 0.4);
+}
