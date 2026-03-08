@@ -1,0 +1,305 @@
+/* ====================== CAR CARD ====================== */
+.car-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: 1px solid var(--gray-100);
+    display: flex;
+    flex-direction: column;
+}
+
+.car-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--gray-200);
+}
+
+/* Image area */
+.car-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+    background: var(--gray-100);
+}
+
+.car-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.car-card:hover .car-image-wrap img {
+    transform: scale(1.05);
+}
+
+/* Badge */
+.car-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.car-badge.flash-sale {
+    background: linear-gradient(135deg, #ff3b3b, #ff6b35);
+    color: white;
+    animation: pulse-badge 2s infinite;
+}
+
+.car-badge.discount {
+    background: linear-gradient(135deg, #9b59b6, #6c3483);
+    color: white;
+}
+
+@keyframes pulse-badge {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(255, 59, 59, 0);
+    }
+}
+
+/* Type badge */
+.car-type-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.car-type-badge.owner {
+    background: rgba(155, 89, 182, 0.85);
+}
+
+/* Favorite button */
+.car-favorite {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all var(--transition);
+    z-index: 2;
+    border: none;
+    cursor: pointer;
+}
+
+.car-favorite:hover {
+    transform: scale(1.1);
+}
+
+.car-favorite.liked {
+    color: #e74c3c;
+}
+
+.car-favorite:not(.liked) {
+    color: var(--gray-400);
+}
+
+/* Placeholder car illustration */
+.car-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.car-placeholder-icon {
+    font-size: 4rem;
+    filter: saturate(0) opacity(0.15);
+}
+
+/* Card body */
+.car-card-body {
+    padding: 14px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.car-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.car-location {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.car-showroom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--gray-500);
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rating */
+.car-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.car-rating-stars {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    color: #f59e0b;
+    font-size: 0.8rem;
+}
+
+.car-rating-score {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.car-rating-trips {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+/* Price */
+.car-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.car-price-original {
+    font-size: 0.78rem;
+    color: var(--gray-400);
+    text-decoration: line-through;
+}
+
+.car-price {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.car-price-unit {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gray-500);
+}
+
+.car-duration {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-top: -2px;
+}
+
+.car-vat-note {
+    font-size: 0.68rem;
+    color: var(--primary);
+    font-style: italic;
+    margin-top: -2px;
+}
+
+/* Specs row */
+.car-specs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-top: 1px solid var(--gray-100);
+    margin-top: 8px;
+    padding-top: 10px;
+}
+
+.car-spec {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.72rem;
+    color: var(--gray-500);
+    font-weight: 500;
+    text-align: center;
+}
+
+.car-spec:not(:last-child) {
+    border-right: 1px solid var(--gray-100);
+}
+
+.car-spec svg {
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+/* Image gradient overlay */
+.car-image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
+    pointer-events: none;
+}
+
+/* Car color swatch */
+.car-image-color {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
