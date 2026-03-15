@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import './ImageCompareSlider.css';
 import { FaArrowsAltH } from 'react-icons/fa';
 import { MdWarning } from 'react-icons/md';
 
@@ -28,10 +27,11 @@ const ImageCompareSlider = ({ beforeSrc, afterSrc, damages = [], onDamageClick }
   };
 
   return (
-    <div className="ics-wrap">
+    <div className="flex flex-col gap-3">
       <div
         ref={containerRef}
-        className="ics-container"
+        className="relative w-full rounded-xl overflow-hidden bg-[#111] cursor-col-resize select-none"
+        style={{ aspectRatio: '16/9' }}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
@@ -39,47 +39,64 @@ const ImageCompareSlider = ({ beforeSrc, afterSrc, damages = [], onDamageClick }
         onTouchEnd={onMouseUp}
       >
         {/* Before image */}
-        <div className="ics-before">
-          {beforeSrc ? <img src={beforeSrc} alt="Trước" /> : <div className="ics-placeholder">Ảnh trước thuê</div>}
-          <div className="ics-label ics-label-left">TRƯỚC</div>
+        <div className="absolute inset-0">
+          {beforeSrc
+            ? <img src={beforeSrc} alt="Trước" className="w-full h-full object-cover block" />
+            : <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400 text-[0.9rem]">Ảnh trước thuê</div>
+          }
+          <div className="absolute top-3 left-3 py-1 px-2.5 rounded-full text-[0.72rem] font-bold tracking-widest bg-black/60 text-white">TRƯỚC</div>
         </div>
 
         {/* After image (clipped) */}
-        <div className="ics-after" style={{ clipPath: `inset(0 0 0 ${position}%)` }}>
-          {afterSrc ? <img src={afterSrc} alt="Sau" /> : <div className="ics-placeholder">Ảnh sau thuê</div>}
-          <div className="ics-label ics-label-right">SAU</div>
-          {/* Damage overlays */}
+        <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${position}%)` }}>
+          {afterSrc
+            ? <img src={afterSrc} alt="Sau" className="w-full h-full object-cover block" />
+            : <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400 text-[0.9rem]">Ảnh sau thuê</div>
+          }
+          <div className="absolute top-3 right-3 py-1 px-2.5 rounded-full text-[0.72rem] font-bold tracking-widest bg-primary/85 text-white">SAU</div>
           {damages.map(dmg => (
             <div
               key={dmg.id}
-              className={`ics-damage ${selectedDamage?.id === dmg.id ? 'selected' : ''}`}
+              className={`absolute border-[2.5px] border-red-500 rounded-md flex items-center justify-center cursor-pointer transition-all animate-[damagePulse_1.5s_ease-in-out_infinite]
+                ${selectedDamage?.id === dmg.id ? 'bg-red-500/30 border-red-600' : 'bg-red-500/15 hover:bg-red-500/30'}`}
               style={{ left: `${dmg.x}%`, top: `${dmg.y}%`, width: `${dmg.w || 8}%`, height: `${dmg.h || 8}%` }}
               onClick={(e) => handleDamageClick(dmg, e)}
             >
-              <MdWarning className="ics-damage-icon" />
+              <MdWarning className="text-red-500 text-base" />
             </div>
           ))}
         </div>
 
         {/* Divider */}
-        <div className="ics-divider" style={{ left: `${position}%` }}>
-          <div className="ics-handle" onMouseDown={onMouseDown} onTouchStart={onMouseDown}>
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-white z-10 -translate-x-1/2"
+          style={{ left: `${position}%` }}
+        >
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full flex items-center justify-center cursor-col-resize shadow-[0_2px_8px_rgba(0,0,0,0.3)] text-gray-700 text-[0.9rem] transition-colors hover:bg-primary hover:text-white"
+            onMouseDown={onMouseDown}
+            onTouchStart={onMouseDown}
+          >
             <FaArrowsAltH />
           </div>
         </div>
       </div>
 
-      {/* Damage detail popup */}
       {selectedDamage && (
-        <div className="ics-damage-detail">
-          <div className="ics-dd-header">
+        <div className="bg-white border-[1.5px] border-yellow-200 rounded-xl p-3.5 text-[0.82rem]">
+          <div className="flex items-center gap-1.5 font-semibold text-gray-900 mb-2.5">
             <MdWarning style={{ color: '#d97706' }} />
             <span>{selectedDamage.label || 'Hư hỏng được phát hiện'}</span>
-            <button onClick={() => setSelectedDamage(null)} className="ics-dd-close">×</button>
+            <button className="ml-auto text-gray-400 px-1 hover:text-gray-600" onClick={() => setSelectedDamage(null)}>×</button>
           </div>
-          <div className="ics-dd-body">
+          <div className="flex flex-col gap-1.5 text-gray-700">
             <div><b>Vị trí:</b> {selectedDamage.location || 'Xem trên ảnh'}</div>
-            <div><b>Mức độ:</b> <span style={{ color: selectedDamage.severity === 'high' ? '#dc2626' : selectedDamage.severity === 'medium' ? '#d97706' : '#059669' }}>{selectedDamage.severityLabel || selectedDamage.severity || 'Nhẹ'}</span></div>
+            <div>
+              <b>Mức độ:</b>{' '}
+              <span style={{ color: selectedDamage.severity === 'high' ? '#dc2626' : selectedDamage.severity === 'medium' ? '#d97706' : '#059669' }}>
+                {selectedDamage.severityLabel || selectedDamage.severity || 'Nhẹ'}
+              </span>
+            </div>
             {selectedDamage.description && <div><b>Mô tả:</b> {selectedDamage.description}</div>}
             {selectedDamage.cost && <div><b>Chi phí dự kiến:</b> {selectedDamage.cost}</div>}
           </div>

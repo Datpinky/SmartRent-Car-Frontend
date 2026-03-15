@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import StatusBadge from '../../../components/common/StatusBadge';
 import { FaCheck, FaTimes, FaStar, FaFlag } from 'react-icons/fa';
-import '../AdminDashboard/AdminDashboard.css';
 
 const MOCK_REVIEWS = [
   { id: 1, user: 'Nguyễn Văn An', vehicle: 'Toyota Camry 2.5Q', rating: 5, comment: 'Xe rất sạch và mới, showroom phục vụ tận tình. Sẽ thuê lại lần sau!', status: 'pending', date: '10/03/2026', reported: false },

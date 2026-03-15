@@ -4,7 +4,6 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaEye, FaCheckCircle, FaTimesCircle, FaStar, FaBuilding, FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 import { MOCK_SHOWROOMS } from '../../../components/data/mockDashboard';
-import '../AdminDashboard/AdminDashboard.css';
 
 const ShowroomVerification = () => {
   const [showrooms, setShowrooms] = useState(MOCK_SHOWROOMS);

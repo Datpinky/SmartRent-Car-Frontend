@@ -4,7 +4,6 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaEye, FaCheckCircle, FaTimes, FaArrowRight } from 'react-icons/fa';
 import { MOCK_BOOKINGS } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const BOOKING_FLOW = ['pending', 'approved', 'delivering', 'renting', 'returned', 'completed'];
 const FLOW_LABELS = { pending: 'Chờ xác nhận', approved: 'Đã duyệt', delivering: 'Đang giao xe', renting: 'Đang thuê', returned: 'Đã trả xe', completed: 'Hoàn thành', cancelled: 'Đã hủy' };

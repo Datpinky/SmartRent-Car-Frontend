@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './Profile.css';
 import FileUpload from '../../../components/common/FileUpload';
 import StatusBadge from '../../../components/common/StatusBadge';
 import { useAuth } from '../../../contexts/AuthContext';

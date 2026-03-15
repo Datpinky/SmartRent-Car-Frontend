@@ -5,7 +5,6 @@ import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
 import { MOCK_OWNER_VEHICLES, MOCK_OWNER_REVENUE } from '../../../components/data/mockDashboard';
 import { useNavigate } from 'react-router-dom';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const OwnerDashboard = () => {
   const navigate = useNavigate();

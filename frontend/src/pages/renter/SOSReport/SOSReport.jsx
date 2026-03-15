@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './SOSReport.css';
 import FileUpload from '../../../components/common/FileUpload';
 import { FaPhone, FaMapMarkerAlt, FaCheckCircle, FaExclamationTriangle, FaAmbulance, FaCar } from 'react-icons/fa';
 import { MdLocalPolice, MdFireTruck } from 'react-icons/md';

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './MyBookings.css';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaFileContract, FaEye, FaComments } from 'react-icons/fa';

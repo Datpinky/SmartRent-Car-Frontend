@@ -5,7 +5,6 @@ import Modal from '../../../components/common/Modal';
 import { FaEye, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { MdDirectionsCar, MdLocalGasStation, MdEventSeat } from 'react-icons/md';
 import { MOCK_VEHICLES_ADMIN } from '../../../components/data/mockDashboard';
-import '../AdminDashboard/AdminDashboard.css';
 
 const VehicleApproval = () => {
   const [vehicles, setVehicles] = useState(MOCK_VEHICLES_ADMIN);

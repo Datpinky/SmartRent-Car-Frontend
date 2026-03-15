@@ -48,7 +48,6 @@ import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
 // Admin profile
 import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
 
-import './App.css';
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
@@ -124,9 +123,9 @@ const App = () => {
 
           {/* Public pages with Navbar/Footer */}
           <Route path="/*" element={
-            <div className="app-layout">
+            <div className="flex flex-col min-h-screen">
               <Navbar />
-              <div className="app-content">
+              <div className="flex-1">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/xe/:id" element={<CarDetail />} />

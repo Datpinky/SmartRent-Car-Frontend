@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import FileUpload from '../../../components/common/FileUpload';
 import { FaSave, FaMapMarkerAlt, FaStar } from 'react-icons/fa';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const ShowroomProfile = () => {
   const [form, setForm] = useState({
