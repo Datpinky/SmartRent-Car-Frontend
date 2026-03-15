@@ -1,0 +1,14 @@
+.ai-inspection { display: flex; flex-direction: column; gap: 20px; }
+.ai-tabs { display: flex; gap: 8px; background: #fff; padding: 6px; border-radius: 12px; border: 1px solid #f0f0f0; width: fit-content; }
+.ai-tab { display: flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 9px; border: none; background: transparent; color: #6b7280; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.ai-tab.active { background: #00b14f; color: #fff; font-weight: 700; }
+.ai-content { display: flex; flex-direction: column; gap: 16px; }
+.ai-steps { display: flex; align-items: center; margin-bottom: 8px; }
+.ai-step { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 600; color: #9ca3af; }
+.ai-step.active { color: #00b14f; }
+.ai-step.done { color: #059669; }
+.ai-step-num { width: 26px; height: 26px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; }
+.ai-step-line { flex: 1; height: 1px; background: #e5e7eb; margin: 0 8px; min-width: 30px; }
+.ai-step-line.done { background: #059669; }
+.ai-card { background: #fff; border-radius: 14px; padding: 20px; border: 1px solid #f0f0f0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.ai-card-title { font-size: 0.95rem; font-weight: 700; color: #111827; margin: 0 0 16px; }

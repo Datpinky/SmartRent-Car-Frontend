@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import SearchBar from '../../components/SearchBar/SearchBar';
-import FilterBar from '../../components/FilterBar/FilterBar';
-import CarGrid from '../../components/CarGrid/CarGrid';
+import SearchBar from '../../SearchBar/SearchBar';
+import FilterBar from '../../FilterBar/FilterBar';
+import CarGrid from '../../CarGrid/CarGrid';
 
 import { cars } from '../../data/cars';
 import './Home.css';

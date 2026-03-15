@@ -1,34 +1,144 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
-import Home from './pages/Home/Home';
-import CarDetail from './pages/CarDetail/CarDetail';
-import Login from './pages/Login/Login';
+import Home from './components/pages/Home/Home';
+import CarDetail from './components/pages/CarDetail/CarDetail';
+import Login from './components/pages/Login/Login';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import RoleRoute from './components/common/RoleRoute';
+import DashboardLayout from './layouts/DashboardLayout';
+import ChatWidget from './components/common/ChatWidget';
+
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement/UserManagement';
+import ShowroomVerification from './pages/admin/ShowroomVerification/ShowroomVerification';
+import VehicleApproval from './pages/admin/VehicleApproval/VehicleApproval';
+import TransactionMonitor from './pages/admin/TransactionMonitor/TransactionMonitor';
+import SystemReports from './pages/admin/SystemReports/SystemReports';
+import ContentModeration from './pages/admin/ContentModeration/ContentModeration';
+import SystemSettings from './pages/admin/SystemSettings/SystemSettings';
+
+// Showroom pages
+import ShowroomDashboard from './pages/showroom/ShowroomDashboard/ShowroomDashboard';
+import VehicleManagement from './pages/showroom/VehicleManagement/VehicleManagement';
+import BookingManagement from './pages/showroom/BookingManagement/BookingManagement';
+import ContractManagement from './pages/showroom/ContractManagement/ContractManagement';
+import CustomerManagement from './pages/showroom/CustomerManagement/CustomerManagement';
+import RevenueReports from './pages/showroom/RevenueReports/RevenueReports';
+import AIInspection from './pages/showroom/AIInspection/AIInspection';
+import ShowroomProfile from './pages/showroom/ShowroomProfile/ShowroomProfile';
+
+// Renter pages
+import Profile from './pages/renter/Profile/Profile';
+import MyBookings from './pages/renter/MyBookings/MyBookings';
+import Checkout from './pages/renter/Checkout/Checkout';
+import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
+import SOSReport from './pages/renter/SOSReport/SOSReport';
+
+// Owner pages
+import OwnerDashboard from './pages/owner/OwnerDashboard/OwnerDashboard';
+import MyVehicles from './pages/owner/MyVehicles/MyVehicles';
+import VehicleTracking from './pages/owner/VehicleTracking/VehicleTracking';
+import Revenue from './pages/owner/Revenue/Revenue';
+import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
+
+// Admin profile
+import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
+
 import './App.css';
+
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ width: 40, height: 40, border: '3px solid #e5e7eb', borderTopColor: '#00b14f', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+      <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Đang tải...</p>
+    </div>
+    <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+  </div>
+);
+
+// Dashboard wrapper with Layout
+const DashboardPage = ({ children, roles }) => (
+  <ProtectedRoute>
+    <RoleRoute roles={roles}>
+      <DashboardLayout>{children}</DashboardLayout>
+    </RoleRoute>
+  </ProtectedRoute>
+);
+
+// Renter page wrapper (uses main layout, just needs auth)
+const RenterPage = ({ children }) => (
+  <ProtectedRoute>
+    <RoleRoute roles={['renter', 'admin']}>
+      <DashboardLayout>{children}</DashboardLayout>
+    </RoleRoute>
+  </ProtectedRoute>
+);
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        {/* Login page: no navbar/footer */}
-        <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Login */}
+          <Route path="/login" element={<Login />} />
 
-        {/* Main layout */}
-        <Route path="/*" element={
-          <div className="app-layout">
-            <Navbar />
-            <div className="app-content">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/xe/:id" element={<CarDetail />} />
-              </Routes>
+          {/* Admin Dashboard */}
+          <Route path="/admin/dashboard"   element={<DashboardPage roles={['admin']}><AdminDashboard /></DashboardPage>} />
+          <Route path="/admin/users"       element={<DashboardPage roles={['admin']}><UserManagement /></DashboardPage>} />
+          <Route path="/admin/showrooms"   element={<DashboardPage roles={['admin']}><ShowroomVerification /></DashboardPage>} />
+          <Route path="/admin/vehicles"    element={<DashboardPage roles={['admin']}><VehicleApproval /></DashboardPage>} />
+          <Route path="/admin/transactions"element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
+          <Route path="/admin/reports"     element={<DashboardPage roles={['admin']}><SystemReports /></DashboardPage>} />
+          <Route path="/admin/moderation"  element={<DashboardPage roles={['admin']}><ContentModeration /></DashboardPage>} />
+          <Route path="/admin/settings"    element={<DashboardPage roles={['admin']}><SystemSettings /></DashboardPage>} />
+          <Route path="/admin/profile"    element={<DashboardPage roles={['admin']}><AdminProfile /></DashboardPage>} />
+
+          {/* Showroom Dashboard */}
+          <Route path="/showroom/dashboard"     element={<DashboardPage roles={['showroom', 'admin']}><ShowroomDashboard /></DashboardPage>} />
+          <Route path="/showroom/vehicles"      element={<DashboardPage roles={['showroom', 'admin']}><VehicleManagement /></DashboardPage>} />
+          <Route path="/showroom/bookings"      element={<DashboardPage roles={['showroom', 'admin']}><BookingManagement /></DashboardPage>} />
+          <Route path="/showroom/contracts"     element={<DashboardPage roles={['showroom', 'admin']}><ContractManagement /></DashboardPage>} />
+          <Route path="/showroom/customers"     element={<DashboardPage roles={['showroom', 'admin']}><CustomerManagement /></DashboardPage>} />
+          <Route path="/showroom/revenue"       element={<DashboardPage roles={['showroom', 'admin']}><RevenueReports /></DashboardPage>} />
+          <Route path="/showroom/ai-inspection" element={<DashboardPage roles={['showroom', 'admin']}><AIInspection /></DashboardPage>} />
+          <Route path="/showroom/profile"       element={<DashboardPage roles={['showroom', 'admin']}><ShowroomProfile /></DashboardPage>} />
+
+          {/* Owner Dashboard */}
+          <Route path="/owner/dashboard" element={<DashboardPage roles={['owner', 'admin']}><OwnerDashboard /></DashboardPage>} />
+          <Route path="/owner/vehicles"  element={<DashboardPage roles={['owner', 'admin']}><MyVehicles /></DashboardPage>} />
+          <Route path="/owner/tracking"  element={<DashboardPage roles={['owner', 'admin']}><VehicleTracking /></DashboardPage>} />
+          <Route path="/owner/revenue"   element={<DashboardPage roles={['owner', 'admin']}><Revenue /></DashboardPage>} />
+          <Route path="/owner/profile"   element={<DashboardPage roles={['owner', 'admin']}><OwnerProfile /></DashboardPage>} />
+
+          {/* Renter portal */}
+          <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
+          <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
+          <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/payment-result"  element={<RenterPage><PaymentResult /></RenterPage>} />
+          <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
+
+          {/* Public pages with Navbar/Footer */}
+          <Route path="/*" element={
+            <div className="app-layout">
+              <Navbar />
+              <div className="app-content">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/xe/:id" element={<CarDetail />} />
+                </Routes>
+              </div>
+              <Footer />
+              <ChatWidget />
             </div>
-            <Footer />
-          </div>
-        } />
-      </Routes>
-    </Router>
+          } />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 };
 
