@@ -150,7 +150,7 @@ const OwnerProfile = () => {
                 />
               </div>
             ))}
-            {phoneError && <div style={{ gridColumn: 'span 2', color: '#dc2626', fontSize: '0.82rem', marginTop: 8 }}>{phoneError}</div>}
+            {phoneError && <div style={{ gridColumn: 'span 2', color: '#dc2626', fontSize: '0.82rem', marginTop: 6 }}>{phoneError}</div>}
             <div style={{ gridColumn: 'span 2' }}>
               <label className="op-label">Địa chỉ</label>
               <input

@@ -94,7 +94,7 @@ const Profile = () => {
                 />
               </div>
             ))}
-            {formError && <div style={{ gridColumn: 'span 2', color: '#dc2626', fontSize: '0.82rem', marginTop: 8 }}>{formError}</div>}
+            {formError && <div style={{ gridColumn: 'span 2', color: '#dc2626', fontSize: '0.82rem', marginTop: 6 }}>{formError}</div>}
             <div style={{ gridColumn: 'span 2' }}>
               <label className="form-label">Địa chỉ</label>
               <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="form-input" />

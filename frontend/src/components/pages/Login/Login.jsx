@@ -1,24 +1,59 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MdDirectionsCar, MdEmail, MdLock, MdPhone } from 'react-icons/md';
+import { useAuth } from '../../../contexts/AuthContext';
 import './Login.css';
+
+const ROLE_REDIRECTS = {
+  admin: '/admin/dashboard',
+  showroom: '/showroom/dashboard',
+  owner: '/owner/dashboard',
+  renter: '/renter/profile',
+};
 
 const Login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
     const [tab, setTab] = useState('login');
     const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', phone: '', name: '' });
     const [confirmError, setConfirmError] = useState('');
+    const [loginError, setLoginError] = useState('');
+    const [registerError, setRegisterError] = useState('');
 
-    const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'phone') {
+            const digits = value.replace(/\D/g, '').slice(0, 10);
+            setForm(f => ({ ...f, phone: digits }));
+            return;
+        }
+        setForm(f => ({ ...f, [name]: value }));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (tab === 'register' && form.password !== form.confirmPassword) {
-            setConfirmError('Mật khẩu xác nhận không khớp!');
+        if (tab === 'register') {
+            if (form.password !== form.confirmPassword) { setConfirmError('Mật khẩu xác nhận không khớp!'); return; }
+            const phoneDigits = (form.phone || '').replace(/\D/g, '');
+            if (phoneDigits.length !== 10) {
+                setRegisterError('Số điện thoại phải có đúng 10 chữ số.');
+                return;
+            }
+            setConfirmError('');
+            setRegisterError('');
+            navigate('/');
             return;
         }
-        setConfirmError('');
-        navigate('/');
+        const result = login(form.email, form.password);
+        if (result.success) {
+            const from = location.state?.from?.pathname;
+            const redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
+            // Defer navigate to next tick so AuthProvider state is committed before route renders
+            setTimeout(() => navigate(redirect, { replace: true }), 0);
+        } else {
+            setLoginError(result.error || 'Đăng nhập thất bại');
+        }
     };
 
     return (
@@ -55,6 +90,20 @@ const Login = () => {
                 </div>
 
 
+                {/* Demo credentials */}
+                {tab === 'login' && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: '0.75rem', color: '#374151' }}>
+                    <div style={{ fontWeight: 700, color: '#059669', marginBottom: 4 }}>Tài khoản demo:</div>
+                    {[['admin@smartrent.com','Admin'],['showroom@smartrent.com','Showroom'],['owner@smartrent.com','Chủ xe'],['user@smartrent.com','Khách thuê']].map(([email, role]) => (
+                      <div key={email} style={{ cursor: 'pointer', padding: '2px 0' }} onClick={() => setForm(f => ({ ...f, email, password: '123456' }))}>
+                        <span style={{ color: '#00b14f', textDecoration: 'underline' }}>{email}</span> <span style={{ color: '#9ca3af' }}>· {role} · 123456</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {loginError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.82rem', marginBottom: 10 }}>{loginError}</div>}
+
                 {/* Form */}
                 <form className="login-form" onSubmit={handleSubmit}>
                     {tab === 'register' && (
@@ -75,18 +124,22 @@ const Login = () => {
 
                     {tab === 'register' && (
                         <div className="login-field">
-                            <label className="login-label">Số điện thoại</label>
+                            <label className="login-label">Số điện thoại (10 số)</label>
                             <div className="login-input-wrap">
                                 <MdPhone className="login-input-icon" size={17} />
                                 <input
                                     className="login-input"
                                     name="phone"
                                     type="tel"
-                                    placeholder="0901 234 567"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={10}
+                                    placeholder="0901234567"
                                     value={form.phone}
                                     onChange={handleChange}
                                 />
                             </div>
+                            {registerError && <div className="login-error-msg">{registerError}</div>}
                         </div>
                     )}
 
