@@ -4,7 +4,6 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaEye, FaDownload, FaFilter } from 'react-icons/fa';
 import { MOCK_TRANSACTIONS } from '../../../components/data/mockDashboard';
-import '../AdminDashboard/AdminDashboard.css';
 
 const PAYMENT_METHOD_COLORS = { 'Ví điện tử': '#6d28d9', 'Thẻ tín dụng': '#2563eb', 'Chuyển khoản': '#0891b2' };
 

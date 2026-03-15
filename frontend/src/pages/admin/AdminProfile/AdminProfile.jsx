@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './AdminProfile.css';
 import { useAuth } from '../../../contexts/AuthContext';
 import { FaSave, FaUser, FaShieldAlt, FaKey, FaCheckCircle, FaHistory } from 'react-icons/fa';
 import { MdVerifiedUser, MdAdminPanelSettings } from 'react-icons/md';

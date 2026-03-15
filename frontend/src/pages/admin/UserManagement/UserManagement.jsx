@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import DataTable from '../../../components/common/DataTable';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
-import { FaPlus, FaEye, FaLock, FaUnlock, FaUserEdit, FaCheckCircle, FaTimesCircle, FaIdCard } from 'react-icons/fa';
+import { FaEye, FaLock, FaUnlock, FaCheckCircle, FaTimesCircle, FaIdCard } from 'react-icons/fa';
 import { MOCK_USERS } from '../../../components/data/mockDashboard';
-import '../AdminDashboard/AdminDashboard.css';
 
 const ROLE_LABELS = { admin: 'Quản trị viên', showroom: 'Showroom', owner: 'Chủ xe', renter: 'Khách thuê' };
 const ROLE_COLORS = { admin: '#6d28d9', showroom: '#00b14f', owner: '#0891b2', renter: '#d97706' };

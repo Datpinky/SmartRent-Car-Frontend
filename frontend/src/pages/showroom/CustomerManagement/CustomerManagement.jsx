@@ -3,7 +3,6 @@ import DataTable from '../../../components/common/DataTable';
 import StatusBadge from '../../../components/common/StatusBadge';
 import { FaStar, FaRoute } from 'react-icons/fa';
 import { MOCK_USERS } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const CUSTOMERS = MOCK_USERS.filter(u => u.role === 'renter').map((u, i) => ({
   ...u,

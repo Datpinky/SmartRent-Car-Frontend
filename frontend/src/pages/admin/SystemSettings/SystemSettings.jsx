@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { FaSave, FaCog, FaBell, FaShieldAlt, FaMoneyBillWave, FaRobot } from 'react-icons/fa';
-import '../AdminDashboard/AdminDashboard.css';
 
 const SECTIONS = [
   { key: 'general', label: 'Cài đặt chung', icon: <FaCog /> },

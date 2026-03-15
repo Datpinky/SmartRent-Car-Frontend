@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import './SystemReports.css';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { FaDownload, FaCalendarAlt } from 'react-icons/fa';
+import { FaDownload } from 'react-icons/fa';
 import { REVENUE_MONTHLY, USER_GROWTH, VEHICLE_CATEGORY_PIE } from '../../../components/data/mockDashboard';
-import '../AdminDashboard/AdminDashboard.css';
 
 const SystemReports = () => {
   const [period, setPeriod] = useState('year');

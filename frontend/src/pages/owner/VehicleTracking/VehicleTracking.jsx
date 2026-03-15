@@ -3,7 +3,6 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import { FaCalendarAlt, FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import { MOCK_OWNER_VEHICLES } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const VEHICLE_TIMELINE = {
   1: [

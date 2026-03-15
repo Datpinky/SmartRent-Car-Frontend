@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './Checkout.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaCreditCard, FaMobileAlt, FaUniversity, FaCheckCircle, FaTag, FaArrowRight } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';

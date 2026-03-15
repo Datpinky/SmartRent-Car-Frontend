@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './AdminDashboard.css';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area

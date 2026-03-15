@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './NotificationBell.css';
 import { FaBell, FaTimes, FaCheckDouble } from 'react-icons/fa';
 import { MdDirectionsCar, MdPayment, MdWarning, MdVerified } from 'react-icons/md';
 
@@ -36,32 +35,64 @@ const NotificationBell = () => {
   const remove = (id) => setNotifications(prev => prev.filter(n => n.id !== id));
 
   return (
-    <div className="notif-bell" ref={ref}>
-      <button className="notif-btn" onClick={() => setOpen(o => !o)}>
+    <div className="relative" ref={ref}>
+      <button
+        className="w-[38px] h-[38px] rounded-[10px] border-[1.5px] border-gray-200 bg-white flex items-center justify-center text-base text-gray-500 relative transition-all hover:border-primary hover:text-primary hover:bg-primary-light"
+        onClick={() => setOpen(o => !o)}
+      >
         <FaBell />
-        {unread > 0 && <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>}
+        {unread > 0 && (
+          <span className="absolute -top-[5px] -right-[5px] bg-red-600 text-white text-[0.6rem] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-[3px] border-2 border-white">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
       </button>
       {open && (
-        <div className="notif-dropdown">
-          <div className="notif-header">
-            <span className="notif-header-title">Thông báo {unread > 0 && <span className="nb-count">({unread})</span>}</span>
-            {unread > 0 && <button className="notif-mark-all" onClick={markAllRead}><FaCheckDouble /> Đọc tất cả</button>}
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[340px] bg-white rounded-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-gray-200 z-[8000] overflow-hidden animate-[notifIn_0.15s_ease]">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f0f0f0]">
+            <span className="text-[0.9rem] font-bold text-gray-900">
+              Thông báo {unread > 0 && <span className="text-primary">({unread})</span>}
+            </span>
+            {unread > 0 && (
+              <button
+                className="text-[0.75rem] text-primary flex items-center gap-1 font-semibold hover:opacity-80"
+                onClick={markAllRead}
+              >
+                <FaCheckDouble /> Đọc tất cả
+              </button>
+            )}
           </div>
-          <div className="notif-list">
+          <div className="max-h-[360px] overflow-y-auto">
             {notifications.length === 0 && (
-              <div className="notif-empty">Không có thông báo nào</div>
+              <div className="text-center text-gray-400 py-8 text-[0.85rem]">Không có thông báo nào</div>
             )}
             {notifications.map(n => {
               const tc = TYPE_ICONS[n.type] || TYPE_ICONS.booking;
               return (
-                <div key={n.id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => markRead(n.id)}>
-                  <div className="notif-item-icon" style={{ background: tc.color + '20', color: tc.color }}>{tc.icon}</div>
-                  <div className="notif-item-body">
-                    <div className="notif-item-title">{n.title}</div>
-                    <div className="notif-item-msg">{n.message}</div>
-                    <div className="notif-item-time">{n.time}</div>
+                <div
+                  key={n.id}
+                  className={`flex items-start gap-2.5 px-3.5 py-3 cursor-pointer border-b border-gray-50 transition-colors relative hover:bg-gray-50
+                    ${!n.read ? 'bg-primary-light' : ''}`}
+                  onClick={() => markRead(n.id)}
+                >
+                  {!n.read && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary" />}
+                  <div
+                    className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center text-[0.95rem] shrink-0"
+                    style={{ background: tc.color + '20', color: tc.color }}
+                  >
+                    {tc.icon}
                   </div>
-                  <button className="notif-item-del" onClick={e => { e.stopPropagation(); remove(n.id); }}><FaTimes /></button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[0.8rem] font-semibold text-gray-900">{n.title}</div>
+                    <div className="text-[0.75rem] text-gray-500 mt-0.5 leading-snug">{n.message}</div>
+                    <div className="text-[0.7rem] text-gray-400 mt-0.5">{n.time}</div>
+                  </div>
+                  <button
+                    className="text-gray-300 p-0.5 flex items-center text-[0.75rem] shrink-0 hover:text-red-600 transition-colors"
+                    onClick={e => { e.stopPropagation(); remove(n.id); }}
+                  >
+                    <FaTimes />
+                  </button>
                 </div>
               );
             })}
