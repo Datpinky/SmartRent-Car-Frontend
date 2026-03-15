@@ -1,5 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply font-sans bg-gray-50 text-gray-800 antialiased;
+    line-height: 1.6;
+  }
+  a {
+    @apply no-underline text-inherit;
+  }
+  ul {
+    @apply list-none;
+  }
+  button {
+    @apply cursor-pointer border-none bg-transparent;
+    font-family: inherit;
+  }
+  img {
+    @apply max-w-full block;
+  }
+}
+
+/* Giữ :root cho các file CSS cũ chưa chuyển sang Tailwind */
 :root {
   --primary: #00b14f;
   --primary-dark: #009940;
@@ -28,29 +56,8 @@
   --transition: 0.2s ease;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Inter', sans-serif;
-  background: var(--gray-50);
-  color: var(--gray-800);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
-
-a { text-decoration: none; color: inherit; }
-ul { list-style: none; }
-button { cursor: pointer; border: none; background: none; font-family: inherit; }
-img { max-width: 100%; display: block; }
-
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 20px;
+@layer components {
+  .container {
+    @apply max-w-[1280px] mx-auto px-5;
+  }
 }
