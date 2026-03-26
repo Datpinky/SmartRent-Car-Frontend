@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MdDirectionsCar, MdPeople, MdBrush, MdSort, MdFilterList, MdClose } from 'react-icons/md';
 import { FaGasPump, FaCar } from 'react-icons/fa';
 
@@ -69,43 +69,169 @@ const POPUP_TITLES = {
   model: 'Mẫu xe', category: 'Loại xe', fuel: 'Nhiên liệu', sort: 'Sắp xếp',
 };
 
+/* ─── Popup component độc lập ─── */
+const FilterPopup = ({ id, anchorRef, options, title, tempSelection, onSelect, onApply, onClose }) => {
+  const popupRef = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  /* Tính vị trí popup bên dưới nút anchor */
+  useEffect(() => {
+    if (!anchorRef?.current || !popupRef.current) return;
+
+    const btn = anchorRef.current.getBoundingClientRect();
+    const popup = popupRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+
+    let left = btn.left;
+    let top = btn.bottom + 8; // 8px gap bên dưới nút
+
+    // Không để tràn ra bên phải màn hình
+    if (left + popup.width > vw - 16) {
+      left = vw - popup.width - 16;
+    }
+    if (left < 8) left = 8;
+
+    setPos({ top, left });
+  }, [anchorRef, id]);
+
+  return (
+    <>
+      {/* Overlay trong suốt để bắt click ra ngoài */}
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+        onMouseDown={onClose}
+      />
+
+      {/* Popup */}
+      <div
+        ref={popupRef}
+        style={{
+          position: 'fixed',
+          top: pos.top,
+          left: pos.left,
+          zIndex: 999,
+          width: 240,
+          background: '#fff',
+          border: '1.5px solid #e5e7eb',
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
+          overflow: 'hidden',
+          animation: 'slideDown 0.15s ease',
+        }}
+        onMouseDown={e => e.stopPropagation()} // không đóng khi click bên trong
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '13px 16px 12px', borderBottom: '1px solid #f3f4f6',
+        }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#111827' }}>{title}</span>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center' }}
+          >
+            <MdClose size={20} />
+          </button>
+        </div>
+
+        {/* Options */}
+        <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => onSelect(opt.value)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 16px',
+                cursor: 'pointer',
+                background: tempSelection === opt.value ? '#f0fdf4' : 'transparent',
+                transition: 'background 0.12s',
+              }}
+              onMouseEnter={e => { if (tempSelection !== opt.value) e.currentTarget.style.background = '#f9fafb'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = tempSelection === opt.value ? '#f0fdf4' : 'transparent'; }}
+            >
+              {/* Radio dot */}
+              <span style={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                border: `2px solid ${tempSelection === opt.value ? '#059669' : '#d1d5db'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'border-color 0.15s',
+              }}>
+                {tempSelection === opt.value && (
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669', display: 'block' }} />
+                )}
+              </span>
+              <span style={{
+                fontSize: '0.87rem',
+                fontWeight: tempSelection === opt.value ? 600 : 400,
+                color: tempSelection === opt.value ? '#059669' : '#374151',
+              }}>
+                {opt.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '10px 14px', borderTop: '1px solid #f3f4f6' }}>
+          <button
+            onClick={onApply}
+            style={{
+              width: '100%', padding: '9px 0',
+              background: 'linear-gradient(135deg, #059669, #047857)',
+              color: '#fff', border: 'none', borderRadius: 10,
+              fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            Áp dụng
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+/* ─── FilterBar chính ─── */
 const FilterBar = ({ onFilter, onSort }) => {
   const [active, setActive] = useState('all');
   const [openPopup, setOpenPopup] = useState(null);
   const [selections, setSelections] = useState({
-    type: 'all', seats: 'all', brand: 'all', model: 'all',
-    category: 'all', fuel: 'all', sort: 'all',
+    type: 'all', seats: 'all', brand: 'all',
+    model: 'all', category: 'all', fuel: 'all', sort: 'all',
   });
   const [tempSelection, setTempSelection] = useState('all');
-  const popupRef = useRef(null);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (popupRef.current && !popupRef.current.contains(e.target)) setOpenPopup(null);
-    };
-    if (openPopup) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openPopup]);
+  // Lưu ref của từng nút chip để tính vị trí popup
+  const btnRefs = useRef({});
 
-  const handleChipClick = (f) => {
-    if (f.hasPopup) {
-      if (openPopup === f.id) { setOpenPopup(null); }
-      else { setOpenPopup(f.id); setTempSelection(selections[f.id]); }
-    } else if (f.id === 'all') {
-      const reset = { type: 'all', seats: 'all', brand: 'all', model: 'all', category: 'all', fuel: 'all', sort: 'all' };
-      setSelections(reset); setActive('all'); setOpenPopup(null);
-      if (onFilter) onFilter('all');
+  const openFilter = (id) => {
+    if (openPopup === id) {
+      setOpenPopup(null);
     } else {
-      setActive(f.id); setOpenPopup(null);
-      if (onFilter) onFilter(f.id);
+      setTempSelection(selections[id] ?? 'all');
+      setOpenPopup(id);
     }
   };
 
+  const handleClose = () => setOpenPopup(null);
+
   const handleApply = () => {
     const newSelections = { ...selections, [openPopup]: tempSelection };
-    setSelections(newSelections); setActive(openPopup); setOpenPopup(null);
+    setSelections(newSelections);
+    setActive(openPopup);
+    setOpenPopup(null);
     if (openPopup === 'sort') { if (onSort) onSort(tempSelection); }
     else { if (onFilter) onFilter(newSelections); }
+  };
+
+  const handleAllClick = () => {
+    const reset = { type: 'all', seats: 'all', brand: 'all', model: 'all', category: 'all', fuel: 'all', sort: 'all' };
+    setSelections(reset); setActive('all'); setOpenPopup(null);
+    if (onFilter) onFilter('all');
   };
 
   const hasAnyFilter = Object.values(selections).some(v => v !== 'all');
@@ -115,75 +241,95 @@ const FilterBar = ({ onFilter, onSort }) => {
     return active === id;
   };
 
-  const chipBase = "flex items-center gap-1.5 px-4 py-2 rounded-full border text-[0.82rem] font-medium cursor-pointer transition-all whitespace-nowrap";
-  const chipActive = "bg-primary text-white border-primary shadow-sm";
-  const chipDefault = "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary";
+  const chipBase = {
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    padding: '7px 16px', borderRadius: 99,
+    fontSize: '0.82rem', fontWeight: 500,
+    cursor: 'pointer', whiteSpace: 'nowrap',
+    border: '1.5px solid', transition: 'all 0.15s',
+    fontFamily: 'inherit',
+  };
+  const chipActive = { background: '#059669', color: '#fff', borderColor: '#059669', boxShadow: '0 2px 6px rgba(5,150,105,0.2)' };
+  const chipDefault = { background: '#fff', color: '#4b5563', borderColor: '#e5e7eb' };
 
   return (
-    <div className="relative bg-white border-b border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.05)] z-[50]">
-      <div className="max-w-[1280px] mx-auto px-5 py-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {FILTERS.map(f => (
+    <div style={{ position: 'relative', background: '#fff', borderBottom: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', zIndex: 50 }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto' }}
+        className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {/* "Tất cả" chip */}
+        <button
+          style={{ ...chipBase, ...(isChipSelected('all') ? chipActive : chipDefault) }}
+          onClick={handleAllClick}
+        >
+          <MdFilterList />
+          Tất cả
+        </button>
+
+        {/* Filter chips */}
+        {FILTERS.filter(f => f.id !== 'all').map(f => (
           <button
             key={f.id}
-            className={`${chipBase} ${isChipSelected(f.id) ? chipActive : chipDefault}`}
-            onClick={() => handleChipClick(f)}
+            ref={el => btnRefs.current[f.id] = el}
+            style={{
+              ...chipBase,
+              ...(isChipSelected(f.id) ? chipActive : chipDefault),
+              ...(openPopup === f.id && !isChipSelected(f.id)
+                ? { borderColor: '#059669', color: '#059669', background: '#f0fdf4' }
+                : {}),
+            }}
+            onClick={() => openFilter(f.id)}
           >
             {f.icon}
             {f.label}
+            {/* Chevron nhỏ */}
+            <svg
+              width="12" height="12" viewBox="0 0 12 12" fill="none"
+              style={{ transform: openPopup === f.id ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.18s', marginLeft: 2 }}
+            >
+              <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         ))}
-        <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 24, background: '#e5e7eb', flexShrink: 0, margin: '0 4px' }} />
+
+        {/* Sắp xếp */}
         <button
-          className={`${chipBase} ${selections.sort !== 'all' ? chipActive : chipDefault}`}
-          onClick={() => {
-            if (openPopup === 'sort') setOpenPopup(null);
-            else { setOpenPopup('sort'); setTempSelection(selections.sort); }
+          ref={el => btnRefs.current['sort'] = el}
+          style={{
+            ...chipBase,
+            ...(selections.sort !== 'all' ? chipActive : chipDefault),
+            ...(openPopup === 'sort' && selections.sort === 'all'
+              ? { borderColor: '#059669', color: '#059669', background: '#f0fdf4' }
+              : {}),
           }}
+          onClick={() => openFilter('sort')}
         >
           <MdSort />
           Sắp xếp
+          <svg
+            width="12" height="12" viewBox="0 0 12 12" fill="none"
+            style={{ transform: openPopup === 'sort' ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.18s', marginLeft: 2 }}
+          >
+            <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
 
+      {/* Popup dropdown */}
       {openPopup && POPUP_OPTIONS[openPopup] && (
-        <>
-          <div className="fixed inset-0 z-[49]" onClick={() => setOpenPopup(null)} />
-          <div
-            ref={popupRef}
-            className="absolute left-5 top-[calc(100%+8px)] z-[51] bg-white border border-gray-200 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] min-w-[220px] overflow-hidden animate-[slideDown_0.15s_ease]"
-          >
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
-              <h3 className="text-[0.9rem] font-bold text-gray-900">{POPUP_TITLES[openPopup]}</h3>
-              <button className="text-gray-400 hover:text-gray-700 transition-colors" onClick={() => setOpenPopup(null)}>
-                <MdClose size={20} />
-              </button>
-            </div>
-            <div className="py-2 max-h-[280px] overflow-y-auto">
-              {POPUP_OPTIONS[openPopup].map(opt => (
-                <label
-                  key={opt.value}
-                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setTempSelection(opt.value)}
-                >
-                  <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${tempSelection === opt.value ? 'border-primary' : 'border-gray-300'}`}>
-                    {tempSelection === opt.value && <span className="w-2 h-2 rounded-full bg-primary block" />}
-                  </span>
-                  <span className={`text-[0.88rem] ${tempSelection === opt.value ? 'text-primary font-semibold' : 'text-gray-700'}`}>
-                    {opt.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="px-4 py-3 border-t border-gray-100">
-              <button
-                className="w-full py-2.5 bg-primary text-white font-semibold rounded-xl text-[0.88rem] transition-colors hover:bg-primary-dark"
-                onClick={handleApply}
-              >
-                Áp dụng
-              </button>
-            </div>
-          </div>
-        </>
+        <FilterPopup
+          id={openPopup}
+          anchorRef={{ current: btnRefs.current[openPopup] }}
+          options={POPUP_OPTIONS[openPopup]}
+          title={POPUP_TITLES[openPopup]}
+          tempSelection={tempSelection}
+          onSelect={setTempSelection}
+          onApply={handleApply}
+          onClose={handleClose}
+        />
       )}
     </div>
   );

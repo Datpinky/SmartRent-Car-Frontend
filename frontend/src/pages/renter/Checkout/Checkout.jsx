@@ -72,7 +72,7 @@ const Checkout = () => {
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827' }}>{car.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{car.showroom || 'Showroom SmartRent'} · {car.location}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{car.showroom || 'Showroom SmartRent'} · {car.address}</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#00b14f', marginTop: 4 }}>{car.price}K/ngày</div>
                 </div>
               </div>

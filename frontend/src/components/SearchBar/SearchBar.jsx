@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar, FaStore } from 'react-icons/fa';
 
 const CITIES = ['Hà Nội', 'Đà Nẵng', 'Hồ Chí Minh'];
 
@@ -26,18 +26,31 @@ const SearchBar = ({ onSearch }) => {
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedDist, setDist] = useState('');
   const [carName, setCarName] = useState('');
+  const [showroomName, setShowroomName] = useState('');
+  const districtRef = useRef(null);
 
   useEffect(() => {
     document.body.style.overflow = showModal ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [showModal]);
 
-  const handleCityClick = (city) => { setSelectedCity(city); setDist(''); };
+  const handleCityClick = (city) => {
+    if (selectedCity === city) {
+      setSelectedCity(null);
+      setDist('');
+      return;
+    }
+    setSelectedCity(city);
+    setDist('');
+    setTimeout(() => {
+      districtRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  };
   const handleDistClick = (d) => setDist(prev => prev === d ? '' : d);
 
   const handleSearch = () => {
     const location = selectedDist || selectedCity || '';
-    if (onSearch) onSearch({ location, carName });
+    if (onSearch) onSearch({ location, carName, showroomName });
     setShowModal(false);
   };
 
@@ -48,16 +61,16 @@ const SearchBar = ({ onSearch }) => {
 
   return (
     <>
-      {/* Search bar */}
+      {/* ── Search bar ngoài ── */}
       <section className="py-10 px-5 bg-gradient-to-br from-[#f0fdf4] to-[#e8f8ef]">
         <h1 className="text-center text-[2rem] font-extrabold text-gray-900 mb-6 max-[600px]:text-[1.4rem]">
           Tìm xe tự lái
         </h1>
         <div
-          className="max-w-[820px] mx-auto flex items-stretch bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden cursor-pointer transition-shadow hover:shadow-lg max-[640px]:flex-col max-[640px]:rounded-xl"
+          className="max-w-[960px] mx-auto flex items-stretch bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden cursor-pointer transition-shadow hover:shadow-lg max-[640px]:flex-col max-[640px]:rounded-xl"
           onClick={() => setShowModal(true)}
         >
-          {/* Location field */}
+          {/* Địa điểm */}
           <div className="flex items-center gap-3 px-5 py-3.5 flex-1 border-r border-gray-100 max-[640px]:border-r-0 max-[640px]:border-b">
             <FaMapMarkerAlt className="text-primary text-base shrink-0" />
             <div className="flex flex-col min-w-0">
@@ -68,7 +81,7 @@ const SearchBar = ({ onSearch }) => {
             </div>
           </div>
 
-          {/* Car name field */}
+          {/* Tìm kiếm xe */}
           <div
             className="flex items-center gap-3 px-5 py-3.5 flex-1 border-r border-gray-100 max-[640px]:border-r-0 max-[640px]:border-b"
             onClick={e => e.stopPropagation()}
@@ -87,6 +100,25 @@ const SearchBar = ({ onSearch }) => {
             </div>
           </div>
 
+          {/* Tìm kiếm showroom */}
+          <div
+            className="flex items-center gap-3 px-5 py-3.5 flex-1 border-r border-gray-100 max-[640px]:border-r-0 max-[640px]:border-b"
+            onClick={e => e.stopPropagation()}
+          >
+            <FaStore className="text-gray-400 text-base shrink-0" />
+            <div className="flex flex-col min-w-0 w-full">
+              <span className="text-[0.68rem] text-gray-400 font-semibold uppercase tracking-wide">Showroom</span>
+              <input
+                type="text"
+                className="text-[0.9rem] font-medium text-gray-800 bg-transparent border-none outline-none placeholder:text-gray-400"
+                placeholder="Tên showroom..."
+                value={showroomName}
+                onChange={(e) => setShowroomName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+          </div>
+
           <button
             className="flex items-center justify-center gap-2 px-7 py-3.5 bg-primary text-white font-bold text-[0.85rem] tracking-wide uppercase transition-colors hover:bg-primary-dark shrink-0 max-[640px]:py-4"
             onClick={e => { e.stopPropagation(); handleSearch(); }}
@@ -96,7 +128,7 @@ const SearchBar = ({ onSearch }) => {
         </div>
       </section>
 
-      {/* Modal */}
+      {/* ── Modal chọn địa điểm ── */}
       {showModal && (
         <div
           className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -106,16 +138,19 @@ const SearchBar = ({ onSearch }) => {
             className="bg-white w-full sm:max-w-[480px] sm:rounded-2xl rounded-t-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal header */}
+            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-              <span className="text-base font-bold text-gray-900">Tìm xe</span>
-              <button className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors" onClick={() => setShowModal(false)}>
+              <span className="text-base font-bold text-gray-900">Chọn địa điểm</span>
+              <button
+                className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                onClick={() => setShowModal(false)}
+              >
                 <FaTimes />
               </button>
             </div>
 
             <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
-              {/* Location display */}
+              {/* Địa điểm đã chọn */}
               <div>
                 <label className="text-[0.78rem] font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Địa điểm</label>
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5">
@@ -126,78 +161,80 @@ const SearchBar = ({ onSearch }) => {
                 </div>
               </div>
 
-              {/* Car name input */}
+              {/* Chọn thành phố — flat */}
               <div>
-                <label className="text-[0.78rem] font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Tìm kiếm xe</label>
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5">
-                  <FaCar className="text-gray-400 shrink-0" />
-                  <input
-                    type="text"
-                    className="flex-1 bg-transparent border-none outline-none text-[0.88rem] text-gray-800 placeholder:text-gray-400"
-                    placeholder="Tìm theo tên xe..."
-                    value={carName}
-                    onChange={(e) => setCarName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  />
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <span className="text-[0.75rem] font-bold text-gray-400 uppercase tracking-wide">Chọn thành phố</span>
+                  {selectedCity && (
+                    <button
+                      className="ml-auto text-[0.72rem] text-primary underline font-semibold"
+                      onClick={() => { setSelectedCity(null); setDist(''); }}
+                    >
+                      Bỏ chọn
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  {CITIES.map(city => {
+                    const isActive = selectedCity === city;
+                    return (
+                      <div
+                        key={city}
+                        className={`flex items-center gap-3 px-3 py-3.5 cursor-pointer rounded-xl transition-colors
+                          ${isActive ? 'bg-[#f0fdf4]' : 'hover:bg-gray-50'}`}
+                        onClick={() => handleCityClick(city)}
+                      >
+                        <FaMapMarkerAlt className={`text-base ${isActive ? 'text-primary' : 'text-gray-300'}`} />
+                        <span className={`flex-1 text-[0.95rem] font-medium ${isActive ? 'text-primary' : 'text-gray-700'}`}>{city}</span>
+                        {isActive
+                          ? <FaCheck className="text-primary text-sm" />
+                          : <FaChevronRight className="text-gray-300 text-xs" />
+                        }
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* City selection */}
-              <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                <div className="px-4 py-2.5 bg-gray-100 text-[0.75rem] font-bold text-gray-500 uppercase tracking-wide">Chọn thành phố</div>
-                {CITIES.map(city => {
-                  const isActive = selectedCity === city;
-                  return (
-                    <div
-                      key={city}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors
-                        ${isActive ? 'bg-primary-light' : 'hover:bg-white'}`}
-                      onClick={() => handleCityClick(city)}
-                    >
-                      <FaMapMarkerAlt className={isActive ? 'text-primary' : 'text-gray-400'} />
-                      <span className={`flex-1 text-[0.9rem] font-medium ${isActive ? 'text-primary' : 'text-gray-700'}`}>{city}</span>
-                      {isActive
-                        ? <FaCheck className="text-primary text-[0.8rem]" />
-                        : <FaChevronRight className="text-gray-300 text-[0.75rem]" />
-                      }
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* District selection */}
+              {/* Chọn quận/huyện — flat */}
               {districts && (
-                <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                  <div className="px-4 py-2.5 bg-gray-100 text-[0.75rem] font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                    <FaMapMarkerAlt className="text-primary" />
-                    Quận / Huyện — {selectedCity}
+                <div ref={districtRef}>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <FaMapMarkerAlt className="text-primary text-xs" />
+                    <span className="text-[0.75rem] font-bold text-gray-400 uppercase tracking-wide">Quận / Huyện — {selectedCity}</span>
                     {selectedDist && (
-                      <button className="ml-auto text-[0.72rem] text-primary underline font-semibold" onClick={() => setDist('')}>
+                      <button
+                        className="ml-auto text-[0.72rem] text-primary underline font-semibold"
+                        onClick={() => setDist('')}
+                      >
                         Bỏ chọn
                       </button>
                     )}
                   </div>
-                  {Object.entries(districts).map(([group, items]) => (
-                    <div key={group}>
-                      <div className="px-4 py-1.5 text-[0.7rem] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">{group}</div>
-                      {items.map(d => {
-                        const on = selectedDist === d;
-                        return (
-                          <div
-                            key={d}
-                            className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors
-                              ${on ? 'bg-primary-light' : 'hover:bg-white'}`}
-                            onClick={() => handleDistClick(d)}
-                          >
-                            <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${on ? 'border-primary' : 'border-gray-300'}`}>
-                              {on && <span className="w-2 h-2 rounded-full bg-primary block" />}
-                            </span>
-                            <span className={`text-[0.88rem] ${on ? 'text-primary font-semibold' : 'text-gray-700'}`}>{d}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                  <div className="flex flex-col">
+                    {Object.entries(districts).map(([group, items]) => (
+                      <div key={group}>
+                        <div className="px-3 py-1 text-[0.68rem] font-bold text-gray-400 uppercase tracking-wider">{group}</div>
+                        {items.map(d => {
+                          const on = selectedDist === d;
+                          return (
+                            <div
+                              key={d}
+                              className={`flex items-center gap-3 px-3 py-3 cursor-pointer rounded-xl transition-colors
+                                ${on ? 'bg-[#f0fdf4]' : 'hover:bg-gray-50'}`}
+                              onClick={() => handleDistClick(d)}
+                            >
+                              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0
+                                ${on ? 'border-primary' : 'border-gray-300'}`}>
+                                {on && <span className="w-2 h-2 rounded-full bg-primary block" />}
+                              </span>
+                              <span className={`text-[0.9rem] ${on ? 'text-primary font-semibold' : 'text-gray-700'}`}>{d}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

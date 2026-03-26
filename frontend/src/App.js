@@ -37,6 +37,7 @@ import MyBookings from './pages/renter/MyBookings/MyBookings';
 import Checkout from './pages/renter/Checkout/Checkout';
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
+import MapPage from './pages/renter/Map/MapPage';
 
 // Owner pages
 import OwnerDashboard from './pages/owner/OwnerDashboard/OwnerDashboard';
@@ -120,6 +121,7 @@ const App = () => {
           <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/payment-result"  element={<RenterPage><PaymentResult /></RenterPage>} />
           <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
+          <Route path="/renter/map"             element={<RenterPage><MapPage /></RenterPage>} />
 
           {/* Public pages with Navbar/Footer */}
           <Route path="/*" element={

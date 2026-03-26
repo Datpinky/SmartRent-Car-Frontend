@@ -88,7 +88,7 @@ const MyBookings = () => {
                       <FaClock size={11} /> {b.days} ngày
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
-                      <FaMapMarkerAlt size={11} /> {b.location}
+                      <FaMapMarkerAlt size={11} /> {b.address}
                     </span>
                   </div>
                 </div>
