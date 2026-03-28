@@ -16,7 +16,6 @@ const MENUS = {
     { key: 'dashboard',   label: 'Tổng quan',           icon: <FaTachometerAlt />, path: '/admin/dashboard' },
     { key: 'users',       label: 'Quản lý người dùng',  icon: <FaUsers />,         path: '/admin/users' },
     { key: 'showrooms',   label: 'Xác minh Showroom',   icon: <FaStore />,         path: '/admin/showrooms' },
-    { key: 'vehicles',    label: 'Duyệt xe',             icon: <FaCar />,           path: '/admin/vehicles' },
     { key: 'transactions',label: 'Giao dịch',            icon: <FaExchangeAlt />,   path: '/admin/transactions' },
     { key: 'reports',     label: 'Báo cáo hệ thống',    icon: <FaChartBar />,      path: '/admin/reports' },
     { key: 'moderation',  label: 'Kiểm duyệt nội dung', icon: <FaShieldAlt />,     path: '/admin/moderation' },

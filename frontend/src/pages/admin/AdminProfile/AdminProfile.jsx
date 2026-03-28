@@ -151,10 +151,7 @@ const AdminProfile = () => {
               />
             </div>
           </div>
-          <div style={{ marginTop: 20, padding: '12px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: '#166534' }}>
-            <FaCheckCircle />
-            Tài khoản này có quyền quản trị toàn bộ hệ thống SmartRent Car.
-          </div>
+          
           <button className="ap-btn-primary" onClick={handleSave} style={{ marginTop: 16 }}>
             <FaSave /> {saved ? 'Đã lưu!' : 'Lưu thay đổi'}
           </button>

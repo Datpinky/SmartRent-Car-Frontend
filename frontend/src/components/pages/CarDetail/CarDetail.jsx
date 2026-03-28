@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
@@ -22,10 +22,6 @@ const CarDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const car = cars.find(c => c.id === Number(id));
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [id]);
 
   if (!car) return (
     <div className="text-center py-20 px-5">
@@ -89,7 +85,7 @@ const CarDetail = () => {
                 <span className="flex items-center gap-1 text-[0.82rem] text-gray-500"><FaStore size={12} className="text-gray-400" /> {car.showroom}</span>
               )}
               <span className="flex items-center gap-1 text-[0.85rem]">
-                {[1, 2, 3, 4, 5].map(i => <FaStar key={i} size={13} color={i <= Math.round(car.rating) ? '#f59e0b' : '#e5e7eb'} />)}
+                {[1,2,3,4,5].map(i => <FaStar key={i} size={13} color={i <= Math.round(car.rating) ? '#f59e0b' : '#e5e7eb'} />)}
                 <strong className="ml-1">{car.rating}</strong>
                 <span className="text-gray-400">({car.trips} chuyến)</span>
               </span>
@@ -107,6 +103,14 @@ const CarDetail = () => {
               </div>
             </div>
 
+            {/* Map — vị trí nhận xe */}
+            {car.address && (
+              <div>
+                <div className={sectionTitle}>Vị trí nhận xe</div>
+                <CarLocationMap locationText={car.address} city="" />
+              </div>
+            )}
+
             {/* Description */}
             <div>
               <div className={sectionTitle}>Mô tả xe</div>
@@ -115,15 +119,6 @@ const CarDetail = () => {
                 Xe được bảo dưỡng định kỳ, đảm bảo an toàn và thoải mái cho người lái.
                 Xe có đầy đủ các tiện nghi hiện đại, điều hòa, camera lùi, hỗ trợ đỗ xe, và hệ thống âm thanh chất lượng cao.
               </p>
-            </div>
-
-            {/* Car Location Map */}
-            <div>
-              <div className={sectionTitle}>Vị trí xe</div>
-              <CarLocationMap
-                locationText={car.address}
-                carName={car.name}
-              />
             </div>
 
             {/* Features */}
@@ -150,7 +145,7 @@ const CarDetail = () => {
               <div className="font-bold text-[0.88rem] text-gray-800 mb-2">Điều khoản</div>
               <div className="text-[0.8rem] font-semibold text-gray-600 mb-1.5">Quy định khác:</div>
               <div className="text-[0.8rem] text-gray-600 leading-[1.8] flex flex-col gap-0.5">
-                {['Sử dụng xe đúng mục đích.', 'Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.', 'Không sử dụng xe thuê để cầm cố, thế chấp.', 'Không hút thuốc, nhả kẹo cao su, xả rác trong xe.', 'Không chở hàng quốc cấm dễ cháy nổ.', 'Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !'].map((t, i) => (
+                {['Sử dụng xe đúng mục đích.','Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.','Không sử dụng xe thuê để cầm cố, thế chấp.','Không hút thuốc, nhả kẹo cao su, xả rác trong xe.','Không chở hàng quốc cấm dễ cháy nổ.','Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !'].map((t,i) => (
                   <p key={i}>– {t}</p>
                 ))}
               </div>

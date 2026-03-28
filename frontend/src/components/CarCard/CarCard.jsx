@@ -89,8 +89,9 @@ const CarCard = ({ car }) => {
           </div>
         )}
 
-        <div className="text-[0.78rem] text-primary font-medium">
-          {car.address}
+        <div className="flex items-center gap-1 text-[0.78rem] text-primary font-medium">
+          <FaMapMarkerAlt size={11} />
+          {car.location}
         </div>
 
         <div className="flex items-center gap-1.5 mt-0.5">

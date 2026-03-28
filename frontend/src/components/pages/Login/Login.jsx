@@ -86,7 +86,9 @@ const Login = () => {
         <div className="absolute w-[300px] h-[300px] -bottom-[50px] -left-[50px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.1) 0%, transparent 70%)' }} />
         <div className="relative z-[1] max-w-[440px]">
           <div className="flex items-center gap-3 text-[1.75rem] font-black text-white mb-10">
-            <img src="/Logo.png" alt="SmartRent Car" className="h-11 w-auto object-contain" />
+            <div className="w-11 h-11 bg-primary rounded-full flex items-center justify-center">
+              <MdDirectionsCar size={22} color="white" />
+            </div>
             SmartRent Car
           </div>
           <h1 className="text-[2.2rem] font-extrabold text-white leading-snug mb-5">

@@ -15,7 +15,6 @@ import ChatWidget from './components/common/ChatWidget';
 import AdminDashboard from './pages/admin/AdminDashboard/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement/UserManagement';
 import ShowroomVerification from './pages/admin/ShowroomVerification/ShowroomVerification';
-import VehicleApproval from './pages/admin/VehicleApproval/VehicleApproval';
 import TransactionMonitor from './pages/admin/TransactionMonitor/TransactionMonitor';
 import SystemReports from './pages/admin/SystemReports/SystemReports';
 import ContentModeration from './pages/admin/ContentModeration/ContentModeration';
@@ -90,7 +89,6 @@ const App = () => {
           <Route path="/admin/dashboard"   element={<DashboardPage roles={['admin']}><AdminDashboard /></DashboardPage>} />
           <Route path="/admin/users"       element={<DashboardPage roles={['admin']}><UserManagement /></DashboardPage>} />
           <Route path="/admin/showrooms"   element={<DashboardPage roles={['admin']}><ShowroomVerification /></DashboardPage>} />
-          <Route path="/admin/vehicles"    element={<DashboardPage roles={['admin']}><VehicleApproval /></DashboardPage>} />
           <Route path="/admin/transactions"element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
           <Route path="/admin/reports"     element={<DashboardPage roles={['admin']}><SystemReports /></DashboardPage>} />
           <Route path="/admin/moderation"  element={<DashboardPage roles={['admin']}><ContentModeration /></DashboardPage>} />
@@ -121,7 +119,6 @@ const App = () => {
           <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/payment-result"  element={<RenterPage><PaymentResult /></RenterPage>} />
           <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
-          <Route path="/renter/map"             element={<RenterPage><MapPage /></RenterPage>} />
 
           {/* Public pages with Navbar/Footer */}
           <Route path="/*" element={
@@ -131,6 +128,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/xe/:id" element={<CarDetail />} />
+                  <Route path="/map" element={<MapPage />} />
                 </Routes>
               </div>
               <Footer />

@@ -68,6 +68,8 @@ const CarLocationMap = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const mapsSearchText = city?.trim() ? `${locationText}, ${city}` : locationText;
+
   // ── Geocode location string → coordinates ──────────────────────────────────
   useEffect(() => {
     if (!locationText) return;
@@ -75,7 +77,7 @@ const CarLocationMap = ({
     setLoading(true);
     setError(null);
 
-    const query = encodeURIComponent(`${locationText}, ${city}`);
+    const query = encodeURIComponent(mapsSearchText);
     const url = `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_KEY}&q=${query}&format=json&limit=1&accept-language=vi`;
 
     fetch(url)
@@ -94,11 +96,11 @@ const CarLocationMap = ({
         setError(err.message);
         setLoading(false);
       });
-  }, [locationText, city]);
+  }, [locationText, city, mapsSearchText]);
 
   const googleMapsUrl = latlng
     ? `https://www.google.com/maps?q=${latlng[0]},${latlng[1]}`
-    : `https://www.google.com/maps/search/${encodeURIComponent(locationText + ', ' + city)}`;
+    : `https://www.google.com/maps/search/${encodeURIComponent(mapsSearchText)}`;
 
   return (
     <div className="clm-root">

@@ -34,7 +34,9 @@ const Navbar = () => {
     <nav className="sticky top-0 z-[1000] bg-white border-b border-gray-200 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
       <div className="flex items-center justify-between h-16 max-w-[1280px] mx-auto px-5">
         <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-gray-800 no-underline">
-          <img src="/Logo.png" alt="SmartRent Car" className="h-9 w-auto object-contain" />
+          <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center text-white font-black">
+            <MdDirectionsCar size={20} />
+          </div>
           <span>Smart<span className="text-primary">Rent</span> Car</span>
         </Link>
 
