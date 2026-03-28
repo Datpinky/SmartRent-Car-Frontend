@@ -21,9 +21,11 @@ const STATUS_CONFIG = {
   returned:    { label: 'Đã trả xe',     bg: '#d1fae5', color: '#059669' },
   renting:     { label: 'Đang thuê',     bg: '#dbeafe', color: '#2563eb' },
   waiting:     { label: 'Đang chờ',      bg: '#fef3c7', color: '#d97706' },
-  signed:      { label: 'Đã ký',         bg: '#d1fae5', color: '#059669' },
-  expired:     { label: 'Hết hạn',       bg: '#f3f4f6', color: '#6b7280' },
-  draft:       { label: 'Nháp',          bg: '#f3f4f6', color: '#6b7280' },
+  signed:               { label: 'Đã ký',         bg: '#d1fae5', color: '#059669' },
+  expired:              { label: 'Hết hạn',       bg: '#f3f4f6', color: '#6b7280' },
+  draft:                { label: 'Nháp',          bg: '#f3f4f6', color: '#6b7280' },
+  pending_renter_sign:  { label: 'Chờ Khách ký',  bg: '#fef3c7', color: '#d97706' },
+  pending_owner_sign:   { label: 'Chờ Chủ xe ký', bg: '#fef3c7', color: '#d97706' },
 };
 
 const StatusBadge = ({ status, customLabel }) => {

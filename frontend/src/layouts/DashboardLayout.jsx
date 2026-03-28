@@ -7,7 +7,7 @@ import {
   FaCog, FaCalendarAlt, FaFileContract, FaChartLine, FaRobot,
   FaBuilding, FaMapMarkerAlt, FaMoneyBillWave, FaBars, FaTimes,
   FaSignOutAlt, FaAngleDown, FaAngleRight, FaExchangeAlt, FaComments,
-  FaAmbulance, FaUser
+  FaAmbulance, FaUser, FaMap
 } from 'react-icons/fa';
 import { MdVerifiedUser } from 'react-icons/md';
 
@@ -16,7 +16,6 @@ const MENUS = {
     { key: 'dashboard',   label: 'Tổng quan',           icon: <FaTachometerAlt />, path: '/admin/dashboard' },
     { key: 'users',       label: 'Quản lý người dùng',  icon: <FaUsers />,         path: '/admin/users' },
     { key: 'showrooms',   label: 'Xác minh Showroom',   icon: <FaStore />,         path: '/admin/showrooms' },
-    { key: 'vehicles',    label: 'Duyệt xe',             icon: <FaCar />,           path: '/admin/vehicles' },
     { key: 'transactions',label: 'Giao dịch',            icon: <FaExchangeAlt />,   path: '/admin/transactions' },
     { key: 'reports',     label: 'Báo cáo hệ thống',    icon: <FaChartBar />,      path: '/admin/reports' },
     { key: 'moderation',  label: 'Kiểm duyệt nội dung', icon: <FaShieldAlt />,     path: '/admin/moderation' },
@@ -43,6 +42,7 @@ const MENUS = {
   renter: [
     { key: 'profile',   label: 'Hồ sơ cá nhân',   icon: <FaUser />,        path: '/renter/profile' },
     { key: 'bookings',  label: 'Chuyến đi của tôi', icon: <FaCalendarAlt />, path: '/renter/bookings' },
+    { key: 'map',       label: 'Bản đồ xe',          icon: <FaMap />,         path: '/renter/map' },
     { key: 'sos',       label: 'Hỗ trợ khẩn cấp',  icon: <FaAmbulance />,   path: '/renter/sos' },
   ],
 };

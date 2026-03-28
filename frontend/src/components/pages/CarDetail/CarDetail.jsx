@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { cars } from '../../data/cars';
+import CarLocationMap from '../../Map/CarLocationMap';
 
 const SpecItem = ({ icon, label, value }) => (
   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -21,6 +22,10 @@ const CarDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const car = cars.find(c => c.id === Number(id));
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [id]);
 
   if (!car) return (
     <div className="text-center py-20 px-5">
@@ -110,6 +115,15 @@ const CarDetail = () => {
                 Xe được bảo dưỡng định kỳ, đảm bảo an toàn và thoải mái cho người lái.
                 Xe có đầy đủ các tiện nghi hiện đại, điều hòa, camera lùi, hỗ trợ đỗ xe, và hệ thống âm thanh chất lượng cao.
               </p>
+            </div>
+
+            {/* Car Location Map */}
+            <div>
+              <div className={sectionTitle}>Vị trí xe</div>
+              <CarLocationMap
+                locationText={car.location}
+                carName={car.name}
+              />
             </div>
 
             {/* Features */}

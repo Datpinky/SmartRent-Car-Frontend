@@ -28,14 +28,20 @@ const ShowroomProfile = () => {
       <div style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', borderRadius: 16, padding: 24, color: '#fff', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ width: 72, height: 72, borderRadius: 18, background: '#00b14f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 900, flexShrink: 0 }}>M</div>
         <div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{form.name}</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: 4 }}>
-            <FaMapMarkerAlt style={{ marginRight: 4 }} />{form.address}
+          <div className="flex items-center gap-2" style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+            {form.name}
+            <FaMapMarkerAlt className="shrink-0" style={{ fontSize: '0.9rem', opacity: 0.85 }} />
           </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: '0.8rem', opacity: 0.8 }}>
-            <span><FaStar style={{ color: '#f59e0b' }} /> 4.8 · 156 đánh giá</span>
+          <div style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: 4 }}>
+            {form.address}
+          </div>
+          <div className="flex items-center gap-4 mt-2 text-[0.8rem] opacity-80">
+            <div className="flex items-center gap-1.5">
+              <FaStar className="shrink-0 text-amber-500" />
+              <span>4.8 · 156 đánh giá</span>
+            </div>
             <span>45 xe · 312 chuyến</span>
-            <span style={{ background: '#00b14f', padding: '2px 10px', borderRadius: 50, opacity: 1, fontWeight: 700 }}>Đã xác minh ✓</span>
+            <span className="bg-primary px-2.5 py-0.5 rounded-full font-bold opacity-100 text-white">Đã xác minh ✓</span>
           </div>
         </div>
       </div>
@@ -63,11 +69,11 @@ const ShowroomProfile = () => {
                   style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
               </div>
             ))}
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Địa chỉ</label>
-              <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
-            </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Địa chỉ</label>
+                <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
             <div style={{ gridColumn: 'span 2' }}>
               <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Mô tả</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}

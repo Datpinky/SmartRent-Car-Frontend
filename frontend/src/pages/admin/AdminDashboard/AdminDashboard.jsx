@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaCheckCircle, FaEye } from 'react-icons/fa';
+import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaEye } from 'react-icons/fa';
 import { MdWarning } from 'react-icons/md';
 import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
@@ -12,9 +12,8 @@ import { useNavigate } from 'react-router-dom';
 
 const ALERTS = [
   { id: 1, type: 'warning', msg: 'Showroom "Xe Tốt Thủ Đức" đang chờ xác minh', action: '/admin/showrooms', actionLabel: 'Xem ngay' },
-  { id: 2, type: 'warning', msg: '2 xe mới chờ duyệt từ chủ xe ký gửi', action: '/admin/vehicles', actionLabel: 'Duyệt xe' },
-  { id: 3, type: 'info',    msg: 'Hệ thống AI phát hiện 1 hư hỏng mới trên Honda CR-V BKS 51H-23456', action: '/admin/reports', actionLabel: 'Xem báo cáo' },
-  { id: 4, type: 'warning', msg: '3 hồ sơ eKYC đang chờ xét duyệt', action: '/admin/users', actionLabel: 'Xét duyệt' },
+  { id: 2, type: 'info',    msg: 'Hệ thống AI phát hiện 1 hư hỏng mới trên Honda CR-V BKS 51H-23456', action: '/admin/reports', actionLabel: 'Xem báo cáo' },
+  { id: 3, type: 'warning', msg: '3 hồ sơ eKYC đang chờ xét duyệt', action: '/admin/users', actionLabel: 'Xét duyệt' },
 ];
 
 const CustomTooltip = ({ active, payload, label }) => {

@@ -9,17 +9,23 @@ const StatCard = ({ title, value, subtext, icon, color = '#00b14f', trend, trend
       >
         {icon}
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <div className="text-[1.6rem] font-extrabold text-gray-900 leading-none">{value}</div>
         <div className="text-[0.82rem] text-gray-500 mt-0.5 font-medium">{title}</div>
-        {(subtext || trendLabel) && (
-          <div className="flex items-center gap-1.5 mt-1">
+        {(trend !== undefined || subtext || trendLabel) && (
+          <div className="flex flex-nowrap items-center gap-1.5 mt-1 min-w-0">
             {trend !== undefined && (
-              <span className={`text-[0.72rem] font-bold px-1.5 py-px rounded-full ${trend >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
+              <span
+                className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[0.72rem] font-bold leading-none ${
+                  trend >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                }`}
+              >
+                {`${trend >= 0 ? '↑' : '↓'} ${Math.abs(trend)}%`}
               </span>
             )}
-            {trendLabel && <span className="text-[0.72rem] text-gray-400">{trendLabel}</span>}
+            {trendLabel && (
+              <span className="whitespace-nowrap text-[0.72rem] text-gray-400">{trendLabel}</span>
+            )}
             {subtext && !trendLabel && <span className="text-[0.72rem] text-gray-400">{subtext}</span>}
           </div>
         )}

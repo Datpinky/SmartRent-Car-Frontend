@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { FaSave, FaCog, FaBell, FaShieldAlt, FaMoneyBillWave, FaRobot } from 'react-icons/fa';
+import { FaSave, FaCog, FaBell, FaShieldAlt, FaMoneyBillWave } from 'react-icons/fa';
 
 const SECTIONS = [
   { key: 'general', label: 'Cài đặt chung', icon: <FaCog /> },
   { key: 'payment', label: 'Thanh toán', icon: <FaMoneyBillWave /> },
   { key: 'notification', label: 'Thông báo', icon: <FaBell /> },
   { key: 'security', label: 'Bảo mật', icon: <FaShieldAlt /> },
-  { key: 'ai', label: 'AI Cài đặt', icon: <FaRobot /> },
 ];
 
 const InputRow = ({ label, value, type = 'text', hint, onChange }) => (
@@ -69,7 +68,6 @@ const SystemSettings = () => {
             <InputRow label="Tên nền tảng" value="SmartRent Car" hint="Tên hiển thị trên toàn bộ hệ thống" />
             <InputRow label="Email liên hệ" value="support@smartrent.vn" type="email" />
             <InputRow label="Hotline hỗ trợ" value="1900 1234" />
-            <InputRow label="Website" value="https://smartrent.vn" />
             <InputRow label="Phí dịch vụ (%)" value="5" type="number" hint="Phần trăm phí dịch vụ trên mỗi giao dịch" />
           </>}
           {activeSection === 'payment' && <>
@@ -95,14 +93,6 @@ const SystemSettings = () => {
             <ToggleRow label="Phiên đăng nhập tự động hết hạn" checked={true} />
             <InputRow label="Thời gian phiên (phút)" value="120" type="number" />
             <ToggleRow label="Mã hóa SSL/TLS" checked={true} hint="Tự động với HTTPS" />
-          </>}
-          {activeSection === 'ai' && <>
-            <h3 style={{ margin: '0 0 16px', fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Cài đặt AI kiểm tra xe</h3>
-            <ToggleRow label="Bật AI kiểm tra hư hỏng" checked={true} hint="Tự động so sánh ảnh trước/sau thuê" />
-            <ToggleRow label="Thông báo tự động khi phát hiện hư hỏng" checked={true} />
-            <InputRow label="Ngưỡng độ tin cậy AI (%)" value="75" type="number" hint="Kết quả dưới ngưỡng sẽ cần xác nhận thủ công" />
-            <ToggleRow label="Lưu trữ ảnh so sánh" checked={true} hint="Lưu ảnh trước/sau cho mục đích giải quyết tranh chấp" />
-            <InputRow label="Thời gian lưu trữ ảnh (ngày)" value="365" type="number" />
           </>}
         </div>
       </div>
