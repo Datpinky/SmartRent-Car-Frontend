@@ -5,7 +5,6 @@ import FileUpload from '../../../components/common/FileUpload';
 import { FaPlus, FaEdit } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import { MOCK_OWNER_VEHICLES } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const MyVehicles = () => {
   const [vehicles, setVehicles] = useState(MOCK_OWNER_VEHICLES.map(v => ({ ...v, rating: 4.7, consignDate: '01/01/2026' })));

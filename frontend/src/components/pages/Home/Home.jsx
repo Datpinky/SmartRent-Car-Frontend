@@ -4,7 +4,6 @@ import FilterBar from '../../FilterBar/FilterBar';
 import CarGrid from '../../CarGrid/CarGrid';
 
 import { cars } from '../../data/cars';
-import './Home.css';
 
 const Home = () => {
     const [filteredCars, setFilteredCars] = useState(cars);

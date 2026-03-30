@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './AIInspection.css';
 import FileUpload from '../../../components/common/FileUpload';
 import ImageCompareSlider from '../../../components/common/ImageCompareSlider';
 import StatusBadge from '../../../components/common/StatusBadge';

@@ -3,7 +3,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { FaDownload, FaMoneyBillWave, FaChartLine } from 'react-icons/fa';
 import { REVENUE_MONTHLY } from '../../../components/data/mockDashboard';
 import { MOCK_SHOWROOM_VEHICLES } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const SHOWROOM_REVENUE = REVENUE_MONTHLY.map(m => ({ ...m, revenue: Math.round(m.revenue * 0.6), expense: Math.round(m.revenue * 0.15), profit: Math.round(m.revenue * 0.45) }));
 

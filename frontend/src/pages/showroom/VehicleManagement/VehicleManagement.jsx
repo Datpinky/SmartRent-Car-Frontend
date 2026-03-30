@@ -6,7 +6,6 @@ import FileUpload from '../../../components/common/FileUpload';
 import { FaPlus, FaEdit, FaTrash, FaStar, FaRoute } from 'react-icons/fa';
 import { MdDirectionsCar, MdLocalGasStation, MdEventSeat } from 'react-icons/md';
 import { MOCK_SHOWROOM_VEHICLES } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const STATUS_OPTS = ['available', 'active', 'maintenance'];
 const FUEL_OPTS = ['Xăng', 'Dầu', 'Điện', 'Hybrid'];

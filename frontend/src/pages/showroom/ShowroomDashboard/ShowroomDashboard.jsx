@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './ShowroomDashboard.css';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer

@@ -3,7 +3,6 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaEye, FaDownload, FaFileContract, FaFileSignature } from 'react-icons/fa';
 import { MOCK_CONTRACTS } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const ContractManagement = () => {
   const [contracts] = useState(MOCK_CONTRACTS);

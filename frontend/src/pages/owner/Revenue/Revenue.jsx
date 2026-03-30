@@ -4,7 +4,6 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaMoneyBillWave, FaDownload, FaPaperPlane } from 'react-icons/fa';
 import { MOCK_OWNER_REVENUE } from '../../../components/data/mockDashboard';
-import '../../admin/AdminDashboard/AdminDashboard.css';
 
 const PAYOUT_HISTORY = [
   { id: 'PT001', month: 'T2/2026', amount: 5220000, method: 'Vietcombank ****1234', date: '05/03/2026', status: 'paid' },
