@@ -130,6 +130,54 @@ export const MOCK_OWNER_REVENUE = [
   { month: 'T3',  revenue: 2200000, payouts: 0 },
 ];
 
+// Doanh thu hàng tháng theo từng xe (simulate backend /revenue?vehicle_id=X)
+export const MOCK_REVENUE_BY_VEHICLE = {
+  all: [
+    { month: 'T9',  revenue: 3200000, payouts: 2880000 },
+    { month: 'T10', revenue: 5400000, payouts: 4860000 },
+    { month: 'T11', revenue: 4800000, payouts: 4320000 },
+    { month: 'T12', revenue: 7200000, payouts: 6480000 },
+    { month: 'T1',  revenue: 6100000, payouts: 5490000 },
+    { month: 'T2',  revenue: 5800000, payouts: 5220000 },
+    { month: 'T3',  revenue: 2200000, payouts: 0 },
+  ],
+  1: [
+    { month: 'T9',  revenue: 1100000, payouts: 990000 },
+    { month: 'T10', revenue: 2200000, payouts: 1980000 },
+    { month: 'T11', revenue: 1980000, payouts: 1782000 },
+    { month: 'T12', revenue: 3300000, payouts: 2970000 },
+    { month: 'T1',  revenue: 3300000, payouts: 2970000 },
+    { month: 'T2',  revenue: 3400000, payouts: 3060000 },
+    { month: 'T3',  revenue: 1100000, payouts: 0 },
+  ],
+  2: [
+    { month: 'T9',  revenue: 1400000, payouts: 1260000 },
+    { month: 'T10', revenue: 1750000, payouts: 1575000 },
+    { month: 'T11', revenue: 1540000, payouts: 1386000 },
+    { month: 'T12', revenue: 2100000, payouts: 1890000 },
+    { month: 'T1',  revenue: 1750000, payouts: 1575000 },
+    { month: 'T2',  revenue: 1400000, payouts: 1260000 },
+    { month: 'T3',  revenue: 700000,  payouts: 0 },
+  ],
+  3: [
+    { month: 'T9',  revenue: 700000,  payouts: 630000 },
+    { month: 'T10', revenue: 1450000, payouts: 1305000 },
+    { month: 'T11', revenue: 1280000, payouts: 1152000 },
+    { month: 'T12', revenue: 1800000, payouts: 1620000 },
+    { month: 'T1',  revenue: 1050000, payouts: 945000 },
+    { month: 'T2',  revenue: 1000000, payouts: 900000 },
+    { month: 'T3',  revenue: 400000,  payouts: 0 },
+  ],
+};
+
+// Chỉ số dashboard theo từng xe (simulate backend /dashboard?vehicle_id=X)
+export const MOCK_STATS_BY_VEHICLE = {
+  all:  { total: 34700000, received: 29250000, pending: 2200000 },
+  1:    { total: 16380000, received: 13752000, pending: 1100000 },
+  2:    { total: 10640000, received: 9946000,  pending: 700000  },
+  3:    { total: 6680000,  revenue: 6552000,   pending: 400000  },
+};
+
 export const MOCK_RENTER_BOOKINGS = [
   { id: 'BK0001', vehicle: 'Toyota Camry 2.5Q 2023',  showroom: 'Showroom Minh Hoàng', from: '10/03/2026', to: '12/03/2026', days: 2, total: 2520000, status: 'active',    payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0001' },
   { id: 'BK0004', vehicle: 'VinFast VF8 Eco 2023',    showroom: 'Showroom Minh Hoàng', from: '01/03/2026', to: '03/03/2026', days: 2, total: 2205000, status: 'completed', payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0002' },

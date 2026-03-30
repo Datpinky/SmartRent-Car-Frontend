@@ -43,17 +43,13 @@ const OwnerProfile = () => {
 
   const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'OW';
 
+  // Viết hoa chữ cái đầu mỗi từ (không strip ký tự để bộ gõ Telex/VNI hoạt động)
   const toTitleCase = (str) =>
-    str.replace(/[^a-zA-ZÀ-ỹ\s]/g, '').replace(/\b(\S)/g, (c) => c.toUpperCase());
+    str.split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
 
   const handleFieldChange = (key, value) => {
     if (key === 'name') {
-      // Only allow letters and spaces (including Vietnamese), auto capitalize
-      if (/[^a-zA-ZÀ-ỹ\s]/.test(value)) {
-        setNameError('Họ và tên chỉ được chứa chữ cái.');
-      } else {
-        setNameError('');
-      }
+      setNameError('');
       setForm(f => ({ ...f, name: toTitleCase(value) }));
       return;
     }
@@ -90,26 +86,46 @@ const OwnerProfile = () => {
 
     // DOB validation
     const dobParts = (form.dob || '').split('/');
-    let dobValid = false;
     if (dobParts.length === 3) {
-      const [day, month, year] = dobParts.map(Number);
-      const dob = new Date(year, month - 1, day);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const age = today.getFullYear() - dob.getFullYear() -
-        (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0);
-      if (isNaN(dob.getTime())) {
+      const day   = parseInt(dobParts[0], 10);
+      const month = parseInt(dobParts[1], 10);
+      const year  = parseInt(dobParts[2], 10);
+
+      if (isNaN(day) || isNaN(month) || isNaN(year)) {
         setDobError('Ngày sinh không hợp lệ (định dạng DD/MM/YYYY).');
         hasError = true;
-      } else if (dob >= today) {
-        setDobError('Ngày sinh không được là ngày trong tương lai.');
-        hasError = true;
-      } else if (age < 18) {
-        setDobError('Bạn phải đủ 18 tuổi để đăng ký.');
+      } else if (month < 1 || month > 12) {
+        setDobError('Tháng không hợp lệ, phải từ 1 đến 12.');
         hasError = true;
       } else {
-        setDobError('');
-        dobValid = true;
+        // Tính số ngày hợp lệ trong tháng
+        const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        const maxDays = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
+
+        if (day < 1 || day > maxDays) {
+          if (month === 2) {
+            setDobError(`Tháng 2 năm ${year} chỉ có ${maxDays} ngày${isLeap ? ' (năm nhuận)' : ''}.`);
+          } else {
+            setDobError(`Tháng ${month} chỉ có ${maxDays} ngày.`);
+          }
+          hasError = true;
+        } else {
+          const dob   = new Date(year, month - 1, day);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const age = today.getFullYear() - year -
+            (today < new Date(today.getFullYear(), month - 1, day) ? 1 : 0);
+
+          if (dob >= today) {
+            setDobError('Ngày sinh không được là ngày trong tương lai.');
+            hasError = true;
+          } else if (age < 18) {
+            setDobError('Bạn phải đủ 18 tuổi để đăng ký.');
+            hasError = true;
+          } else {
+            setDobError('');
+          }
+        }
       }
     } else {
       setDobError('Ngày sinh không hợp lệ (định dạng DD/MM/YYYY).');
