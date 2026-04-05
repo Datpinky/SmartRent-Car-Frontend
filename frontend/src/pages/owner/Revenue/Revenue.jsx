@@ -25,15 +25,15 @@ import {
 } from '../../../components/data/mockDashboard';
 
 /* ── Helpers ─────────────────────────────────────────────── */
-const fmtM  = (n) => (n / 1_000_000).toFixed(1) + 'M';
+const fmtM = (n) => (n / 1_000_000).toFixed(1) + 'M';
 const fmtVN = (n) => n.toLocaleString('vi-VN') + 'đ';
 const genId = () => 'PT' + String(Date.now()).slice(-5);
 
 /* ── Mock bank accounts (từ hồ sơ chủ xe — thay bằng API thực) ── */
 const MOCK_BANK_ACCOUNTS = [
-  { id: 'ba1', bankName: 'Vietcombank', accountNo: '0012345678910', accountName: 'NGUYEN VAN KHOA', primary: true  },
-  { id: 'ba2', bankName: 'Techcombank', accountNo: '19034567891',   accountName: 'NGUYEN VAN KHOA', primary: false },
-  { id: 'ba3', bankName: 'MB Bank',     accountNo: '07712345678',   accountName: 'NGUYEN VAN KHOA', primary: false },
+  { id: 'ba1', bankName: 'Vietcombank', accountNo: '0012345678910', accountName: 'NGUYEN VAN KHOA', primary: true },
+  { id: 'ba2', bankName: 'Techcombank', accountNo: '19034567891', accountName: 'NGUYEN VAN KHOA', primary: false },
+  { id: 'ba3', bankName: 'MB Bank', accountNo: '07712345678', accountName: 'NGUYEN VAN KHOA', primary: false },
 ];
 
 /* ── Static payout history (mock) ───────────────────────── */
@@ -70,7 +70,7 @@ const INITIAL_PAYOUTS = [
       renter: 'Lê Minh Cường', period: '01/12/2025 → 31/12/2025',
       gross: 8000000, platformFee: 800000, damagePenalty: 720000, net: 6480000,
       aiDamages: [
-        { item: 'Trầy xước cản sau',       severity: 'Nhẹ',       cost: 350000 },
+        { item: 'Trầy xước cản sau', severity: 'Nhẹ', cost: 350000 },
         { item: 'Vết lõm cánh cửa sau trái', severity: 'Trung bình', cost: 370000 },
       ],
     },
@@ -92,8 +92,8 @@ const INITIAL_PAYOUTS = [
 ];
 
 /* ── Simulated API calls ─────────────────────────────────── */
-const fetchVehicles  = ()  => new Promise(r => setTimeout(() => r(MOCK_OWNER_VEHICLES), 600));
-const fetchStats     = (k) => new Promise(r => setTimeout(() => r(MOCK_STATS_BY_VEHICLE[k]  ?? MOCK_STATS_BY_VEHICLE.all), 400));
+const fetchVehicles = () => new Promise(r => setTimeout(() => r(MOCK_OWNER_VEHICLES), 600));
+const fetchStats = (k) => new Promise(r => setTimeout(() => r(MOCK_STATS_BY_VEHICLE[k] ?? MOCK_STATS_BY_VEHICLE.all), 400));
 const fetchChartData = (k) => new Promise(r => setTimeout(() => r(MOCK_REVENUE_BY_VEHICLE[k] ?? MOCK_REVENUE_BY_VEHICLE.all), 500));
 
 /* Simulate POST /api/withdrawals */
@@ -101,32 +101,32 @@ const postWithdrawal = ({ amount, bankAccountId }) =>
   new Promise((resolve, reject) =>
     setTimeout(() => {
       if (!amount || Number(amount) <= 0) reject(new Error('Số tiền không hợp lệ.'));
-      else if (!bankAccountId)            reject(new Error('Vui lòng chọn tài khoản ngân hàng.'));
-      else                                resolve({ id: genId(), status: 'processing' });
+      else if (!bankAccountId) reject(new Error('Vui lòng chọn tài khoản ngân hàng.'));
+      else resolve({ id: genId(), status: 'processing' });
     }, 1200)
   );
 
 /* ══════════════════════════════════════════════════════════ */
 const Revenue = () => {
   /* ── Vehicle filter state ── */
-  const [vehicles, setVehicles]               = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
-  const [selectedId, setSelectedId]           = useState('all');
-  const [stats, setStats]                     = useState(MOCK_STATS_BY_VEHICLE.all);
-  const [statsLoading, setStatsLoading]       = useState(false);
-  const [chartData, setChartData]             = useState(MOCK_REVENUE_BY_VEHICLE.all);
-  const [chartLoading, setChartLoading]       = useState(false);
+  const [selectedId, setSelectedId] = useState('all');
+  const [stats, setStats] = useState(MOCK_STATS_BY_VEHICLE.all);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [chartData, setChartData] = useState(MOCK_REVENUE_BY_VEHICLE.all);
+  const [chartLoading, setChartLoading] = useState(false);
 
   /* ── Payout table ── */
-  const [payouts, setPayouts]     = useState(INITIAL_PAYOUTS);
-  const [detailTx, setDetailTx]   = useState(null);
+  const [payouts, setPayouts] = useState(INITIAL_PAYOUTS);
+  const [detailTx, setDetailTx] = useState(null);
 
   /* ── Withdraw dialog ── */
-  const [wOpen, setWOpen]         = useState(false);
-  const [wAmount, setWAmount]     = useState('');
-  const [wAmtErr, setWAmtErr]     = useState('');
-  const [wBankId, setWBankId]     = useState(MOCK_BANK_ACCOUNTS[0]?.id ?? '');
-  const [wLoading, setWLoading]   = useState(false);
+  const [wOpen, setWOpen] = useState(false);
+  const [wAmount, setWAmount] = useState('');
+  const [wAmtErr, setWAmtErr] = useState('');
+  const [wBankId, setWBankId] = useState(MOCK_BANK_ACCOUNTS[0]?.id ?? '');
+  const [wLoading, setWLoading] = useState(false);
 
   /* ── MUI Snackbar (fallback) ── */
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
@@ -161,9 +161,9 @@ const Revenue = () => {
   const validateAmt = (val) => {
     const n = Number(String(val).replace(/\D/g, ''));
     const avail = stats?.pending ?? 0;
-    if (!val || isNaN(n) || n <= 0)  return 'Vui lòng nhập số tiền muốn rút.';
-    if (n < 100_000)                  return 'Số tiền tối thiểu là 100,000đ.';
-    if (n > avail)                    return `Vượt quá số dư (${fmtVN(avail)}).`;
+    if (!val || isNaN(n) || n <= 0) return 'Vui lòng nhập số tiền muốn rút.';
+    if (n < 100_000) return 'Số tiền tối thiểu là 100,000đ.';
+    if (n > avail) return `Vượt quá số dư (${fmtVN(avail)}).`;
     return '';
   };
 
@@ -173,19 +173,19 @@ const Revenue = () => {
     if (err) { setWAmtErr(err); return; }
     if (!wBankId) { toast.error('Vui lòng chọn tài khoản ngân hàng.'); return; }
 
-    const rawAmt   = Number(String(wAmount).replace(/\D/g, ''));
-    const bankAcc  = MOCK_BANK_ACCOUNTS.find(b => b.id === wBankId);
+    const rawAmt = Number(String(wAmount).replace(/\D/g, ''));
+    const bankAcc = MOCK_BANK_ACCOUNTS.find(b => b.id === wBankId);
 
     setWLoading(true);
     try {
       const result = await postWithdrawal({ amount: rawAmt, bankAccountId: wBankId });
 
-      const today  = new Date();
-      const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+      const today = new Date();
+      const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
       const newRow = {
         id: result.id,
-        month: `T${today.getMonth()+1}/${today.getFullYear()}`,
+        month: `T${today.getMonth() + 1}/${today.getFullYear()}`,
         amount: rawAmt,
         method: `${bankAcc?.bankName} ****${bankAcc?.accountNo.slice(-4)}`,
         date: dateStr,
@@ -213,15 +213,15 @@ const Revenue = () => {
 
   /* ── Derived ── */
   const selectedVehicle = vehicles.find(v => String(v.id) === selectedId);
-  const vehicleLabel    = selectedVehicle
+  const vehicleLabel = selectedVehicle
     ? `${selectedVehicle.name} – ${selectedVehicle.plate}`
     : 'Tất cả phương tiện';
 
   const STAT_CARDS = [
-    { label: 'Tổng doanh thu', val: fmtM(stats?.total    ?? 0), color: '#0891b2', sub: vehicleLabel },
-    { label: 'Đã nhận',        val: fmtM(stats?.received ?? 0), color: '#059669', sub: '90% tỷ lệ chi trả' },
-    { label: 'Đang chờ rút',   val: fmtM(stats?.pending  ?? 0), color: '#d97706', sub: 'Số dư khả dụng' },
-    { label: 'Tỷ lệ chia sẻ',  val: '90%',                       color: '#7c3aed', sub: 'Chủ xe / SmartRent' },
+    { label: 'Tổng doanh thu', val: fmtM(stats?.total ?? 0), color: '#0891b2', sub: vehicleLabel },
+    { label: 'Đã nhận', val: fmtM(stats?.received ?? 0), color: '#059669', sub: '90% tỷ lệ chi trả' },
+    { label: 'Đang chờ rút', val: fmtM(stats?.pending ?? 0), color: '#d97706', sub: 'Số dư khả dụng' },
+    { label: 'Tỷ lệ chia sẻ', val: '90%', color: '#7c3aed', sub: 'Chủ xe / SmartRent' },
   ];
 
   const inputSx = {
@@ -266,7 +266,7 @@ const Revenue = () => {
               onChange={e => setSelectedId(e.target.value)}
               style={{ width: '100%', paddingLeft: 34, paddingRight: 28, paddingTop: 9, paddingBottom: 9, border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: '0.85rem', outline: 'none', background: '#fff', color: '#111827', cursor: 'pointer', boxSizing: 'border-box', appearance: 'none' }}
             >
-              <option value="all">🚗 Tất cả phương tiện</option>
+              <option value="all"> Tất cả phương tiện</option>
               {vehicles.map(v => <option key={v.id} value={String(v.id)}>{v.name} – {v.plate}</option>)}
             </select>
             <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9ca3af', fontSize: '0.7rem' }}>▼</span>
@@ -313,7 +313,7 @@ const Revenue = () => {
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
               <Tooltip formatter={(v, n) => [fmtVN(v), n]} />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
-              <Bar dataKey="revenue" name="Doanh thu"  fill="#0891b2" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="revenue" name="Doanh thu" fill="#0891b2" radius={[4, 4, 0, 0]} />
               <Bar dataKey="payouts" name="Đã chi trả" fill="#00b14f" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -503,12 +503,12 @@ const Revenue = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem', marginBottom: 4 }}>
                 <tbody>
                   {[
-                    { label: 'Doanh thu gộp',        value: fmtVN(detailTx.detail.gross),         color: '#059669' },
-                    { label: 'Phí nền tảng (10%)',    value: `-${fmtVN(detailTx.detail.platformFee)}`, color: '#dc2626' },
+                    { label: 'Doanh thu gộp', value: fmtVN(detailTx.detail.gross), color: '#059669' },
+                    { label: 'Phí nền tảng (10%)', value: `-${fmtVN(detailTx.detail.platformFee)}`, color: '#dc2626' },
                     ...(detailTx.detail.damagePenalty > 0
                       ? [{ label: 'Khấu trừ hư hỏng (AI)', value: `-${fmtVN(detailTx.detail.damagePenalty)}`, color: '#d97706' }]
                       : []),
-                    { label: 'Thực nhận (chủ xe)',   value: fmtVN(detailTx.detail.net),            color: '#059669', bold: true },
+                    { label: 'Thực nhận (chủ xe)', value: fmtVN(detailTx.detail.net), color: '#059669', bold: true },
                   ].map(row => (
                     <tr key={row.label}>
                       <td style={{ padding: '7px 0', borderBottom: '1px solid #f3f4f6', color: row.bold ? '#111827' : '#6b7280', fontWeight: row.bold ? 700 : 400 }}>{row.label}</td>

@@ -9,35 +9,35 @@ import {
 import { MdVerifiedUser, MdDirectionsCar } from 'react-icons/md';
 
 const OWNER_STATS = [
-  { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar />, color: '#6d28d9' },
-  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave />, color: '#059669' },
-  { label: 'Chờ rút tiền',     value: '8,200,000₫',  icon: <FaExclamationCircle />, color: '#d97706' },
+  { label: 'Xe đang ký gửi', value: '3', icon: <MdDirectionsCar />, color: '#6d28d9' },
+  { label: 'Tổng doanh thu', value: '52,400,000₫', icon: <FaMoneyBillWave />, color: '#059669' },
+  { label: 'Chờ rút tiền', value: '8,200,000₫', icon: <FaExclamationCircle />, color: '#d97706' },
 ];
 
 const KYC_DOCS = [
-  { key: 'cccd',  label: 'CCCD / Căn cước công dân',  hint: 'Chụp 2 mặt CCCD rõ nét (PNG/JPG, ≤ 5MB)' },
-  { key: 'gplx',  label: 'Giấy phép lái xe',           hint: 'Chụp 2 mặt GPLX còn hiệu lực (PNG/JPG, ≤ 5MB)' },
-  { key: 'sohong', label: 'Sổ hồng / Đăng ký xe',     hint: 'Giấy tờ chứng minh quyền sở hữu xe (PNG/JPG, ≤ 5MB)' },
+  { key: 'cccd', label: 'CCCD / Căn cước công dân', hint: 'Chụp 2 mặt CCCD rõ nét (PNG/JPG, ≤ 5MB)' },
+  { key: 'gplx', label: 'Giấy phép lái xe', hint: 'Chụp 2 mặt GPLX còn hiệu lực (PNG/JPG, ≤ 5MB)' },
+  { key: 'sohong', label: 'Sổ hồng / Đăng ký xe', hint: 'Giấy tờ chứng minh quyền sở hữu xe (PNG/JPG, ≤ 5MB)' },
 ];
 
 const OwnerProfile = () => {
   const { user, updateUser } = useAuth();
-  const [tab, setTab]         = useState('info');
-  const [form, setForm]       = useState({
-    name:    user?.name  || 'Nguyễn Văn Khoa',
-    email:   user?.email || 'owner@smartrent.com',
-    phone:   user?.phone || '0900000003',
-    dob:     '15/07/1985',
+  const [tab, setTab] = useState('info');
+  const [form, setForm] = useState({
+    name: user?.name || 'Nguyễn Văn Khoa',
+    email: user?.email || 'owner@smartrent.com',
+    phone: user?.phone || '0900000003',
+    dob: '15/07/1985',
     address: '56 Trần Hưng Đạo, Q.1, TP.HCM',
-    bank:    'Vietcombank – 0012345678910',
+    bank: 'Vietcombank – 0012345678910',
   });
-  const [saved, setSaved]     = useState(false);
+  const [saved, setSaved] = useState(false);
   const [phoneError, setPhoneError] = useState('');
-  const [nameError, setNameError]   = useState('');
-  const [dobError, setDobError]     = useState('');
+  const [nameError, setNameError] = useState('');
+  const [dobError, setDobError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [kycStatus, setKycStatus] = useState('pending');
-  const [pwForm, setPwForm]   = useState({ current: '', next: '', confirm: '' });
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSaved, setPwSaved] = useState(false);
 
@@ -87,9 +87,9 @@ const OwnerProfile = () => {
     // DOB validation
     const dobParts = (form.dob || '').split('/');
     if (dobParts.length === 3) {
-      const day   = parseInt(dobParts[0], 10);
+      const day = parseInt(dobParts[0], 10);
       const month = parseInt(dobParts[1], 10);
-      const year  = parseInt(dobParts[2], 10);
+      const year = parseInt(dobParts[2], 10);
 
       if (isNaN(day) || isNaN(month) || isNaN(year)) {
         setDobError('Ngày sinh không hợp lệ (định dạng DD/MM/YYYY).');
@@ -110,7 +110,7 @@ const OwnerProfile = () => {
           }
           hasError = true;
         } else {
-          const dob   = new Date(year, month - 1, day);
+          const dob = new Date(year, month - 1, day);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const age = today.getFullYear() - year -
@@ -163,8 +163,8 @@ const OwnerProfile = () => {
   const handleKycSubmit = () => setKycStatus('pending');
 
   const handlePwSave = () => {
-    if (!pwForm.current)            { setPwError('Vui lòng nhập mật khẩu hiện tại'); return; }
-    if (pwForm.next.length < 6)     { setPwError('Mật khẩu mới phải có ít nhất 6 ký tự'); return; }
+    if (!pwForm.current) { setPwError('Vui lòng nhập mật khẩu hiện tại'); return; }
+    if (pwForm.next.length < 6) { setPwError('Mật khẩu mới phải có ít nhất 6 ký tự'); return; }
     if (pwForm.next !== pwForm.confirm) { setPwError('Mật khẩu xác nhận không khớp'); return; }
     setPwError('');
     setPwSaved(true);
@@ -173,9 +173,9 @@ const OwnerProfile = () => {
   };
 
   const TABS = [
-    ['info',     <FaUser />,         'Thông tin'],
-    ['kyc',      <FaIdCard />,       'Xác minh danh tính'],
-    ['security', <FaShieldAlt />,    'Bảo mật'],
+    ['info', <FaUser />, 'Thông tin'],
+    ['kyc', <FaIdCard />, 'Xác minh danh tính'],
+    ['security', <FaShieldAlt />, 'Bảo mật'],
   ];
 
   return (
@@ -314,8 +314,8 @@ const OwnerProfile = () => {
         <div className="op-card">
           <h3 className="op-section-title">Xác minh danh tính (eKYC)</h3>
           <div style={{ marginBottom: 18, padding: '12px 16px', background: kycStatus === 'pending' ? '#fffbeb' : kycStatus === 'verified' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${kycStatus === 'pending' ? '#fde68a' : kycStatus === 'verified' ? '#bbf7d0' : '#fecaca'}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {kycStatus === 'verified'   && <><FaCheckCircle style={{ color: '#059669' }} /> <span style={{ fontSize: '0.83rem', color: '#166534', fontWeight: 600 }}>Tài khoản đã được xác minh.</span></>}
-            {kycStatus === 'pending'    && <><FaExclamationCircle style={{ color: '#d97706' }} /> <span style={{ fontSize: '0.83rem', color: '#92400e', fontWeight: 600 }}>Hồ sơ đang chờ duyệt. Admin sẽ xem xét trong 24–48 giờ.</span></>}
+            {kycStatus === 'verified' && <><FaCheckCircle style={{ color: '#059669' }} /> <span style={{ fontSize: '0.83rem', color: '#166534', fontWeight: 600 }}>Tài khoản đã được xác minh.</span></>}
+            {kycStatus === 'pending' && <><FaExclamationCircle style={{ color: '#d97706' }} /> <span style={{ fontSize: '0.83rem', color: '#92400e', fontWeight: 600 }}>Hồ sơ đang chờ duyệt. Admin sẽ xem xét trong 24–48 giờ.</span></>}
             {kycStatus === 'unverified' && <><FaIdCard style={{ color: '#dc2626' }} /> <span style={{ fontSize: '0.83rem', color: '#991b1b', fontWeight: 600 }}>Chưa xác minh – Vui lòng tải lên tài liệu bên dưới.</span></>}
           </div>
 
@@ -327,7 +327,7 @@ const OwnerProfile = () => {
                 <FileUpload
                   accept="image/*"
                   maxFiles={2}
-                  onFilesChange={() => {}}
+                  onFilesChange={() => { }}
                   label={`Tải lên ${doc.label}`}
                 />
               </div>
@@ -348,8 +348,8 @@ const OwnerProfile = () => {
           <h3 className="op-section-title">Đổi mật khẩu</h3>
           <div style={{ maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              ['Mật khẩu hiện tại',     'current'],
-              ['Mật khẩu mới',          'next'],
+              ['Mật khẩu hiện tại', 'current'],
+              ['Mật khẩu mới', 'next'],
               ['Xác nhận mật khẩu mới', 'confirm'],
             ].map(([label, key]) => (
               <div key={key}>
