@@ -119,7 +119,7 @@ const MapPage = () => {
         </div>
 
         <div className="map-page-header-badges">
-          <span className="map-badge map-badge--green">
+          <span className="map-badge map-badge--sky">
             🚗 {SAMPLE_CARS.length} xe khả dụng
           </span>
           <span className="map-badge map-badge--blue">📡 Thời gian thực</span>

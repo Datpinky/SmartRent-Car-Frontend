@@ -70,7 +70,7 @@
   white-space: nowrap;
 }
 
-.map-badge--green {
+.map-badge--sky {
   background: #f0fff4;
   color: #276749;
   border: 1px solid #9ae6b4;
@@ -85,6 +85,13 @@
 /* ── Map container ───────────────────────────────────────── */
 .map-page-map-container {
   width: 100%;
+}
+
+/* Nhúng trong /xe/:id — cùng style khối bản đồ với trang /map */
+.car-detail-map-wrap {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 /* ── Tips row ────────────────────────────────────────────── */

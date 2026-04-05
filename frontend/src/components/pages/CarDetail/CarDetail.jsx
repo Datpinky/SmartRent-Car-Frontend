@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { cars as MOCK_CARS } from '../../data/cars';
-import CarLocationMap from '../../Map/CarLocationMap';
+import MapView from '../../Map/MapView';
 import vehicleService from '../../../services/vehicleService';
+import vehicleLocationService from '../../../services/vehicleLocationService';
 import reviewService from '../../../services/reviewService';
 import favoriteService from '../../../services/favoriteService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { LOCATIONIQ_API_KEY } from '../../Map/mapConfig';
+import '../../../pages/renter/Map/MapPage.css';
+import '../../Map/CarLocationMap.css';
 
 const SpecItem = ({ icon, label, value }) => (
   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -53,6 +57,12 @@ const CarDetail = () => {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
 
+  /** Tọa độ để hiển thị MapView (cùng stack với /map) */
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [resolvedAddress, setResolvedAddress] = useState('');
+  const [coordsLoading, setCoordsLoading] = useState(false);
+  const [coordsError, setCoordsError] = useState(null);
+
   const loadCar = useCallback(async () => {
     setLoading(true);
     try {
@@ -90,6 +100,93 @@ const CarDetail = () => {
     loadCar();
     loadReviews();
   }, [loadCar, loadReviews]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!car) return undefined;
+
+    const run = async () => {
+      setCoordsLoading(true);
+      setCoordsError(null);
+      setPickupCoords(null);
+
+      const directLat = car.latitude ?? car.lat;
+      const directLng = car.longitude ?? car.lng;
+      if (directLat != null && directLng != null) {
+        if (!cancelled) {
+          setPickupCoords({ lat: Number(directLat), lng: Number(directLng) });
+          setResolvedAddress(car.address || car.location || '');
+          setCoordsLoading(false);
+        }
+        return;
+      }
+
+      if (isMongoId(id)) {
+        try {
+          const loc = await vehicleLocationService.getByVehicleId(id);
+          if (!cancelled && loc?.latitude != null && loc?.longitude != null) {
+            setPickupCoords({ lat: Number(loc.latitude), lng: Number(loc.longitude) });
+            setResolvedAddress(loc.address || car.address || car.location || '');
+            setCoordsLoading(false);
+            return;
+          }
+        } catch {
+          /* 401 hoặc chưa có bản ghi — geocode tiếp */
+        }
+      }
+
+      const text = car.address || car.location;
+      if (!text) {
+        if (!cancelled) setCoordsLoading(false);
+        return;
+      }
+
+      const query = encodeURIComponent(`${text}, Việt Nam`);
+      try {
+        const r = await fetch(
+          `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_API_KEY}&q=${query}&format=json&limit=1&accept-language=vi`
+        );
+        if (!r.ok) throw new Error('Không geocode được địa chỉ.');
+        const data = await r.json();
+        if (!data?.length) throw new Error('Không tìm thấy vị trí.');
+        const { lat, lon, display_name } = data[0];
+        if (!cancelled) {
+          setPickupCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
+          setResolvedAddress(display_name);
+        }
+      } catch (e) {
+        if (!cancelled) setCoordsError(e.message || 'Lỗi bản đồ');
+      } finally {
+        if (!cancelled) setCoordsLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [car, id]);
+
+  const mapCarsForView = useMemo(() => {
+    if (!car || !pickupCoords) return [];
+    return [
+      {
+        id: car.id || car._id,
+        name: car.name,
+        latitude: pickupCoords.lat,
+        longitude: pickupCoords.lng,
+        price: car.price,
+        seats: car.seats,
+        fuel: car.fuel,
+        category: car.category || car.type,
+        image: car.image,
+      },
+    ];
+  }, [car, pickupCoords]);
+
+  const googleMapsHref = pickupCoords
+    ? `https://www.google.com/maps?q=${pickupCoords.lat},${pickupCoords.lng}`
+    : `https://www.google.com/maps/search/${encodeURIComponent(car?.address || car?.location || '')}`;
 
   const handleToggleFavorite = async (e) => {
     e.stopPropagation();
@@ -236,11 +333,47 @@ const CarDetail = () => {
               </div>
             </div>
 
-            {/* Map */}
-            {(car.address || car.location) && (
+            {/* Map — MapView embed + style MapPage.css (cùng /map) */}
+            {(car.address || car.location || isMongoId(id)) && (
               <div>
                 <div className={sectionTitle}>Vị trí nhận xe</div>
-                <CarLocationMap locationText={car.address || car.location} city="" />
+                <div className="clm-root">
+                  <div className="clm-address-bar">
+                    <span className="clm-address-icon">📍</span>
+                    <span className="clm-address-text">
+                      {coordsLoading
+                        ? 'Đang tải vị trí…'
+                        : coordsError
+                          ? car.address || car.location || '—'
+                          : resolvedAddress || car.address || car.location || '—'}
+                    </span>
+                    <a href={googleMapsHref} target="_blank" rel="noreferrer" className="clm-open-maps-btn">
+                      Mở trong Maps ↗
+                    </a>
+                  </div>
+                  <div className="map-page-map-container car-detail-map-wrap relative min-h-[280px]">
+                    {coordsLoading && (
+                      <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-white/90 rounded-xl">
+                        <div className="w-9 h-9 border-[3px] border-primary border-t-transparent rounded-full animate-spin mb-2" />
+                        <p className="text-[0.82rem] text-gray-500">Đang tải bản đồ…</p>
+                      </div>
+                    )}
+                    {!coordsLoading && coordsError && (
+                      <div className="flex flex-col items-center justify-center min-h-[200px] bg-gray-50 rounded-xl border border-gray-100 p-4 text-center">
+                        <span className="text-2xl mb-2">⚠️</span>
+                        <p className="text-[0.85rem] text-gray-600">{coordsError}</p>
+                      </div>
+                    )}
+                    {!coordsLoading && !coordsError && pickupCoords && mapCarsForView.length > 0 && (
+                      <MapView embed height="340px" cars={mapCarsForView} />
+                    )}
+                    {!coordsLoading && !coordsError && !pickupCoords && (car.address || car.location) && (
+                      <div className="flex items-center justify-center min-h-[120px] bg-gray-50 rounded-xl text-[0.82rem] text-gray-500">
+                        Không xác định được tọa độ từ địa chỉ.
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

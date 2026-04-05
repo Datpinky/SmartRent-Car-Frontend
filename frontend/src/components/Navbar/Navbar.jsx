@@ -61,12 +61,6 @@ const Navbar = () => {
                       <button className="flex items-center gap-2 w-full px-3.5 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-100 text-left" onClick={() => { navigate('/renter/profile'); setUserDropdownOpen(false); }}>
                         <FaUser /> Hồ sơ cá nhân
                       </button>
-                      <button className="flex items-center gap-2 w-full px-3.5 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-100 text-left" onClick={() => { navigate('/renter/bookings'); setUserDropdownOpen(false); }}>
-                        <FaCalendarAlt /> Chuyến đi của tôi
-                      </button>
-                      <button className="flex items-center gap-2 w-full px-3.5 py-2.5 text-[0.85rem] text-gray-700 hover:bg-gray-100 text-left" onClick={() => { navigate('/renter/sos'); setUserDropdownOpen(false); }}>
-                        <FaAmbulance /> Hỗ trợ khẩn cấp
-                      </button>
                       <div className="h-px bg-gray-200 my-1" />
                     </>
                   )}

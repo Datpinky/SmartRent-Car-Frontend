@@ -14,10 +14,12 @@
  *   image?, price?, seats?, fuel?, category?
  * }>                              – required
  * height? : string                – CSS height string, default '600px'
+ * embed? : boolean                – Gọn cho trang chi tiết xe: ẩn thanh điều khiện & sidebar, căn bản đồ theo xe
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 
@@ -34,7 +36,6 @@ import {
 import { enrichCarsWithDistance, filterByRadius } from './mapUtils';
 
 // ─── Fix Leaflet default marker icon (must run once) ─────────────────────────
-import L from 'leaflet';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -57,17 +58,46 @@ const FlyToUser = ({ position }) => {
   return null;
 };
 
+/** Căn khung nhìn theo danh sách xe (dùng trong chế độ embed / trang chi tiết) */
+const FitMapToCars = ({ cars }) => {
+  const map = useMap();
+  useEffect(() => {
+    const valid = (cars || []).filter(
+      (c) =>
+        c.latitude != null &&
+        c.longitude != null &&
+        !Number.isNaN(Number(c.latitude)) &&
+        !Number.isNaN(Number(c.longitude))
+    );
+    if (!valid.length) return;
+    if (valid.length === 1) {
+      map.setView([Number(valid[0].latitude), Number(valid[0].longitude)], 15, { animate: false });
+    } else {
+      const bounds = L.latLngBounds(valid.map((c) => [Number(c.latitude), Number(c.longitude)]));
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+    }
+  }, [cars, map]);
+  return null;
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
-const MapView = ({ cars = [], height = '600px' }) => {
+const MapView = ({ cars = [], height = '600px', embed = false }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(!embed);
   const [selectedCarId, setSelectedCarId] = useState(null);
   const [radiusKm, setRadiusKm] = useState(null);   // null = no filter
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(!embed);
 
-  // ── 1. Geolocation ──────────────────────────────────────────────────────────
+  // ── 1. Geolocation (tắt khi embed — tránh lệch tâm khỏi xe) ──────────────────
   useEffect(() => {
+    if (embed) {
+      setUserLocation(null);
+      setLocationError(null);
+      setLocationLoading(false);
+      return;
+    }
+
     if (!navigator.geolocation) {
       setLocationError('Trình duyệt của bạn không hỗ trợ định vị.');
       setLocationLoading(false);
@@ -92,7 +122,17 @@ const MapView = ({ cars = [], height = '600px' }) => {
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [embed]);
+
+  const mapCenter = useMemo(() => {
+    if (embed && cars?.[0]?.latitude != null && cars?.[0]?.longitude != null) {
+      return [Number(cars[0].latitude), Number(cars[0].longitude)];
+    }
+    if (userLocation) return [userLocation.lat, userLocation.lng];
+    return DEFAULT_CENTER;
+  }, [embed, cars, userLocation]);
+
+  const mapZoom = embed ? 15 : DEFAULT_ZOOM;
 
   // ── 2. Enrich cars with distance from user ──────────────────────────────────
   const carsWithDistance = useMemo(
@@ -131,8 +171,9 @@ const MapView = ({ cars = [], height = '600px' }) => {
   const isApiKeyMissing = LOCATIONIQ_API_KEY.startsWith('pk.your_');
 
   return (
-    <div className="mapview-root">
+    <div className={`mapview-root ${embed ? 'mapview-root--embed' : ''}`}>
       {/* ── Top control bar ────────────────────────────────────────────────── */}
+      {!embed && (
       <div className="mapview-controls">
         {/* Location status */}
         <div className="mapview-location-status">
@@ -186,6 +227,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
           {showSidebar ? '◀ Ẩn' : '▶ Danh sách'}
         </button>
       </div>
+      )}
 
       {/* ── API key warning ─────────────────────────────────────────────────── */}
       {isApiKeyMissing && (
@@ -198,26 +240,25 @@ const MapView = ({ cars = [], height = '600px' }) => {
       )}
 
       {/* ── Map + Sidebar layout ────────────────────────────────────────────── */}
-      <div className="mapview-body">
+      <div className={embed ? 'mapview-body mapview-body--embed' : 'mapview-body'}>
         {/* Map */}
         <div className="mapview-map-wrap" style={{ height }}>
           <MapContainer
-            center={
-              userLocation
-                ? [userLocation.lat, userLocation.lng]
-                : DEFAULT_CENTER
-            }
-            zoom={DEFAULT_ZOOM}
+            center={mapCenter}
+            zoom={mapZoom}
             style={{ width: '100%', height: '100%' }}
             zoomControl={true}
+            scrollWheelZoom={!embed}
           >
             <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
 
+            {embed && <FitMapToCars cars={cars} />}
+
             {/* Fly to user when location first resolves */}
-            <FlyToUser position={userLocation} />
+            {!embed && <FlyToUser position={userLocation} />}
 
             {/* User marker + radius ring */}
-            <UserLocation position={userLocation} radiusKm={radiusKm} />
+            {!embed && <UserLocation position={userLocation} radiusKm={radiusKm} />}
 
             {/* Car markers */}
             {visibleCars.map((car) => (
@@ -232,7 +273,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
         </div>
 
         {/* Sidebar */}
-        {showSidebar && (
+        {!embed && showSidebar && (
           <aside className="mapview-sidebar">
             <p className="mapview-sidebar-title">
               Xe gần bạn{' '}

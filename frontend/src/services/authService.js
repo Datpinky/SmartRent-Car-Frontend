@@ -13,7 +13,11 @@ export const mapBackendRole = (backendRole) => {
 export const authService = {
   async login(email, password) {
     const res = await apiClient.post('/api/auth/login', { email, password });
-    const { user, token } = res.data.data;
+    const payload = res.data?.data;
+    if (!payload?.user || !payload?.token) {
+      throw new Error('Phản hồi đăng nhập không hợp lệ.');
+    }
+    const { user, token } = payload;
 
     const frontendUser = {
       id: user._id,

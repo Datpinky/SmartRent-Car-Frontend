@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import Home from './components/pages/Home/Home';
@@ -105,8 +105,7 @@ const App = () => {
           <Route path="/owner/revenue"   element={<DashboardPage roles={['owner', 'admin']}><Revenue /></DashboardPage>} />
           <Route path="/owner/profile"   element={<DashboardPage roles={['owner', 'admin']}><OwnerProfile /></DashboardPage>} />
 
-          {/* Renter portal — /renter → hồ sơ (truy cập trực tiếp bằng URL ngắn) */}
-          <Route path="/renter" element={<Navigate to="/renter/profile" replace />} />
+          {/* Renter portal */}
           <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />

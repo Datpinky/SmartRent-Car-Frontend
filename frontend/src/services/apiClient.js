@@ -27,12 +27,24 @@ apiClient.interceptors.response.use(
 
     let normalizedMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
 
+    const reqUrl = error.config?.url || '';
+    const isLoginRequest = reqUrl.includes('/api/auth/login');
+
     if (!error.response) {
       normalizedMessage = 'Không thể kết nối đến máy chủ. Kiểm tra backend đang chạy tại cổng 5000.';
     } else if (status === 401) {
-      normalizedMessage = serverMessage || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
-      localStorage.removeItem('smartrent_token');
-      localStorage.removeItem('smartrent_user');
+      const enToVi = {
+        'Invalid email or password': 'Email hoặc mật khẩu không đúng.',
+        'Password not compare': 'Email hoặc mật khẩu không đúng.',
+      };
+      normalizedMessage =
+        enToVi[serverMessage] ||
+        serverMessage ||
+        (isLoginRequest ? 'Email hoặc mật khẩu không đúng.' : 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+      if (!isLoginRequest) {
+        localStorage.removeItem('smartrent_token');
+        localStorage.removeItem('smartrent_user');
+      }
     } else if (status === 403) {
       normalizedMessage = serverMessage || 'Bạn không có quyền thực hiện thao tác này.';
     } else if (status === 404) {

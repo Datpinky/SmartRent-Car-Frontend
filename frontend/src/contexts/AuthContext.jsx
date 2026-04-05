@@ -10,7 +10,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('smartrent_user');
-      if (saved) setUser(JSON.parse(saved));
+      if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim().startsWith('{')) {
+        setUser(JSON.parse(saved));
+      } else if (saved && (saved === 'undefined' || saved === 'null')) {
+        localStorage.removeItem('smartrent_user');
+      }
     } catch {
       localStorage.removeItem('smartrent_user');
     }

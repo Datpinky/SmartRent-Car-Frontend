@@ -14,6 +14,20 @@
   background: #fff;
 }
 
+/* Nhúng trang chi tiết xe — tránh trùng viền với khối cha */
+.mapview-root--embed {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.mapview-body--embed {
+  display: block;
+}
+
+.mapview-body--embed .mapview-map-wrap {
+  width: 100%;
+}
+
 /* ── Control bar ──────────────────────────────────────────── */
 .mapview-controls {
   display: flex;

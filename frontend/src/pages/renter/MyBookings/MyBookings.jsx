@@ -1,148 +1,61 @@
-import React, { useState } from 'react';
-import StatusBadge from '../../../components/common/StatusBadge';
-import Modal from '../../../components/common/Modal';
-import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaFileContract, FaEye, FaComments } from 'react-icons/fa';
-import { MdDirectionsCar } from 'react-icons/md';
-import { MOCK_RENTER_BOOKINGS } from '../../../components/data/mockDashboard';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { FaCheckCircle, FaTimesCircle, FaHome, FaList } from 'react-icons/fa';
 
-const TABS = [
-  { key: 'all',       label: 'Tất cả' },
-  { key: 'active',    label: 'Đang thuê' },
-  { key: 'approved',  label: 'Sắp tới' },
-  { key: 'completed', label: 'Hoàn thành' },
-  { key: 'cancelled', label: 'Đã hủy' },
-];
-
-const MyBookings = () => {
-  const [activeTab, setActiveTab] = useState('all');
-  const [detailModal, setDetailModal] = useState(null);
+const PaymentResult = () => {
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-
-  const displayed = activeTab === 'all' ? MOCK_RENTER_BOOKINGS : MOCK_RENTER_BOOKINGS.filter(b => b.status === activeTab);
-
-  const getStatusAction = (b) => {
-    if (b.status === 'active') return { label: 'Báo cáo sự cố', action: () => navigate('/renter/sos'), color: '#dc2626' };
-    if (b.status === 'completed') return { label: 'Đánh giá', action: () => {}, color: '#d97706' };
-    if (b.status === 'approved') return { label: 'Xem chi tiết', action: () => setDetailModal(b), color: '#2563eb' };
-    return null;
-  };
+  const status = params.get('status') || 'success';
+  const isSuccess = status === 'success';
 
   return (
-    <div className="my-bookings">
-      <div className="page-header" style={{ marginBottom: 20 }}>
-        <div><h1 className="page-title">Chuyến đi của tôi</h1><p className="page-subtitle">Lịch sử và trạng thái đặt xe</p></div>
-        <button className="btn-primary" onClick={() => navigate('/')}>+ Đặt xe mới</button>
-      </div>
-
-      {/* Summary */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Tổng chuyến', val: MOCK_RENTER_BOOKINGS.length, color: '#374151' },
-          { label: 'Đang thuê', val: MOCK_RENTER_BOOKINGS.filter(b => b.status === 'active').length, color: '#2563eb' },
-          { label: 'Hoàn thành', val: MOCK_RENTER_BOOKINGS.filter(b => b.status === 'completed').length, color: '#059669' },
-        ].map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '10px 18px', border: '1px solid #f0f0f0', textAlign: 'center', minWidth: 100 }}>
-            <div style={{ fontWeight: 800, fontSize: '1.3rem', color: s.color }}>{s.val}</div>
-            <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="booking-tabs">
-        {TABS.map(t => {
-          const count = t.key === 'all' ? MOCK_RENTER_BOOKINGS.length : MOCK_RENTER_BOOKINGS.filter(b => b.status === t.key).length;
-          return (
-            <button key={t.key} className={`booking-tab ${activeTab === t.key ? 'active' : ''}`} onClick={() => setActiveTab(t.key)}>
-              {t.label} {count > 0 && <span className="booking-tab-count">{count}</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Booking cards */}
-      <div className="booking-list">
-        {displayed.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#9ca3af', background: '#fff', borderRadius: 14 }}>
-            <MdDirectionsCar style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }} />
-            <div>Không có chuyến đi nào</div>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: 24 }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', border: '1px solid #f0f0f0' }}>
+        {isSuccess ? (
+          <>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', animation: 'popIn 0.4s ease' }}>
+              <FaCheckCircle style={{ fontSize: '3rem', color: '#0284c7' }} />
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thành công!</h2>
+            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
+              Đặt xe của bạn đã được xác nhận. Chúng tôi sẽ gửi thông tin chi tiết qua email và SMS.
+            </p>
+            <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'left' }}>
+              {[['Mã đặt xe', 'BK' + Math.floor(Math.random() * 10000).toString().padStart(4, '0')], ['Thời gian', '15/03/2026 10:00 – 17/03/2026 10:00'], ['Tổng tiền', '2.520.000đ']].map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.82rem' }}>
+                  <span style={{ color: '#9ca3af' }}>{k}</span>
+                  <span style={{ fontWeight: 600, color: '#111827' }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} />
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thất bại</h2>
+            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>Giao dịch không thể thực hiện. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.</p>
+          </>
         )}
-        {displayed.map(b => {
-          const action = getStatusAction(b);
-          return (
-            <div key={b.id} className="booking-card-item">
-              <div className="booking-card-left">
-                <div className="booking-card-img">
-                  <MdDirectionsCar style={{ fontSize: '2.5rem', color: '#00b14f' }} />
-                </div>
-                <div className="booking-card-info">
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>{b.vehicle}</div>
-                  <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: 3 }}>{b.showroom}</div>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
-                      <FaCalendarAlt size={11} /> {b.from} → {b.to}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
-                      <FaClock size={11} /> {b.days} ngày
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
-                      <FaMapMarkerAlt size={11} /> {b.location}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="booking-card-right">
-                <div style={{ textAlign: 'right' }}>
-                  <StatusBadge status={b.status} />
-                  <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#00b14f', marginTop: 6 }}>{b.total.toLocaleString()}đ</div>
-                  <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Mã: {b.id}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  <button className="btn-icon" onClick={() => setDetailModal(b)} title="Chi tiết"><FaEye /></button>
-                  {b.contractId && <button className="btn-icon" title="Xem hợp đồng"><FaFileContract /></button>}
-                  <button className="btn-icon" title="Liên hệ showroom"><FaComments /></button>
-                  {action && <button style={{ background: action.color, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }} onClick={action.action}>{action.label}</button>}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
-      {/* Detail Modal */}
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết chuyến đi" width={480}>
-        {detailModal && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: '#f0fdf4', borderRadius: 12, padding: 16 }}>
-              <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{detailModal.vehicle}</div>
-              <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 3 }}>{detailModal.showroom}</div>
-            </div>
-            {[
-              ['Mã đặt xe', detailModal.id],
-              ['Ngày nhận xe', detailModal.from],
-              ['Ngày trả xe', detailModal.to],
-              ['Số ngày thuê', detailModal.days],
-              ['Tổng tiền', detailModal.total.toLocaleString() + 'đ'],
-              ['Trạng thái', detailModal.status],
-              ['Thanh toán', detailModal.payStatus],
-            ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 10 }}>
-                <span style={{ fontSize: '0.82rem', color: '#6b7280' }}>{k}</span>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#111827' }}>{v}</span>
-              </div>
-            ))}
-            {detailModal.contractId && (
-              <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                <FaFileContract /> Xem hợp đồng điện tử
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={() => navigate('/')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+            <FaHome /> Trang chủ
+          </button>
+          {isSuccess
+            ? <button onClick={() => navigate('/renter/bookings')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#87ceeb', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>
+                <FaList /> Xem chuyến đi
               </button>
-            )}
-          </div>
-        )}
-      </Modal>
+            : <button onClick={() => navigate(-1)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#87ceeb', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>
+                Thử lại
+              </button>
+          }
+        </div>
+      </div>
+      <style>{`@keyframes popIn { from { transform: scale(0.5); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>
     </div>
   );
 };
 
-export default MyBookings;
+export default PaymentResult;

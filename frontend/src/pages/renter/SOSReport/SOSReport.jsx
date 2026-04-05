@@ -12,7 +12,7 @@ const INCIDENT_TYPES = [
 ];
 
 const HOTLINES = [
-  { label: 'SmartRent Hỗ trợ', number: '1900 1234', icon: <FaPhone />, color: '#00b14f', desc: '24/7 – Miễn phí' },
+  { label: 'SmartRent Hỗ trợ', number: '1900 1234', icon: <FaPhone />, color: '#87ceeb', desc: '24/7 – Miễn phí' },
   { label: 'Cấp cứu', number: '115', icon: <FaAmbulance />, color: '#dc2626', desc: 'Khẩn cấp y tế' },
   { label: 'Cảnh sát', number: '113', icon: <MdLocalPolice />, color: '#2563eb', desc: 'Tai nạn, sự cố' },
   { label: 'Cứu hỏa', number: '114', icon: <MdFireTruck />, color: '#d97706', desc: 'Cháy nổ' },
@@ -116,7 +116,7 @@ const SOSReport = () => {
               <FaMapMarkerAlt /> Chia sẻ vị trí hiện tại
             </button>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 10, color: '#059669', fontSize: '0.85rem', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 10, color: '#0284c7', fontSize: '0.85rem', fontWeight: 600 }}>
               <FaCheckCircle /> Đã chia sẻ vị trí
             </div>
           )}
