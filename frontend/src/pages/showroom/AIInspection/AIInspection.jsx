@@ -69,9 +69,9 @@ const AIInspection = () => {
               <h3 className="ai-card-title">Chọn xe cần kiểm tra</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {['Toyota Camry 2.5Q – BK0001', 'Honda CR-V L – BK0004', 'Kia Carnival – BK0007'].map(v => (
-                  <div key={v} onClick={() => setSelectedVehicle(v)} style={{ padding: 14, borderRadius: 12, border: `2px solid ${selectedVehicle === v ? '#00b14f' : '#e5e7eb'}`, background: selectedVehicle === v ? '#f0fdf4' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  <div key={v} onClick={() => setSelectedVehicle(v)} style={{ padding: 14, borderRadius: 12, border: `2px solid ${selectedVehicle === v ? '#87ceeb' : '#e5e7eb'}`, background: selectedVehicle === v ? '#f0f9ff' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <FaCar style={{ color: '#00b14f', fontSize: '1.2rem' }} />
+                      <FaCar style={{ color: '#87ceeb', fontSize: '1.2rem' }} />
                       <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827' }}>{v}</span>
                     </div>
                   </div>
@@ -97,7 +97,7 @@ const AIInspection = () => {
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <span style={{ background: '#dcfce7', color: '#16a34a', fontWeight: 700, fontSize: '0.75rem', padding: '2px 9px', borderRadius: 50 }}>SAU</span>
+                    <span style={{ background: '#e0f2fe', color: '#0284c7', fontWeight: 700, fontSize: '0.75rem', padding: '2px 9px', borderRadius: 50 }}>SAU</span>
                     <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>Ảnh khi nhận lại xe</span>
                   </div>
                   <FileUpload multiple hint="Chụp nhiều góc tương ứng với ảnh trước thuê" onUpload={setAfterFiles} />
@@ -173,12 +173,12 @@ const AIInspection = () => {
                   <td style={{ textAlign: 'center' }}>
                     {h.damages > 0
                       ? <span style={{ fontWeight: 700, color: '#dc2626' }}>{h.damages} vết</span>
-                      : <span style={{ color: '#059669', fontWeight: 600 }}>0</span>
+                      : <span style={{ color: '#0284c7', fontWeight: 600 }}>0</span>
                     }
                   </td>
                   <td>
                     {h.status === 'clean'
-                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontSize: '0.8rem', fontWeight: 600 }}><FaCheckCircle /> Không hư hỏng</span>
+                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#0284c7', fontSize: '0.8rem', fontWeight: 600 }}><FaCheckCircle /> Không hư hỏng</span>
                       : <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}><FaExclamationTriangle /> Phát hiện hư hỏng</span>
                     }
                   </td>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MdDirectionsCar, MdPeople, MdBrush, MdSort, MdFilterList, MdClose } from 'react-icons/md';
 import { FaGasPump, FaCar } from 'react-icons/fa';
 
@@ -144,27 +144,27 @@ const FilterPopup = ({ id, anchorRef, options, title, tempSelection, onSelect, o
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 16px',
                 cursor: 'pointer',
-                background: tempSelection === opt.value ? '#f0fdf4' : 'transparent',
+                background: tempSelection === opt.value ? '#f0f9ff' : 'transparent',
                 transition: 'background 0.12s',
               }}
               onMouseEnter={e => { if (tempSelection !== opt.value) e.currentTarget.style.background = '#f9fafb'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = tempSelection === opt.value ? '#f0fdf4' : 'transparent'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = tempSelection === opt.value ? '#f0f9ff' : 'transparent'; }}
             >
               {/* Radio dot */}
               <span style={{
                 width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                border: `2px solid ${tempSelection === opt.value ? '#059669' : '#d1d5db'}`,
+                border: `2px solid ${tempSelection === opt.value ? '#0284c7' : '#d1d5db'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'border-color 0.15s',
               }}>
                 {tempSelection === opt.value && (
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669', display: 'block' }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0284c7', display: 'block' }} />
                 )}
               </span>
               <span style={{
                 fontSize: '0.87rem',
                 fontWeight: tempSelection === opt.value ? 600 : 400,
-                color: tempSelection === opt.value ? '#059669' : '#374151',
+                color: tempSelection === opt.value ? '#0284c7' : '#374151',
               }}>
                 {opt.label}
               </span>
@@ -178,10 +178,10 @@ const FilterPopup = ({ id, anchorRef, options, title, tempSelection, onSelect, o
             onClick={onApply}
             style={{
               width: '100%', padding: '9px 0',
-              background: 'linear-gradient(135deg, #059669, #047857)',
+              background: 'linear-gradient(135deg, #0284c7, #0369a1)',
               color: '#fff', border: 'none', borderRadius: 10,
               fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+              boxShadow: '0 2px 8px rgba(2, 132, 199,0.25)',
               transition: 'opacity 0.15s',
             }}
             onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
@@ -249,7 +249,7 @@ const FilterBar = ({ onFilter, onSort }) => {
     border: '1.5px solid', transition: 'all 0.15s',
     fontFamily: 'inherit',
   };
-  const chipActive = { background: '#059669', color: '#fff', borderColor: '#059669', boxShadow: '0 2px 6px rgba(5,150,105,0.2)' };
+  const chipActive = { background: '#0284c7', color: '#fff', borderColor: '#0284c7', boxShadow: '0 2px 6px rgba(2, 132, 199,0.2)' };
   const chipDefault = { background: '#fff', color: '#4b5563', borderColor: '#e5e7eb' };
 
   return (
@@ -275,7 +275,7 @@ const FilterBar = ({ onFilter, onSort }) => {
               ...chipBase,
               ...(isChipSelected(f.id) ? chipActive : chipDefault),
               ...(openPopup === f.id && !isChipSelected(f.id)
-                ? { borderColor: '#059669', color: '#059669', background: '#f0fdf4' }
+                ? { borderColor: '#0284c7', color: '#0284c7', background: '#f0f9ff' }
                 : {}),
             }}
             onClick={() => openFilter(f.id)}
@@ -302,7 +302,7 @@ const FilterBar = ({ onFilter, onSort }) => {
             ...chipBase,
             ...(selections.sort !== 'all' ? chipActive : chipDefault),
             ...(openPopup === 'sort' && selections.sort === 'all'
-              ? { borderColor: '#059669', color: '#059669', background: '#f0fdf4' }
+              ? { borderColor: '#0284c7', color: '#0284c7', background: '#f0f9ff' }
               : {}),
           }}
           onClick={() => openFilter('sort')}

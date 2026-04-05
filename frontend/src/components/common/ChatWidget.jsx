@@ -45,7 +45,7 @@ const ChatWidget = () => {
     <div className="fixed bottom-6 right-6 z-[5000]">
       {/* FAB */}
       <button
-        className="w-[52px] h-[52px] rounded-full bg-primary border-none text-white text-[1.2rem] flex items-center justify-center shadow-[0_4px_16px_rgba(0,177,79,0.4)] transition-all relative hover:bg-primary-dark hover:scale-[1.07]"
+        className="w-[52px] h-[52px] rounded-full bg-primary border-none text-white text-[1.2rem] flex items-center justify-center shadow-[0_4px_16px_rgba(135,206,235,0.4)] transition-all relative hover:bg-primary-dark hover:scale-[1.07]"
         onClick={() => setOpen(o => !o)}
       >
         {open ? <FaTimes /> : <FaComments />}
@@ -74,7 +74,7 @@ const ChatWidget = () => {
                   >
                     <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[0.85rem] shrink-0 relative">
                       {conv.avatar}
-                      {conv.online && <span className="absolute bottom-px right-px w-[9px] h-[9px] rounded-full bg-green-400 border-2 border-white" />}
+                      {conv.online && <span className="absolute bottom-px right-px w-[9px] h-[9px] rounded-full bg-sky-400 border-2 border-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[0.83rem] font-semibold text-gray-900">{conv.name}</div>
@@ -97,7 +97,7 @@ const ChatWidget = () => {
                 <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[0.75rem] shrink-0">{activeConv.avatar}</div>
                 <div className="flex-1">
                   <div className="text-[0.9rem] font-bold text-gray-900">{activeConv.name}</div>
-                  <div style={{ fontSize: '0.68rem', color: activeConv.online ? '#059669' : '#9ca3af' }}>
+                  <div style={{ fontSize: '0.68rem', color: activeConv.online ? '#0284c7' : '#9ca3af' }}>
                     {activeConv.online ? '● Online' : 'Offline'}
                   </div>
                 </div>

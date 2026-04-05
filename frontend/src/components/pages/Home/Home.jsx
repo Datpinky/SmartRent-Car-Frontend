@@ -13,6 +13,7 @@ const matchLocation = (carLoc, search) => {
     const idx = loc.indexOf(term);
     if (idx === -1) return false;
     const charAfter = loc[idx + term.length];
+    // eslint-disable-next-line no-useless-escape
     return charAfter === undefined || /[\s,.\/\-(]/.test(charAfter);
 };
 

@@ -42,8 +42,8 @@ const VehicleManagement = () => {
   const columns = [
     { key: 'name', label: 'Thông tin xe', render: row => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <MdDirectionsCar size={22} color="#00b14f" />
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <MdDirectionsCar size={22} color="#87ceeb" />
         </div>
         <div>
           <div style={{ fontWeight: 600, fontSize: '0.83rem', color: '#111827' }}>{row.name}</div>
@@ -60,7 +60,7 @@ const VehicleManagement = () => {
         </div>
       </div>
     )},
-    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 700, color: '#00b14f', fontSize: '0.9rem' }}>{row.price}K</span>, sortable: true, accessor: 'price' },
+    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 700, color: '#87ceeb', fontSize: '0.9rem' }}>{row.price}K</span>, sortable: true, accessor: 'price' },
     { key: 'trips', label: 'Chuyến', render: row => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <FaRoute size={12} color="#9ca3af" /><span style={{ fontWeight: 600 }}>{row.trips}</span>
@@ -102,7 +102,7 @@ const VehicleManagement = () => {
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <span style={{ fontSize: '0.8rem', color: '#6b7280', marginRight: 4 }}>Trạng thái:</span>
           {['all', 'available', 'active', 'maintenance'].map(s => (
-            <button key={s} onClick={() => setFilterStatus(s)} style={{ padding: '4px 12px', borderRadius: 50, border: '1.5px solid', borderColor: filterStatus === s ? '#00b14f' : '#e5e7eb', background: filterStatus === s ? '#00b14f' : '#fff', color: filterStatus === s ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+            <button key={s} onClick={() => setFilterStatus(s)} style={{ padding: '4px 12px', borderRadius: 50, border: '1.5px solid', borderColor: filterStatus === s ? '#87ceeb' : '#e5e7eb', background: filterStatus === s ? '#87ceeb' : '#fff', color: filterStatus === s ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
               {s === 'all' ? 'Tất cả' : s === 'available' ? 'Sẵn sàng' : s === 'active' ? 'Đang thuê' : 'Bảo dưỡng'}
             </button>
           ))}

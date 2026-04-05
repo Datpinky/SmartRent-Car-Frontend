@@ -5,7 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   FaIdCard, FaCheckCircle, FaUser, FaShieldAlt,
   FaCamera, FaEdit, FaPhone, FaEnvelope, FaBirthdayCake,
-  FaMapMarkerAlt, FaSyncAlt, FaCheck, FaTimes
+  FaMapMarkerAlt, FaSyncAlt, FaCheck
 } from 'react-icons/fa';
 import { MdVerifiedUser } from 'react-icons/md';
 
@@ -22,12 +22,12 @@ const InfoRow = ({ icon, label, value }) => (
       width: 34,
       height: 34,
       borderRadius: 9,
-      background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+      background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
-      color: '#059669',
+      color: '#0284c7',
       fontSize: '0.82rem',
     }}>
       {icon}
@@ -155,12 +155,8 @@ const Profile = () => {
 
         <div className="profile-hero-info">
           <div className="profile-hero-name">{form.name || user?.name}</div>
-          <div className="profile-hero-email">{form.email || user?.email}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <StatusBadge status={kycStatus} />
-            <span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.08)', padding: '2px 10px', borderRadius: 20 }}>
-              Thành viên từ tháng 1, 2026
-            </span>
           </div>
         </div>
 
@@ -218,18 +214,18 @@ const Profile = () => {
                 onClick={handleStartEdit}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 7,
-                  background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
-                  border: '1.5px solid #6ee7b7',
+                  background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                  border: '1.5px solid #7dd3fc',
                   borderRadius: 10,
                   padding: '8px 18px',
                   fontSize: '0.83rem',
                   fontWeight: 700,
-                  color: '#059669',
+                  color: '#0284c7',
                   cursor: 'pointer',
                   transition: 'all 0.18s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg, #d1fae5, #a7f3d0)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #ecfdf5, #d1fae5)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg, #e0f2fe, #bae6fd)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #f0f9ff, #e0f2fe)'}
               >
                 <FaEdit style={{ fontSize: '0.78rem' }} />
                 Chỉnh sửa
@@ -240,8 +236,8 @@ const Profile = () => {
           {/* Thông báo đã lưu */}
           {saved && (
             <div style={{
-              background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
-              border: '1px solid #6ee7b7',
+              background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+              border: '1px solid #7dd3fc',
               borderRadius: 10,
               padding: '11px 16px',
               marginBottom: 16,
@@ -250,7 +246,7 @@ const Profile = () => {
               gap: 8,
               fontSize: '0.84rem',
               fontWeight: 600,
-              color: '#059669',
+              color: '#0284c7',
               animation: 'fadeIn 0.3s ease',
             }}>
               <FaCheck />
@@ -287,7 +283,7 @@ const Profile = () => {
                 {fields.map(({ icon, label, key, type, readonly, inputProps }) => (
                   <div key={key}>
                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ color: '#059669', fontSize: '0.7rem' }}>{icon}</span>
+                      <span style={{ color: '#0284c7', fontSize: '0.7rem' }}>{icon}</span>
                       {label}
                     </label>
                     <input
@@ -310,7 +306,7 @@ const Profile = () => {
                 {/* Địa chỉ — full width */}
                 <div style={{ gridColumn: 'span 2' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <FaMapMarkerAlt style={{ color: '#059669', fontSize: '0.7rem' }} />
+                    <FaMapMarkerAlt style={{ color: '#0284c7', fontSize: '0.7rem' }} />
                     Địa chỉ
                   </label>
                   <input
@@ -383,7 +379,7 @@ const Profile = () => {
                     padding: '10px 22px',
                     fontSize: '0.88rem',
                     opacity: saving ? 0.85 : 1,
-                    boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+                    boxShadow: '0 2px 8px rgba(2, 132, 199,0.25)',
                     transition: 'all 0.2s',
                   }}
                 >
@@ -410,7 +406,7 @@ const Profile = () => {
         <div className="profile-card">
           {kycStatus === 'verified' ? (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <MdVerifiedUser style={{ fontSize: '4rem', color: '#059669', marginBottom: 12 }} />
+              <MdVerifiedUser style={{ fontSize: '4rem', color: '#0284c7', marginBottom: 12 }} />
               <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827', marginBottom: 4 }}>Danh tính đã được xác minh</div>
               <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Bạn có thể thuê xe trên SmartRent Car.</p>
             </div>
@@ -433,8 +429,8 @@ const Profile = () => {
               </div>
               <h3 className="profile-section-title">Giấy phép lái xe (GPLX)</h3>
               <FileUpload label="Ảnh GPLX" hint="Ảnh rõ nét, đúng thông tin, còn hạn" />
-              <div style={{ background: '#f0fdf4', borderRadius: 12, padding: 14, margin: '20px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <FaCheckCircle color="#059669" style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ background: '#f0f9ff', borderRadius: 12, padding: 14, margin: '20px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <FaCheckCircle color="#0284c7" style={{ marginTop: 2, flexShrink: 0 }} />
                 <p style={{ fontSize: '0.8rem', color: '#374151', margin: 0 }}>Thông tin của bạn được bảo mật và chỉ dùng cho mục đích xác minh danh tính theo quy định.</p>
               </div>
               <button className="btn-primary" onClick={handleKycSubmit}>Gửi hồ sơ xác minh</button>

@@ -33,7 +33,7 @@ const ContentModeration = () => {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {['all', 'pending', 'reported', 'approved'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ padding: '6px 14px', borderRadius: 50, border: '1.5px solid', borderColor: filter === f ? '#00b14f' : '#e5e7eb', background: filter === f ? '#00b14f' : '#fff', color: filter === f ? '#fff' : '#374151', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+          <button key={f} onClick={() => setFilter(f)} style={{ padding: '6px 14px', borderRadius: 50, border: '1.5px solid', borderColor: filter === f ? '#87ceeb' : '#e5e7eb', background: filter === f ? '#87ceeb' : '#fff', color: filter === f ? '#fff' : '#374151', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
             {f === 'all' ? 'Tất cả' : f === 'pending' ? 'Chờ duyệt' : f === 'reported' ? '⚠ Bị báo cáo' : 'Đã duyệt'}
             <span style={{ marginLeft: 6, background: 'rgba(255,255,255,0.3)', borderRadius: 50, padding: '0 6px', fontSize: '0.72rem' }}>
               {f === 'all' ? reviews.length : f === 'reported' ? reviews.filter(r => r.reported).length : reviews.filter(r => r.status === f).length}

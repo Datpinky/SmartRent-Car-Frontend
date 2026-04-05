@@ -10,7 +10,7 @@ import { MdVerifiedUser, MdDirectionsCar } from 'react-icons/md';
 
 const OWNER_STATS = [
   { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar />, color: '#6d28d9' },
-  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave />, color: '#059669' },
+  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave />, color: '#0284c7' },
   { label: 'Chờ rút tiền',     value: '8,200,000₫',  icon: <FaExclamationCircle />, color: '#d97706' },
 ];
 
@@ -178,8 +178,8 @@ const OwnerProfile = () => {
       {tab === 'kyc' && (
         <div className="op-card">
           <h3 className="op-section-title">Xác minh danh tính (eKYC)</h3>
-          <div style={{ marginBottom: 18, padding: '12px 16px', background: kycStatus === 'pending' ? '#fffbeb' : kycStatus === 'verified' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${kycStatus === 'pending' ? '#fde68a' : kycStatus === 'verified' ? '#bbf7d0' : '#fecaca'}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {kycStatus === 'verified'   && <><FaCheckCircle style={{ color: '#059669' }} /> <span style={{ fontSize: '0.83rem', color: '#166534', fontWeight: 600 }}>Tài khoản đã được xác minh.</span></>}
+          <div style={{ marginBottom: 18, padding: '12px 16px', background: kycStatus === 'pending' ? '#fffbeb' : kycStatus === 'verified' ? '#f0f9ff' : '#fef2f2', border: `1px solid ${kycStatus === 'pending' ? '#fde68a' : kycStatus === 'verified' ? '#bae6fd' : '#fecaca'}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {kycStatus === 'verified'   && <><FaCheckCircle style={{ color: '#0284c7' }} /> <span style={{ fontSize: '0.83rem', color: '#075985', fontWeight: 600 }}>Tài khoản đã được xác minh.</span></>}
             {kycStatus === 'pending'    && <><FaExclamationCircle style={{ color: '#d97706' }} /> <span style={{ fontSize: '0.83rem', color: '#92400e', fontWeight: 600 }}>Hồ sơ đang chờ duyệt. Admin sẽ xem xét trong 24–48 giờ.</span></>}
             {kycStatus === 'unverified' && <><FaIdCard style={{ color: '#dc2626' }} /> <span style={{ fontSize: '0.83rem', color: '#991b1b', fontWeight: 600 }}>Chưa xác minh – Vui lòng tải lên tài liệu bên dưới.</span></>}
           </div>
@@ -238,7 +238,7 @@ const OwnerProfile = () => {
               </div>
             )}
             {pwSaved && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '8px 12px', color: '#075985', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <FaCheckCircle /> Mật khẩu đã được cập nhật!
               </div>
             )}

@@ -41,8 +41,8 @@ const UserLocation = ({ position, radiusKm = null }) => {
           center={[position.lat, position.lng]}
           radius={radiusKm * 1000}          // Leaflet expects metres
           pathOptions={{
-            color: '#00b14f',
-            fillColor: '#00b14f',
+            color: '#87ceeb',
+            fillColor: '#87ceeb',
             fillOpacity: 0.07,
             weight: 1.5,
             dashArray: '6 4',

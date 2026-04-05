@@ -23,10 +23,10 @@ const OwnerDashboard = () => {
 
       <div className="stats-grid">
         <StatCard title="Xe đang ký gửi"     value={MOCK_OWNER_VEHICLES.length}   icon={<FaCar />}           color="#0891b2" />
-        <StatCard title="Xe đang cho thuê"   value={MOCK_OWNER_VEHICLES.filter(v => v.status === 'active').length} icon={<FaCar />} color="#00b14f" />
+        <StatCard title="Xe đang cho thuê"   value={MOCK_OWNER_VEHICLES.filter(v => v.status === 'active').length} icon={<FaCar />} color="#87ceeb" />
         <StatCard title="Tổng doanh thu"     value={(totalRevenue / 1000000).toFixed(1) + 'M'} icon={<FaMoneyBillWave />} color="#d97706" trend={8.5} trendLabel="so tháng trước" />
         <StatCard title="Chờ nhận tiền"      value={(pendingRevenue / 1000).toLocaleString() + 'K'} icon={<FaMoneyBillWave />} color="#7c3aed" subtext="Sẽ chuyển vào T4" />
-        <StatCard title="Tổng chuyến"        value={MOCK_OWNER_VEHICLES.reduce((s, v) => s + v.trips, 0)} icon={<FaRoute />} color="#059669" trend={14.2} trendLabel="so tháng trước" />
+        <StatCard title="Tổng chuyến"        value={MOCK_OWNER_VEHICLES.reduce((s, v) => s + v.trips, 0)} icon={<FaRoute />} color="#0284c7" trend={14.2} trendLabel="so tháng trước" />
         <StatCard title="Doanh thu tháng 3"  value="2.2M" icon={<FaChartLine />} color="#dc2626" />
       </div>
 
@@ -43,7 +43,7 @@ const OwnerDashboard = () => {
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1000000).toFixed(1) + 'M'} />
             <Tooltip formatter={(v, n) => [(v / 1000).toLocaleString() + 'K', n]} />
             <Bar dataKey="revenue" name="Doanh thu"  fill="#0891b2" radius={[4,4,0,0]} />
-            <Bar dataKey="payouts" name="Đã chi trả" fill="#00b14f" radius={[4,4,0,0]} />
+            <Bar dataKey="payouts" name="Đã chi trả" fill="#87ceeb" radius={[4,4,0,0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -66,7 +66,7 @@ const OwnerDashboard = () => {
               </div>
               <StatusBadge status={v.status} />
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#00b14f' }}>{(v.revenue / 1000000).toFixed(1)}M</div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#87ceeb' }}>{(v.revenue / 1000000).toFixed(1)}M</div>
                 <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>tổng DT</div>
               </div>
             </div>

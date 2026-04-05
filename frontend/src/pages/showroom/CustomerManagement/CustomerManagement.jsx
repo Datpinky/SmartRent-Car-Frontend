@@ -28,7 +28,7 @@ const CustomerManagement = () => {
     { key: 'bookings', label: 'Chuyến', render: row => (
       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><FaRoute size={12} color="#9ca3af" />{row.bookings}</span>
     ), sortable: true, accessor: 'bookings', align: 'center' },
-    { key: 'totalSpent', label: 'Tổng chi tiêu', render: row => <span style={{ fontWeight: 700, color: '#00b14f' }}>{row.totalSpent.toLocaleString()}đ</span>, sortable: true, accessor: 'totalSpent' },
+    { key: 'totalSpent', label: 'Tổng chi tiêu', render: row => <span style={{ fontWeight: 700, color: '#87ceeb' }}>{row.totalSpent.toLocaleString()}đ</span>, sortable: true, accessor: 'totalSpent' },
     { key: 'avgRating', label: 'Đánh giá', render: row => (
       <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700, color: '#d97706', fontSize: '0.82rem' }}>
         <FaStar size={11} /> {row.avgRating}
@@ -54,7 +54,7 @@ const CustomerManagement = () => {
       <div style={{ display: 'flex', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { label: 'Tổng khách hàng', val: CUSTOMERS.length, color: '#2563eb' },
-          { label: 'Tổng doanh thu từ khách', val: totalRevenue.toLocaleString() + 'đ', color: '#00b14f' },
+          { label: 'Tổng doanh thu từ khách', val: totalRevenue.toLocaleString() + 'đ', color: '#87ceeb' },
           { label: 'Trung bình chuyến/người', val: avgBookings, color: '#7c3aed' },
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '10px 18px', border: '1px solid #f0f0f0', flex: 1, minWidth: 160 }}>

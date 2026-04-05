@@ -6,7 +6,7 @@ import { FaEye, FaLock, FaUnlock, FaCheckCircle, FaTimesCircle, FaIdCard } from 
 import { MOCK_USERS } from '../../../components/data/mockDashboard';
 
 const ROLE_LABELS = { admin: 'Quản trị viên', showroom: 'Showroom', owner: 'Chủ xe', renter: 'Khách thuê' };
-const ROLE_COLORS = { admin: '#6d28d9', showroom: '#00b14f', owner: '#0891b2', renter: '#d97706' };
+const ROLE_COLORS = { admin: '#6d28d9', showroom: '#87ceeb', owner: '#0891b2', renter: '#d97706' };
 
 const UserManagement = () => {
   const [users, setUsers] = useState(MOCK_USERS);
@@ -47,7 +47,7 @@ const UserManagement = () => {
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="btn-icon" title="Xem chi tiết" onClick={() => openModal(row, 'view')}><FaEye /></button>
         {row.kyc === 'pending' && <button className="btn-icon" title="Duyệt eKYC" onClick={() => setKycUser(row)} style={{ borderColor: '#d97706', color: '#d97706' }}><FaIdCard /></button>}
-        <button className="btn-icon" title={row.status === 'locked' ? 'Mở khóa' : 'Khóa'} onClick={() => toggleLock(row.id)} style={row.status === 'locked' ? { borderColor: '#059669', color: '#059669' } : {}}>
+        <button className="btn-icon" title={row.status === 'locked' ? 'Mở khóa' : 'Khóa'} onClick={() => toggleLock(row.id)} style={row.status === 'locked' ? { borderColor: '#0284c7', color: '#0284c7' } : {}}>
           {row.status === 'locked' ? <FaUnlock /> : <FaLock />}
         </button>
       </div>

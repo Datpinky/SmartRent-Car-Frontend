@@ -38,7 +38,7 @@ const VehicleApproval = () => {
         {row.source === 'showroom' ? 'Showroom' : 'Ký gửi'}
       </span>
     )},
-    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 600, color: '#00b14f' }}>{row.price}K</span>, sortable: true, accessor: 'price' },
+    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 600, color: '#87ceeb' }}>{row.price}K</span>, sortable: true, accessor: 'price' },
     { key: 'specs', label: 'Thông số', render: row => (
       <div style={{ fontSize: '0.75rem', color: '#6b7280', display: 'flex', gap: 8 }}>
         <span><MdEventSeat /> {row.seats}</span>
@@ -51,7 +51,7 @@ const VehicleApproval = () => {
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="btn-icon" onClick={() => setViewModal(row)} title="Xem chi tiết"><FaEye /></button>
         {row.status === 'pending' && <>
-          <button className="btn-icon" style={{ borderColor: '#059669', color: '#059669' }} onClick={() => approve(row.id)} title="Phê duyệt"><FaCheckCircle /></button>
+          <button className="btn-icon" style={{ borderColor: '#0284c7', color: '#0284c7' }} onClick={() => approve(row.id)} title="Phê duyệt"><FaCheckCircle /></button>
           <button className="btn-icon danger" onClick={() => setRejectModal(row)} title="Từ chối"><FaTimesCircle /></button>
         </>}
       </div>
@@ -74,8 +74,8 @@ const VehicleApproval = () => {
       <Modal isOpen={!!viewModal} onClose={() => setViewModal(null)} title="Chi tiết xe" width={500}>
         {viewModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ background: '#f0fdf4', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
-              <MdDirectionsCar size={48} color="#00b14f" />
+            <div style={{ background: '#f0f9ff', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <MdDirectionsCar size={48} color="#87ceeb" />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{viewModal.name}</div>
                 <StatusBadge status={viewModal.status} />

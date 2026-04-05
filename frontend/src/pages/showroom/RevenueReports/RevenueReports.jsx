@@ -26,7 +26,7 @@ const RevenueReports = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         {[
-          { label: 'Tổng doanh thu năm', value: totalRevenue + 'M', color: '#00b14f', icon: <FaMoneyBillWave /> },
+          { label: 'Tổng doanh thu năm', value: totalRevenue + 'M', color: '#87ceeb', icon: <FaMoneyBillWave /> },
           { label: 'Lợi nhuận ước tính', value: totalProfit + 'M', color: '#2563eb', icon: <FaChartLine /> },
           { label: 'Doanh thu tháng 3', value: '145M', color: '#d97706', icon: <FaMoneyBillWave /> },
           { label: 'Tổng chuyến đã hoàn thành', value: '312', color: '#7c3aed', icon: <FaChartLine /> },
@@ -57,7 +57,7 @@ const RevenueReports = () => {
           <AreaChart data={SHOWROOM_REVENUE} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="revGr" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00b14f" stopOpacity={0.3} /><stop offset="95%" stopColor="#00b14f" stopOpacity={0} />
+                <stop offset="5%" stopColor="#87ceeb" stopOpacity={0.3} /><stop offset="95%" stopColor="#87ceeb" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="proGr" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} /><stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
@@ -68,7 +68,7 @@ const RevenueReports = () => {
             <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v, n) => [v + 'M', n]} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
-            <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke="#00b14f" fill="url(#revGr)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke="#87ceeb" fill="url(#revGr)" strokeWidth={2.5} dot={false} />
             <Area type="monotone" dataKey="profit"  name="Lợi nhuận" stroke="#2563eb" fill="url(#proGr)" strokeWidth={2}   dot={false} />
             <Area type="monotone" dataKey="expense" name="Chi phí"   stroke="#dc2626" fill="transparent"   strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
           </AreaChart>
@@ -92,11 +92,11 @@ const RevenueReports = () => {
                     <td><span className="code-badge">{v.plate}</span></td>
                     <td>{v.category}</td>
                     <td style={{ textAlign: 'center', fontWeight: 700 }}>{v.trips}</td>
-                    <td style={{ fontWeight: 700, color: '#00b14f' }}>{(estRevenue).toLocaleString()}K</td>
+                    <td style={{ fontWeight: 700, color: '#87ceeb' }}>{(estRevenue).toLocaleString()}K</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ flex: 1, height: 6, background: '#f3f4f6', borderRadius: 3 }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: '#00b14f', borderRadius: 3 }} />
+                          <div style={{ width: `${pct}%`, height: '100%', background: '#87ceeb', borderRadius: 3 }} />
                         </div>
                         <span style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: 28 }}>{pct}%</span>
                       </div>

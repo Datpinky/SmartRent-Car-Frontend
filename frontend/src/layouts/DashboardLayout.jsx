@@ -49,7 +49,7 @@ const MENUS = {
 
 const ROLE_CONFIG = {
   admin:    { label: 'Quản trị viên', color: '#6d28d9', bg: '#f5f3ff' },
-  showroom: { label: 'Showroom',      color: '#00b14f', bg: '#f0fdf4' },
+  showroom: { label: 'Showroom',      color: '#87ceeb', bg: '#f0f9ff' },
   owner:    { label: 'Chủ xe',        color: '#0891b2', bg: '#ecfeff' },
   renter:   { label: 'Khách thuê',    color: '#d97706', bg: '#fffbeb' },
 };
@@ -102,36 +102,21 @@ const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`bg-[#1a1a2e] flex flex-col fixed top-0 left-0 bottom-0 z-[200] overflow-hidden transition-[width] duration-[250ms] ease-in-out
-          max-md:transition-transform max-md:!w-60
-          ${collapsed ? 'w-[68px]' : 'w-60'}
+        className={`bg-white border-r border-gray-200 flex flex-col fixed top-0 left-0 bottom-0 z-[200] overflow-hidden shadow-[2px_0_8px_rgba(0,0,0,0.04)] w-60
+          max-md:transition-transform
           ${sidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-3.5 py-[18px] border-b border-white/[0.08] min-h-[64px] shrink-0">
-          {!collapsed && (
-            <div className="flex items-center gap-2.5 cursor-pointer flex-1" onClick={() => navigate('/')}>
-              <div className="w-[34px] h-[34px] bg-primary rounded-[9px] flex items-center justify-center font-black text-base text-white shrink-0">S</div>
-              <div className="flex flex-col leading-none">
-                <span className="text-[0.95rem] font-extrabold text-white">SmartRent</span>
-                <span className="text-[0.65rem] text-white/[0.45]">Car Rental</span>
-              </div>
+        <div className="flex items-center justify-between px-3.5 py-[14px] border-b border-gray-100 min-h-[64px] shrink-0">
+          <div className="flex items-center gap-2.5 cursor-pointer flex-1" onClick={() => navigate('/')}>
+            <img src="/TagIcon.png" alt="SmartRent" className="w-[34px] h-[34px] object-contain shrink-0" />
+            <div className="flex flex-col leading-none">
+              <span className="text-[0.95rem] font-extrabold text-gray-800">SmartRent</span>
+              <span className="text-[0.65rem] text-gray-400">Car Rental</span>
             </div>
-          )}
-          {collapsed && (
-            <div
-              className="w-[34px] h-[34px] bg-primary rounded-[9px] flex items-center justify-center font-black text-base text-white shrink-0 cursor-pointer mx-auto"
-              onClick={() => navigate('/')}
-            >S</div>
-          )}
+          </div>
           <button
-            className="hidden md:flex bg-white/[0.08] text-white/60 w-7 h-7 rounded-[7px] items-center justify-center text-[0.8rem] shrink-0 transition-colors hover:bg-white/[0.15] hover:text-white"
-            onClick={() => setCollapsed(c => !c)}
-          >
-            {collapsed ? <FaAngleRight /> : <FaBars />}
-          </button>
-          <button
-            className="flex md:hidden bg-white/[0.08] text-white/60 w-7 h-7 rounded-[7px] items-center justify-center text-[0.8rem] shrink-0 transition-colors hover:bg-white/[0.15] hover:text-white"
+            className="flex md:hidden bg-gray-100 text-gray-500 w-7 h-7 rounded-[7px] items-center justify-center text-[0.8rem] shrink-0 transition-colors hover:bg-gray-200 hover:text-gray-700"
             onClick={() => setSidebarOpen(false)}
           >
             <FaTimes />
@@ -139,74 +124,59 @@ const DashboardLayout = ({ children }) => {
         </div>
 
         {/* Role badge */}
-        {!collapsed && (
-          <div
-            className="mx-3 mt-2.5 mb-1 py-1.5 px-3 rounded-lg text-[0.72rem] font-bold flex items-center gap-1.5"
-            style={{ background: roleCfg.bg, color: roleCfg.color }}
+        <div
+          className="mx-3 mt-2.5 mb-1 py-1.5 px-3 rounded-lg text-[0.72rem] font-bold flex items-center gap-1.5"
+          style={{ background: roleCfg.bg, color: roleCfg.color }}
           >
             <MdVerifiedUser style={{ fontSize: '0.85rem' }} /> {roleCfg.label}
-          </div>
-        )}
+        </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-2 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent]">
+        <nav className="flex-1 overflow-y-auto py-2 [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.08)_transparent]">
           {menus.map(item => (
             <button
               key={item.key}
               className={`flex items-center gap-2.5 w-full px-3.5 py-2.5 text-[0.85rem] font-medium text-left transition-all relative
                 ${isActive(item.path)
-                  ? 'text-white bg-[rgba(0,177,79,0.2)]'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
+                  ? 'text-primary bg-primary/[0.08]'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               onClick={() => { navigate(item.path); setSidebarOpen(false); }}
-              title={collapsed ? item.label : ''}
             >
               {isActive(item.path) && (
                 <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-primary rounded-r-sm" />
               )}
               <span className="text-base shrink-0 w-5 flex items-center justify-center">{item.icon}</span>
-              {!collapsed && <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>}
-              {!collapsed && isActive(item.path) && <span className="w-1.5 h-1.5 bg-primary rounded-full shrink-0" />}
+              <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
+              {isActive(item.path) && <span className="w-1.5 h-1.5 bg-primary rounded-full shrink-0" />}
             </button>
           ))}
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-white/[0.08] shrink-0">
-          {!collapsed && (
-            <div className="flex items-center gap-2.5 px-1 py-2 mb-2">
-              <div
-                className="w-[34px] h-[34px] rounded-full flex items-center justify-center font-bold text-[0.8rem] text-white shrink-0"
-                style={{ background: roleCfg.color }}
-              >{initials}</div>
-              <div className="min-w-0">
-                <div className="text-[0.8rem] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">{user?.name}</div>
-                <div className="text-[0.68rem] text-white/40 whitespace-nowrap overflow-hidden text-ellipsis">{user?.email}</div>
-              </div>
-            </div>
-          )}
-          {collapsed && (
+        <div className="p-3 border-t border-gray-100 shrink-0">
+          <div className="flex items-center gap-2.5 px-1 py-2 mb-2">
             <div
-              className="w-[34px] h-[34px] rounded-full flex items-center justify-center font-bold text-[0.8rem] text-white shrink-0 mx-auto mb-2"
+              className="w-[34px] h-[34px] rounded-full flex items-center justify-center font-bold text-[0.8rem] text-white shrink-0"
               style={{ background: roleCfg.color }}
             >{initials}</div>
-          )}
+            <div className="min-w-0">
+              <div className="text-[0.8rem] font-semibold text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">{user?.name}</div>
+              <div className="text-[0.68rem] text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis">{user?.email}</div>
+            </div>
+          </div>
           <button
-            className="flex items-center gap-2 w-full px-3 py-2.5 bg-white/[0.06] rounded-[9px] text-white/60 text-[0.82rem] font-medium transition-all justify-center hover:bg-red-600/20 hover:text-red-300"
+            className="flex items-center gap-2 w-full px-3 py-2.5 bg-gray-50 rounded-[9px] text-gray-500 text-[0.82rem] font-medium transition-all justify-center hover:bg-red-50 hover:text-red-500 border border-gray-100"
             onClick={handleLogout}
-            title={collapsed ? 'Đăng xuất' : ''}
           >
             <FaSignOutAlt />
-            {!collapsed && <span>Đăng xuất</span>}
+            <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
 
       {/* Main area */}
-      <div
-        className={`flex-1 flex flex-col min-h-screen transition-[margin] duration-[250ms] ease-in-out max-md:ml-0
-          ${collapsed ? 'ml-[68px]' : 'ml-60'}`}
-      >
+      <div className="flex-1 flex flex-col min-h-screen ml-60 max-md:ml-0">
         {/* Topbar */}
         <header className="h-[60px] bg-white border-b border-[#f0f0f0] flex items-center justify-between px-5 sticky top-0 z-[100] shadow-[0_1px_4px_rgba(0,0,0,0.05)] shrink-0">
           <div className="flex items-center gap-3">
@@ -222,72 +192,21 @@ const DashboardLayout = ({ children }) => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              className="w-[38px] h-[38px] rounded-[10px] border-[1.5px] border-gray-200 bg-white flex items-center justify-center text-[0.95rem] text-gray-500 transition-all cursor-pointer hover:border-primary hover:text-primary hover:bg-primary-light"
+              className="flex items-center gap-1.5 h-[36px] px-3 rounded-[10px] border-[1.5px] border-gray-200 bg-white text-[0.72rem] font-bold text-gray-500 tracking-wide uppercase transition-all cursor-pointer hover:border-primary hover:text-primary hover:bg-primary-light"
               onClick={() => navigate('/')}
-              title="Trang chủ"
             >
-              <FaStore />
+              <FaStore size={13} />
+              Trang chủ
             </button>
             {(user?.role === 'renter' || user?.role === 'showroom') && (
               <button
-                className="w-[38px] h-[38px] rounded-[10px] border-[1.5px] border-gray-200 bg-white flex items-center justify-center text-[0.95rem] text-gray-500 transition-all cursor-pointer hover:border-primary hover:text-primary hover:bg-primary-light"
-                title="Chat"
+                className="flex items-center gap-1.5 h-[36px] px-3 rounded-[10px] border-[1.5px] border-gray-200 bg-white text-[0.72rem] font-bold text-gray-500 tracking-wide uppercase transition-all cursor-pointer hover:border-primary hover:text-primary hover:bg-primary-light"
               >
-                <FaComments />
+                <FaComments size={13} />
+                Tin nhắn
               </button>
             )}
             <NotificationBell />
-            {user?.role !== 'renter' && (
-              <div
-                className="flex items-center gap-1.5 py-1 px-2 rounded-[10px] cursor-pointer transition-colors relative select-none hover:bg-gray-100"
-                ref={dropdownRef}
-                onClick={() => setUserDropdownOpen(o => !o)}
-              >
-                <div
-                  className="w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-[0.72rem] text-white shrink-0"
-                  style={{ background: roleCfg.color }}
-                >{initials}</div>
-                <span className="text-[0.82rem] font-semibold text-gray-700 max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
-                  {user?.name}
-                </span>
-                <FaAngleDown
-                  style={{
-                    fontSize: '0.7rem',
-                    color: '#9ca3af',
-                    transition: 'transform 0.2s',
-                    transform: userDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                />
-                {userDropdownOpen && (
-                  <div className="absolute top-[calc(100%+8px)] right-0 z-[999] bg-white border border-gray-200 rounded-[14px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] min-w-[210px] py-2 animate-[slideDown_0.15s_ease]">
-                    <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-                      <div
-                        className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-[0.9rem] font-bold text-white shrink-0"
-                        style={{ background: roleCfg.color }}
-                      >{initials}</div>
-                      <div>
-                        <div className="text-[0.85rem] font-bold text-gray-900">{user?.name}</div>
-                        <div className="text-[0.72rem] font-semibold mt-px" style={{ color: roleCfg.color }}>{roleCfg.label}</div>
-                      </div>
-                    </div>
-                    <div className="h-px bg-gray-100 my-1" />
-                    <button
-                      className="flex items-center gap-2 w-full px-3.5 py-2.5 text-[0.83rem] text-gray-700 cursor-pointer transition-colors text-left hover:bg-gray-50"
-                      onClick={handleProfile}
-                    >
-                      <FaUser /> Hồ sơ cá nhân
-                    </button>
-                    <div className="h-px bg-gray-100 my-1" />
-                    <button
-                      className="flex items-center gap-2 w-full px-3.5 py-2.5 text-[0.83rem] text-red-600 cursor-pointer transition-colors text-left hover:bg-red-50"
-                      onClick={handleLogout}
-                    >
-                      <FaSignOutAlt /> Đăng xuất
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </header>
 

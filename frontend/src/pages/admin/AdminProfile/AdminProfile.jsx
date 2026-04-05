@@ -151,7 +151,7 @@ const AdminProfile = () => {
               />
             </div>
           </div>
-          <div style={{ marginTop: 20, padding: '12px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: '#166534' }}>
+          <div style={{ marginTop: 20, padding: '12px 16px', background: '#f0f9ff', borderRadius: 10, border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: '#075985' }}>
             <FaCheckCircle />
             Tài khoản này có quyền quản trị toàn bộ hệ thống SmartRent Car.
           </div>
@@ -192,7 +192,7 @@ const AdminProfile = () => {
               </div>
             )}
             {pwSaved && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '8px 12px', color: '#075985', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <FaCheckCircle /> Mật khẩu đã được cập nhật thành công!
               </div>
             )}
@@ -209,7 +209,7 @@ const AdminProfile = () => {
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827' }}>Thiết bị hiện tại</div>
                   <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>Windows 10 – Chrome – TP.HCM · 14/03/2026</div>
                 </div>
-                <span style={{ background: '#d1fae5', color: '#059669', fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 50 }}>Hoạt động</span>
+                <span style={{ background: '#e0f2fe', color: '#0284c7', fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 50 }}>Hoạt động</span>
               </div>
             </div>
           </div>

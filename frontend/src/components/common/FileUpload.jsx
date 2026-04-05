@@ -56,7 +56,7 @@ const FileUpload = ({ label, accept = 'image/*', multiple = false, onUpload, hin
             <div key={f.id} className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
               {f.url
                 ? <img src={f.url} alt={f.name} className="w-10 h-10 object-cover rounded-md" />
-                : <FaCheckCircle className="text-emerald-600 text-[1.2rem]" />
+                : <FaCheckCircle className="text-sky-600 text-[1.2rem]" />
               }
               <span className="flex-1 text-[0.8rem] text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">{f.name}</span>
               <button

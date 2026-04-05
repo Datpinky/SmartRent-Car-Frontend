@@ -93,7 +93,7 @@ const ImageCompareSlider = ({ beforeSrc, afterSrc, damages = [], onDamageClick }
             <div><b>Vị trí:</b> {selectedDamage.location || 'Xem trên ảnh'}</div>
             <div>
               <b>Mức độ:</b>{' '}
-              <span style={{ color: selectedDamage.severity === 'high' ? '#dc2626' : selectedDamage.severity === 'medium' ? '#d97706' : '#059669' }}>
+              <span style={{ color: selectedDamage.severity === 'high' ? '#dc2626' : selectedDamage.severity === 'medium' ? '#d97706' : '#0284c7' }}>
                 {selectedDamage.severityLabel || selectedDamage.severity || 'Nhẹ'}
               </span>
             </div>

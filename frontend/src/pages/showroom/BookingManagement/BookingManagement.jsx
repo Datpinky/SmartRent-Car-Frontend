@@ -30,13 +30,13 @@ const BookingManagement = () => {
     { key: 'from', label: 'Nhận xe', accessor: 'from' },
     { key: 'to',   label: 'Trả xe',  accessor: 'to' },
     { key: 'days', label: 'Ngày', accessor: 'days', align: 'center' },
-    { key: 'total', label: 'Tổng tiền', render: row => <span style={{ fontWeight: 700, color: '#00b14f', whiteSpace: 'nowrap' }}>{row.total.toLocaleString()}đ</span>, sortable: true, accessor: 'total' },
+    { key: 'total', label: 'Tổng tiền', render: row => <span style={{ fontWeight: 700, color: '#87ceeb', whiteSpace: 'nowrap' }}>{row.total.toLocaleString()}đ</span>, sortable: true, accessor: 'total' },
     { key: 'status', label: 'Trạng thái', render: row => <StatusBadge status={row.status} /> },
     { key: 'actions', label: 'Hành động', render: row => (
       <div style={{ display: 'flex', gap: 5 }}>
         <button className="btn-icon" onClick={() => setViewModal(row)} title="Chi tiết"><FaEye /></button>
         {row.status === 'pending' && <>
-          <button className="btn-icon" style={{ borderColor: '#059669', color: '#059669' }} onClick={() => approve(row.id)} title="Duyệt"><FaCheckCircle /></button>
+          <button className="btn-icon" style={{ borderColor: '#0284c7', color: '#0284c7' }} onClick={() => approve(row.id)} title="Duyệt"><FaCheckCircle /></button>
           <button className="btn-icon danger" onClick={() => setRejectModal(row)} title="Từ chối"><FaTimes /></button>
         </>}
         {['approved', 'delivering', 'renting', 'returned'].includes(row.status) && (
@@ -66,7 +66,7 @@ const BookingManagement = () => {
           {BOOKING_FLOW.map((s, i) => (
             <React.Fragment key={s}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: bookings.some(b => b.status === s) ? '#00b14f' : '#e5e7eb' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: bookings.some(b => b.status === s) ? '#87ceeb' : '#e5e7eb' }} />
                 <span style={{ fontSize: '0.68rem', color: '#6b7280', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>{FLOW_LABELS[s]}</span>
                 <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#111827' }}>{bookings.filter(b => b.status === s).length}</span>
               </div>
@@ -79,7 +79,7 @@ const BookingManagement = () => {
       {/* Filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         {['all', 'pending', 'approved', 'renting', 'completed', 'cancelled'].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} style={{ padding: '5px 12px', borderRadius: 50, border: '1.5px solid', borderColor: statusFilter === s ? '#00b14f' : '#e5e7eb', background: statusFilter === s ? '#00b14f' : '#fff', color: statusFilter === s ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+          <button key={s} onClick={() => setStatusFilter(s)} style={{ padding: '5px 12px', borderRadius: 50, border: '1.5px solid', borderColor: statusFilter === s ? '#87ceeb' : '#e5e7eb', background: statusFilter === s ? '#87ceeb' : '#fff', color: statusFilter === s ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
             {s === 'all' ? 'Tất cả' : FLOW_LABELS[s] || s}
             {s !== 'all' && <span style={{ marginLeft: 5, opacity: 0.7 }}>({bookings.filter(b => b.status === s).length})</span>}
           </button>
@@ -92,7 +92,7 @@ const BookingManagement = () => {
       <Modal isOpen={!!viewModal} onClose={() => setViewModal(null)} title="Chi tiết đặt xe" width={500}>
         {viewModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: '#f0fdf4', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ background: '#f0f9ff', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <span className="code-badge">{viewModal.id}</span>
                 <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827', marginTop: 6 }}>{viewModal.vehicle}</div>

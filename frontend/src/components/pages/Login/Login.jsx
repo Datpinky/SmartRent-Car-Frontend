@@ -7,10 +7,10 @@ const ROLE_REDIRECTS = {
   admin: '/admin/dashboard',
   showroom: '/showroom/dashboard',
   owner: '/owner/dashboard',
-  renter: '/renter/profile',
+  renter: '/',
 };
 
-const inputCls = "w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]";
+const inputCls = "w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(135,206,235,0.1)]";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -79,23 +79,15 @@ const Login = () => {
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Left panel */}
-      <div className="flex-1 bg-gradient-to-[145deg] from-[#1a1a2e] via-[#0f3460] to-[#16213e] hidden md:flex items-center justify-center px-10 py-[60px] relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #1a1a2e 0%, #0f3460 50%, #16213e 100%)' }}
+      <div className="flex-1 hidden md:flex items-center justify-center px-10 py-[60px] relative overflow-hidden sticky top-0 h-screen self-start"
+        style={{ background: 'linear-gradient(145deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%)' }}
       >
-        <div className="absolute w-[500px] h-[500px] -top-[100px] -right-[100px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.2) 0%, transparent 70%)' }} />
-        <div className="absolute w-[300px] h-[300px] -bottom-[50px] -left-[50px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.1) 0%, transparent 70%)' }} />
+        <div className="absolute w-[500px] h-[500px] -top-[100px] -right-[100px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(135,206,235,0.4) 0%, transparent 70%)' }} />
+        <div className="absolute w-[300px] h-[300px] -bottom-[50px] -left-[50px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(135,206,235,0.3) 0%, transparent 70%)' }} />
         <div className="relative z-[1] max-w-[440px]">
-          <div className="flex items-center gap-3 text-[1.75rem] font-black text-white mb-10">
-            <img src="/Logo.png" alt="SmartRent Car" className="h-11 w-auto object-contain" />
-            SmartRent Car
+          <div className="flex items-center gap-6 mb-10">
+            <img src="/logo_transparent.png" alt="SmartRent Car" className="h-28 w-auto object-contain drop-shadow-md shrink-0" />
           </div>
-          <h1 className="text-[2.2rem] font-extrabold text-white leading-snug mb-5">
-            Thuê xe tự lái<br />
-            <span className="text-primary">Nhanh chóng</span> &amp; <span className="text-primary">An toàn</span>
-          </h1>
-          <p className="text-base text-white/65 leading-[1.7] mb-10">
-            Kết nối hàng nghìn chủ xe với khách thuê trên toàn quốc. Trải nghiệm dịch vụ thuê xe hiện đại nhất Việt Nam.
-          </p>
         </div>
       </div>
 
@@ -124,8 +116,8 @@ const Login = () => {
 
         {/* Demo credentials */}
         {tab === 'login' && (
-          <div className="bg-primary-light border border-green-200 rounded-[10px] px-3.5 py-2.5 mb-3 text-[0.75rem] text-gray-700">
-            <div className="font-bold text-emerald-600 mb-1">Tài khoản demo:</div>
+          <div className="bg-primary-light border border-sky-200 rounded-[10px] px-3.5 py-2.5 mb-3 text-[0.75rem] text-gray-700">
+            <div className="font-bold text-sky-600 mb-1">Tài khoản demo:</div>
             {[['admin@smartrent.com','Admin'],['showroom@smartrent.com','Showroom'],['owner@smartrent.com','Chủ xe'],['user@smartrent.com','Khách thuê']].map(([email, role]) => (
               <div key={email} className="py-0.5 cursor-pointer" onClick={() => setForm(f => ({ ...f, email, password: '123456' }))}>
                 <span className="text-primary underline">{email}</span> <span className="text-gray-400">· {role} · 123456</span>
@@ -191,7 +183,7 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
+            className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(135,206,235,0.35)]"
           >
             {tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
           </button>

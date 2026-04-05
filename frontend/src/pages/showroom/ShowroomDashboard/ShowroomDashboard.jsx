@@ -35,7 +35,7 @@ const ShowroomDashboard = () => {
 
       {/* Stats */}
       <div className="stats-grid">
-        <StatCard title="Tổng xe quản lý"    value="45"    icon={<FaCar />}           color="#00b14f" trend={6.7}  trendLabel="so tháng trước" />
+        <StatCard title="Tổng xe quản lý"    value="45"    icon={<FaCar />}           color="#87ceeb" trend={6.7}  trendLabel="so tháng trước" />
         <StatCard title="Xe đang cho thuê"   value="12"    icon={<FaCar />}           color="#2563eb" trend={9.1}  trendLabel="so tháng trước" />
         <StatCard title="Booking mới hôm nay" value="3"    icon={<FaCalendarCheck />} color="#d97706" subtext="chờ xác nhận" />
         <StatCard title="Doanh thu tháng 3"  value="145M"  icon={<FaMoneyBillWave />} color="#dc2626" trend={14.2} trendLabel="so tháng trước" />
@@ -71,15 +71,15 @@ const ShowroomDashboard = () => {
             <AreaChart data={SHOWROOM_REVENUE} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="srGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00b14f" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#00b14f" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#87ceeb" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#87ceeb" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v) => [v + 'M VND', 'Doanh thu']} />
-              <Area type="monotone" dataKey="revenue" stroke="#00b14f" fill="url(#srGrad)" strokeWidth={2.5} dot={false} />
+              <Area type="monotone" dataKey="revenue" stroke="#87ceeb" fill="url(#srGrad)" strokeWidth={2.5} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -115,7 +115,7 @@ const ShowroomDashboard = () => {
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => [v, 'Lượt đặt']} />
-            <Bar dataKey="bookings" name="Lượt đặt" fill="#00b14f" radius={[5,5,0,0]} />
+            <Bar dataKey="bookings" name="Lượt đặt" fill="#87ceeb" radius={[5,5,0,0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -136,12 +136,12 @@ const ShowroomDashboard = () => {
                   <td>{b.renter}</td>
                   <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.vehicle}</td>
                   <td>{b.from}</td><td>{b.to}</td>
-                  <td style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
+                  <td style={{ fontWeight: 600, color: '#87ceeb' }}>{b.total.toLocaleString()}đ</td>
                   <td><StatusBadge status={b.status} /></td>
                   <td>
                     {b.status === 'pending' && (
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn-icon" style={{ borderColor: '#059669', color: '#059669' }} title="Duyệt"><FaCheckCircle /></button>
+                        <button className="btn-icon" style={{ borderColor: '#0284c7', color: '#0284c7' }} title="Duyệt"><FaCheckCircle /></button>
                         <button className="btn-icon danger" title="Từ chối"><FaTimes /></button>
                       </div>
                     )}

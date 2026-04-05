@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaCheckCircle, FaEye } from 'react-icons/fa';
+import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaEye } from 'react-icons/fa';
 import { MdWarning } from 'react-icons/md';
 import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
@@ -47,7 +47,7 @@ const AdminDashboard = () => {
       <div className="stats-grid">
         <StatCard title="Tổng người dùng"     value="1,247"   icon={<FaUsers />}         color="#6d28d9" trend={12.4}  trendLabel="so tháng trước" />
         <StatCard title="Tổng Showroom"        value="23"      icon={<FaStore />}         color="#0891b2" trend={4.5}   trendLabel="so tháng trước" />
-        <StatCard title="Tổng lượt đặt xe"    value="3,891"   icon={<FaCalendarCheck />} color="#00b14f" trend={18.2}  trendLabel="so tháng trước" />
+        <StatCard title="Tổng lượt đặt xe"    value="3,891"   icon={<FaCalendarCheck />} color="#87ceeb" trend={18.2}  trendLabel="so tháng trước" />
         <StatCard title="Doanh thu hệ thống"  value="2.4 tỷ"  icon={<FaMoneyBillWave />} color="#d97706" trend={21.5}  trendLabel="so tháng trước" />
         <StatCard title="Xe đang hoạt động"   value="48"      icon={<FaCar />}           color="#dc2626" trend={6.7}   trendLabel="so tháng trước" />
         <StatCard title="Chờ duyệt"           value="5"       icon={<FaExclamationTriangle />} color="#f59e0b" subtext="showroom + xe" />
@@ -87,8 +87,8 @@ const AdminDashboard = () => {
             <AreaChart data={REVENUE_MONTHLY} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00b14f" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#00b14f" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#87ceeb" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#87ceeb" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -96,7 +96,7 @@ const AdminDashboard = () => {
               <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               {activeTab === 'revenue'
-                ? <Area type="monotone" dataKey="revenue" name="Doanh thu (triệu VND)" stroke="#00b14f" fill="url(#colorRev)" strokeWidth={2.5} dot={false} />
+                ? <Area type="monotone" dataKey="revenue" name="Doanh thu (triệu VND)" stroke="#87ceeb" fill="url(#colorRev)" strokeWidth={2.5} dot={false} />
                 : <Area type="monotone" dataKey="bookings" name="Lượt đặt" stroke="#6d28d9" fill="#e0e7ff" strokeWidth={2.5} dot={false} />
               }
             </AreaChart>
@@ -136,7 +136,7 @@ const AdminDashboard = () => {
             <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltip />} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
-            <Bar dataKey="renters" name="Khách thuê" fill="#00b14f" radius={[4,4,0,0]} />
+            <Bar dataKey="renters" name="Khách thuê" fill="#87ceeb" radius={[4,4,0,0]} />
             <Bar dataKey="owners"  name="Chủ xe"     fill="#0891b2" radius={[4,4,0,0]} />
             <Bar dataKey="showrooms" name="Showroom" fill="#6d28d9" radius={[4,4,0,0]} />
           </BarChart>
@@ -160,7 +160,7 @@ const AdminDashboard = () => {
                   <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.vehicle}</td>
                   <td>{b.from}</td>
                   <td>{b.to}</td>
-                  <td style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
+                  <td style={{ fontWeight: 600, color: '#87ceeb' }}>{b.total.toLocaleString()}đ</td>
                   <td><StatusBadge status={b.status} /></td>
                 </tr>
               ))}

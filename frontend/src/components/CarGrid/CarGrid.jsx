@@ -49,7 +49,7 @@ const CarGrid = ({ cars, loading = false, title = 'Xe tự lái' }) => {
       {hasMore && (
         <div className="text-center mt-8">
           <button
-            className="inline-flex items-center gap-2 px-8 py-3 border-2 border-primary rounded-full text-[0.9rem] font-semibold text-primary bg-transparent transition-all hover:bg-primary hover:text-white hover:shadow-[0_4px_16px_rgba(0,177,79,0.3)] hover:-translate-y-px"
+            className="inline-flex items-center gap-2 px-8 py-3 border-2 border-primary rounded-full text-[0.9rem] font-semibold text-primary bg-transparent transition-all hover:bg-primary hover:text-white hover:shadow-[0_4px_16px_rgba(135,206,235,0.3)] hover:-translate-y-px"
             onClick={() => setVisibleCount(v => v + 8)}
           >
             Xem thêm xe

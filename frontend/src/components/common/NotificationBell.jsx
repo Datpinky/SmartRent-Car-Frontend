@@ -12,7 +12,7 @@ const MOCK_NOTIFICATIONS = [
 
 const TYPE_ICONS = {
   booking: { icon: <MdDirectionsCar />, color: '#2563eb' },
-  payment: { icon: <MdPayment />, color: '#059669' },
+  payment: { icon: <MdPayment />, color: '#0284c7' },
   ai:      { icon: <MdWarning />,    color: '#d97706' },
   verify:  { icon: <MdVerified />,   color: '#7c3aed' },
 };
@@ -37,10 +37,11 @@ const NotificationBell = () => {
   return (
     <div className="relative" ref={ref}>
       <button
-        className="w-[38px] h-[38px] rounded-[10px] border-[1.5px] border-gray-200 bg-white flex items-center justify-center text-base text-gray-500 relative transition-all hover:border-primary hover:text-primary hover:bg-primary-light"
+        className="flex items-center gap-1.5 h-[36px] px-3 rounded-[10px] border-[1.5px] border-gray-200 bg-white text-[0.72rem] font-bold text-gray-500 tracking-wide uppercase transition-all cursor-pointer hover:border-primary hover:text-primary hover:bg-primary-light relative"
         onClick={() => setOpen(o => !o)}
       >
-        <FaBell />
+        <FaBell size={13} />
+        Thông báo
         {unread > 0 && (
           <span className="absolute -top-[5px] -right-[5px] bg-red-600 text-white text-[0.6rem] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-[3px] border-2 border-white">
             {unread > 9 ? '9+' : unread}

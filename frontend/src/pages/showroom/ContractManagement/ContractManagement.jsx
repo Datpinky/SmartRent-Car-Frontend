@@ -22,7 +22,7 @@ const ContractManagement = () => {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[['all', 'Tất cả'], ['rental', 'HĐ thuê xe'], ['service', 'HĐ dịch vụ'], ['signed', 'Đã ký'], ['draft', 'Nháp'], ['expired', 'Hết hạn']].map(([k, label]) => (
-          <button key={k} onClick={() => setFilter(k)} style={{ padding: '5px 12px', borderRadius: 50, border: '1.5px solid', borderColor: filter === k ? '#00b14f' : '#e5e7eb', background: filter === k ? '#00b14f' : '#fff', color: filter === k ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+          <button key={k} onClick={() => setFilter(k)} style={{ padding: '5px 12px', borderRadius: 50, border: '1.5px solid', borderColor: filter === k ? '#87ceeb' : '#e5e7eb', background: filter === k ? '#87ceeb' : '#fff', color: filter === k ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
             {label}
           </button>
         ))}
@@ -51,7 +51,7 @@ const ContractManagement = () => {
                   {c.vehicle !== '-' && <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{c.vehicle}</div>}
                 </td>
                 <td style={{ fontSize: '0.8rem', color: '#374151' }}>{c.from} → {c.to}</td>
-                <td style={{ fontWeight: 700, color: c.total > 0 ? '#00b14f' : '#9ca3af' }}>
+                <td style={{ fontWeight: 700, color: c.total > 0 ? '#87ceeb' : '#9ca3af' }}>
                   {c.total > 0 ? c.total.toLocaleString() + 'đ' : '—'}
                 </td>
                 <td><StatusBadge status={c.status} /></td>

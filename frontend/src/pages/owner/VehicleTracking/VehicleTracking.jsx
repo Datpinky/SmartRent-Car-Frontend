@@ -19,7 +19,7 @@ const VEHICLE_TIMELINE = {
   ],
 };
 
-const TYPE_COLORS = { active: '#2563eb', completed: '#059669', available: '#00b14f', warning: '#d97706', maintenance: '#7c3aed' };
+const TYPE_COLORS = { active: '#2563eb', completed: '#0284c7', available: '#87ceeb', warning: '#d97706', maintenance: '#7c3aed' };
 
 const VehicleTracking = () => {
   return (

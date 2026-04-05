@@ -194,7 +194,10 @@ const CarDetail = () => {
               </div>
             </div>
 
-            <button className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-all hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]">
+            <button 
+              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-all hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(135,206,235,0.35)]"
+              onClick={() => navigate('/renter/checkout/' + car.id)}
+            >
               Đặt xe ngay
             </button>
             <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>

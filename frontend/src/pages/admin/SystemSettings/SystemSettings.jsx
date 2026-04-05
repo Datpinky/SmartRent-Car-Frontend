@@ -27,7 +27,7 @@ const ToggleRow = ({ label, checked, hint }) => {
         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>{label}</div>
         {hint && <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>{hint}</div>}
       </div>
-      <button onClick={() => setOn(!on)} style={{ width: 44, height: 24, borderRadius: 50, border: 'none', background: on ? '#00b14f' : '#d1d5db', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+      <button onClick={() => setOn(!on)} style={{ width: 44, height: 24, borderRadius: 50, border: 'none', background: on ? '#87ceeb' : '#d1d5db', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
         <span style={{ position: 'absolute', width: 18, height: 18, borderRadius: '50%', background: '#fff', top: 3, left: on ? 23 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
       </button>
     </div>
@@ -55,7 +55,7 @@ const SystemSettings = () => {
         <div style={{ width: 200, flexShrink: 0 }}>
           <div style={{ background: '#fff', borderRadius: 14, padding: 8, border: '1px solid #f0f0f0' }}>
             {SECTIONS.map(s => (
-              <button key={s.key} onClick={() => setActiveSection(s.key)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 9, border: 'none', background: activeSection === s.key ? '#f0fdf4' : 'transparent', color: activeSection === s.key ? '#00b14f' : '#374151', fontWeight: activeSection === s.key ? 700 : 500, fontSize: '0.83rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button key={s.key} onClick={() => setActiveSection(s.key)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 9, border: 'none', background: activeSection === s.key ? '#f0f9ff' : 'transparent', color: activeSection === s.key ? '#87ceeb' : '#374151', fontWeight: activeSection === s.key ? 700 : 500, fontSize: '0.83rem', cursor: 'pointer', textAlign: 'left' }}>
                 {s.icon} {s.label}
               </button>
             ))}

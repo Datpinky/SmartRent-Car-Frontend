@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaStar, FaMapMarkerAlt, FaGasPump, FaStore } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaStar, FaGasPump, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
 

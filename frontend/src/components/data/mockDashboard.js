@@ -27,14 +27,14 @@ export const USER_GROWTH = [
 ];
 
 export const VEHICLE_STATUS_PIE = [
-  { name: 'Sẵn sàng', value: 28, color: '#059669' },
+  { name: 'Sẵn sàng', value: 28, color: '#0284c7' },
   { name: 'Đang thuê', value: 12, color: '#2563eb' },
   { name: 'Bảo dưỡng', value: 5, color: '#7c3aed' },
   { name: 'Chờ duyệt', value: 3, color: '#d97706' },
 ];
 
 export const VEHICLE_CATEGORY_PIE = [
-  { name: 'SUV', value: 18, color: '#00b14f' },
+  { name: 'SUV', value: 18, color: '#87ceeb' },
   { name: 'Sedan', value: 12, color: '#2563eb' },
   { name: 'MPV', value: 7, color: '#7c3aed' },
   { name: 'Hatchback', value: 5, color: '#d97706' },
@@ -131,10 +131,10 @@ export const MOCK_OWNER_REVENUE = [
 ];
 
 export const MOCK_RENTER_BOOKINGS = [
-  { id: 'BK0001', vehicle: 'Toyota Camry 2.5Q 2023',  showroom: 'Showroom Minh Hoàng', from: '10/03/2026', to: '12/03/2026', days: 2, total: 2520000, status: 'active',    payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0001' },
-  { id: 'BK0004', vehicle: 'VinFast VF8 Eco 2023',    showroom: 'Showroom Minh Hoàng', from: '01/03/2026', to: '03/03/2026', days: 2, total: 2205000, status: 'completed', payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0002' },
-  { id: 'BK0007', vehicle: 'Honda CR-V L 2023',       showroom: 'Auto Center Quận 1',  from: '20/02/2026', to: '22/02/2026', days: 2, total: 2310000, status: 'completed', payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: null },
-  { id: 'BK0010', vehicle: 'Mazda CX-5 Premium 2022', showroom: 'Vina Car Rental',     from: '25/03/2026', to: '27/03/2026', days: 2, total: 1995000, status: 'approved',  payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: null },
-  { id: 'BK0011', vehicle: 'Toyota Fortuner 2.7 2023',showroom: 'Showroom Minh Hoàng', from: '15/01/2026', to: '17/01/2026', days: 2, total: 2940000, status: 'completed', payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: null },
-  { id: 'BK0008', vehicle: 'Mazda CX-5 Premium 2022', showroom: 'Vina Car Rental',     from: '15/02/2026', to: '17/02/2026', days: 2, total: 1995000, status: 'cancelled', payStatus: 'failed',  location: 'TP.HCM', image: null, contractId: null },
+  { id: 'BK0001', carId: 5,  showroom: 'Toyota Nam Sài Gòn',    from: '10/03/2026', to: '12/03/2026', days: 2, total: 2520000, status: 'active',    payStatus: 'paid',   contractId: 'HD0001' },
+  { id: 'BK0004', carId: 10, showroom: 'VinFast Nam Sài Gòn',    from: '01/03/2026', to: '03/03/2026', days: 2, total: 2205000, status: 'completed', payStatus: 'paid',   contractId: 'HD0002' },
+  { id: 'BK0007', carId: 21, showroom: 'Honda Tân Bình Premium', from: '20/02/2026', to: '22/02/2026', days: 2, total: 2310000, status: 'completed', payStatus: 'paid',   contractId: null },
+  { id: 'BK0010', carId: 7,  showroom: 'Mazda Phú Nhuận',       from: '25/03/2026', to: '27/03/2026', days: 2, total: 1995000, status: 'approved',  payStatus: 'paid',   contractId: null },
+  { id: 'BK0011', carId: 26, showroom: 'Toyota Quận 11',         from: '15/01/2026', to: '17/01/2026', days: 2, total: 2940000, status: 'completed', payStatus: 'paid',   contractId: null },
+  { id: 'BK0008', carId: 24, showroom: 'Mazda Bình Thạnh',       from: '15/02/2026', to: '17/02/2026', days: 2, total: 1995000, status: 'cancelled', payStatus: 'failed', contractId: null },
 ];

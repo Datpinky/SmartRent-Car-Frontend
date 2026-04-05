@@ -21,7 +21,7 @@ const TransactionMonitor = () => {
     { key: 'bookingId', label: 'Mã đặt xe', render: row => <span className="code-badge">{row.bookingId}</span> },
     { key: 'renter', label: 'Khách thuê', accessor: 'renter', sortable: true },
     { key: 'showroom', label: 'Showroom', accessor: 'showroom', sortable: true },
-    { key: 'amount', label: 'Số tiền', render: row => <span style={{ fontWeight: 700, color: '#00b14f' }}>{row.amount.toLocaleString()}đ</span>, sortable: true, accessor: 'amount' },
+    { key: 'amount', label: 'Số tiền', render: row => <span style={{ fontWeight: 700, color: '#87ceeb' }}>{row.amount.toLocaleString()}đ</span>, sortable: true, accessor: 'amount' },
     { key: 'method', label: 'Phương thức', render: row => (
       <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 50,
         background: (PAYMENT_METHOD_COLORS[row.method] || '#6b7280') + '18',
@@ -48,10 +48,10 @@ const TransactionMonitor = () => {
       <div style={{ display: 'flex', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { label: 'Tổng giao dịch', val: transactions.length, color: '#374151' },
-          { label: 'Thành công',     val: transactions.filter(t => t.status === 'paid').length, color: '#059669' },
+          { label: 'Thành công',     val: transactions.filter(t => t.status === 'paid').length, color: '#0284c7' },
           { label: 'Đang xử lý',    val: transactions.filter(t => t.status === 'processing').length, color: '#2563eb' },
           { label: 'Thất bại',      val: transactions.filter(t => t.status === 'failed').length, color: '#dc2626' },
-          { label: 'Tổng doanh thu', val: totalRevenue.toLocaleString() + 'đ', color: '#00b14f' },
+          { label: 'Tổng doanh thu', val: totalRevenue.toLocaleString() + 'đ', color: '#87ceeb' },
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '10px 16px', border: '1px solid #f0f0f0', flex: 1, minWidth: 140 }}>
             <div style={{ fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
@@ -66,8 +66,8 @@ const TransactionMonitor = () => {
         {['all', 'paid', 'processing', 'failed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)} style={{
             padding: '5px 14px', borderRadius: 50, border: '1.5px solid',
-            borderColor: statusFilter === s ? '#00b14f' : '#e5e7eb',
-            background: statusFilter === s ? '#00b14f' : '#fff',
+            borderColor: statusFilter === s ? '#87ceeb' : '#e5e7eb',
+            background: statusFilter === s ? '#87ceeb' : '#fff',
             color: statusFilter === s ? '#fff' : '#374151',
             fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
           }}>
@@ -81,8 +81,8 @@ const TransactionMonitor = () => {
       <Modal isOpen={!!viewModal} onClose={() => setViewModal(null)} title="Chi tiết giao dịch" width={460}>
         {viewModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: viewModal.status === 'paid' ? '#f0fdf4' : viewModal.status === 'failed' ? '#fef2f2' : '#eff6ff', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: viewModal.status === 'paid' ? '#059669' : viewModal.status === 'failed' ? '#dc2626' : '#2563eb' }}>{viewModal.amount.toLocaleString()}đ</div>
+            <div style={{ background: viewModal.status === 'paid' ? '#f0f9ff' : viewModal.status === 'failed' ? '#fef2f2' : '#eff6ff', borderRadius: 12, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: viewModal.status === 'paid' ? '#0284c7' : viewModal.status === 'failed' ? '#dc2626' : '#2563eb' }}>{viewModal.amount.toLocaleString()}đ</div>
               <StatusBadge status={viewModal.status} />
             </div>
             {[

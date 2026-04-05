@@ -59,7 +59,7 @@ const MyVehicles = () => {
             <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
               <div>
                 <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>Tổng doanh thu</div>
-                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#00b14f' }}>{(v.revenue / 1000000).toFixed(1)}M VND</div>
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#87ceeb' }}>{(v.revenue / 1000000).toFixed(1)}M VND</div>
               </div>
               {v.pendingRevenue > 0 && (
                 <div style={{ textAlign: 'right' }}>

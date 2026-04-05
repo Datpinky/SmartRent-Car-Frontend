@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StatCard = ({ title, value, subtext, icon, color = '#00b14f', trend, trendLabel }) => {
+const StatCard = ({ title, value, subtext, icon, color = '#87ceeb', trend, trendLabel }) => {
   return (
     <div className="bg-white rounded-[14px] p-5 flex items-center gap-4 shadow-[0_1px_4px_rgba(0,0,0,0.07)] border border-[#f0f0f0] transition-shadow duration-200 hover:shadow-md">
       <div
@@ -15,7 +15,7 @@ const StatCard = ({ title, value, subtext, icon, color = '#00b14f', trend, trend
         {(subtext || trendLabel) && (
           <div className="flex items-center gap-1.5 mt-1">
             {trend !== undefined && (
-              <span className={`text-[0.72rem] font-bold px-1.5 py-px rounded-full ${trend >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+              <span className={`text-[0.72rem] font-bold px-1.5 py-px rounded-full ${trend >= 0 ? 'bg-sky-100 text-sky-600' : 'bg-red-100 text-red-600'}`}>
                 {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
               </span>
             )}

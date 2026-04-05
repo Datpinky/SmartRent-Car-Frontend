@@ -98,14 +98,14 @@
 }
 
 .mapview-radius-select:focus {
-  border-color: #00b14f;
+  border-color: #87ceeb;
 }
 
 /* Count badge */
 .mapview-count-badge {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #00b14f;
+  color: #87ceeb;
   background: #f0fff4;
   border: 1px solid #9ae6b4;
   border-radius: 20px;
@@ -128,8 +128,8 @@
 }
 
 .mapview-sidebar-toggle:hover {
-  border-color: #00b14f;
-  color: #00b14f;
+  border-color: #87ceeb;
+  color: #87ceeb;
 }
 
 /* ── API warning banner ────────────────────────────────────── */
@@ -197,7 +197,7 @@
 }
 
 .mapview-sidebar-count {
-  background: #00b14f;
+  background: #87ceeb;
   color: #fff;
   border-radius: 20px;
   padding: 1px 8px;
@@ -244,7 +244,7 @@
 
 .mapview-car-item--active {
   background: #f0fff4;
-  border-left: 3px solid #00b14f;
+  border-left: 3px solid #87ceeb;
   padding-left: 11px;
 }
 
@@ -291,7 +291,7 @@
 
 .mapview-car-dist {
   font-size: 0.72rem;
-  color: #00b14f;
+  color: #87ceeb;
   font-weight: 600;
   margin: 0;
 }
@@ -299,7 +299,7 @@
 .mapview-car-price {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #00b14f;
+  color: #87ceeb;
   text-align: right;
   flex-shrink: 0;
   line-height: 1.3;
@@ -335,10 +335,10 @@
 .user-location-dot {
   width: 14px;
   height: 14px;
-  background: #00b14f;
+  background: #87ceeb;
   border: 3px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(0, 177, 79, 0.4);
+  box-shadow: 0 0 0 2px rgba(135,206,235, 0.4);
   position: relative;
   z-index: 2;
 }
@@ -350,7 +350,7 @@
   transform: translate(-50%, -50%);
   width: 32px;
   height: 32px;
-  background: rgba(0, 177, 79, 0.25);
+  background: rgba(135,206,235, 0.25);
   border-radius: 50%;
   animation: userPulse 2s ease-out infinite;
   z-index: 1;
@@ -381,7 +381,7 @@
   width: 36px;
   height: 36px;
   background: #fff;
-  border: 2.5px solid #00b14f;
+  border: 2.5px solid #87ceeb;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
@@ -391,9 +391,9 @@
 .car-marker-icon--selected {
   width: 44px;
   height: 44px;
-  background: #00b14f;
+  background: #87ceeb;
   border-color: #007f37;
-  box-shadow: 0 4px 16px rgba(0, 177, 79, 0.4);
+  box-shadow: 0 4px 16px rgba(135,206,235, 0.4);
 }
 
 .car-marker-emoji {
@@ -504,7 +504,7 @@
 
 .car-popup-badge {
   display: inline-block;
-  background: #00b14f;
+  background: #87ceeb;
   color: #fff;
   font-size: 0.65rem;
   font-weight: 700;
@@ -531,7 +531,7 @@
 }
 
 .car-popup-distance {
-  color: #00b14f !important;
+  color: #87ceeb !important;
   font-weight: 600;
 }
 
@@ -545,11 +545,11 @@
 .car-popup-price {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #00b14f;
+  color: #87ceeb;
 }
 
 .car-popup-btn {
-  background: #00b14f;
+  background: #87ceeb;
   color: #fff !important;
   font-size: 0.75rem;
   font-weight: 700;

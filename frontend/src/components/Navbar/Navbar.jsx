@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTimes, FaBars, FaUser, FaCalendarAlt, FaAmbulance, FaSignOutAlt } from 'react-icons/fa';
-import { MdDirectionsCar } from 'react-icons/md';
+
 import { useAuth } from '../../contexts/AuthContext';
 
 const ROLE_DASHBOARD_PATHS = {
@@ -26,7 +26,7 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => { logout(); setMenuOpen(false); setUserDropdownOpen(false); navigate('/'); };
+  const handleLogout = () => { logout(); setMenuOpen(false); setUserDropdownOpen(false); navigate('/login'); };
 
   const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'U';
 
@@ -40,7 +40,7 @@ const Navbar = () => {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-2">
-          {user ? (
+          {user && (
             <div className="relative" ref={dropdownRef}>
               <button
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-[0.875rem] font-semibold text-gray-800 cursor-pointer transition-all hover:border-primary hover:bg-gray-50"
@@ -79,13 +79,6 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-          ) : (
-            <button
-              className="px-5 py-[9px] rounded-lg text-[0.875rem] font-semibold border-2 border-primary text-primary bg-transparent transition-all cursor-pointer hover:bg-primary hover:text-white hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,177,79,0.3)]"
-              onClick={() => navigate('/login')}
-            >
-              Đăng nhập
-            </button>
           )}
         </div>
 
@@ -101,7 +94,7 @@ const Navbar = () => {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="pt-3 pb-4 border-t border-gray-100 flex flex-col bg-white md:hidden">
-          {user ? (
+          {user && (
             <>
               {user.role === 'renter' && (
                 <>
@@ -115,13 +108,6 @@ const Navbar = () => {
               )}
               <button className="block w-full px-5 py-3 text-[0.9rem] font-medium text-red-600 hover:bg-red-50 text-left" onClick={handleLogout}>Đăng xuất</button>
             </>
-          ) : (
-            <button
-              className="mt-1 mx-5 px-5 py-[9px] rounded-lg text-[0.875rem] font-semibold border-2 border-primary text-primary bg-transparent transition-all cursor-pointer text-center hover:bg-primary hover:text-white"
-              onClick={() => { navigate('/login'); setMenuOpen(false); }}
-            >
-              Đăng nhập
-            </button>
           )}
         </div>
       )}

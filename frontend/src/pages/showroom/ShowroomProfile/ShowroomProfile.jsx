@@ -26,7 +26,7 @@ const ShowroomProfile = () => {
 
       {/* Header Card */}
       <div style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', borderRadius: 16, padding: 24, color: '#fff', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div style={{ width: 72, height: 72, borderRadius: 18, background: '#00b14f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 900, flexShrink: 0 }}>M</div>
+        <div style={{ width: 72, height: 72, borderRadius: 18, background: '#87ceeb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 900, flexShrink: 0 }}>M</div>
         <div>
           <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{form.name}</div>
           <div style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: 4 }}>
@@ -35,7 +35,7 @@ const ShowroomProfile = () => {
           <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: '0.8rem', opacity: 0.8 }}>
             <span><FaStar style={{ color: '#f59e0b' }} /> 4.8 · 156 đánh giá</span>
             <span>45 xe · 312 chuyến</span>
-            <span style={{ background: '#00b14f', padding: '2px 10px', borderRadius: 50, opacity: 1, fontWeight: 700 }}>Đã xác minh ✓</span>
+            <span style={{ background: '#87ceeb', padding: '2px 10px', borderRadius: 50, opacity: 1, fontWeight: 700 }}>Đã xác minh ✓</span>
           </div>
         </div>
       </div>

@@ -62,7 +62,7 @@ const SearchBar = ({ onSearch }) => {
   return (
     <>
       {/* ── Search bar ngoài ── */}
-      <section className="py-10 px-5 bg-gradient-to-br from-[#f0fdf4] to-[#e8f8ef]">
+      <section className="py-10 px-5 bg-gradient-to-br from-[#f0f9ff] to-[#e0f2fb]">
         <h1 className="text-center text-[2rem] font-extrabold text-gray-900 mb-6 max-[600px]:text-[1.4rem]">
           Tìm xe tự lái
         </h1>
@@ -181,7 +181,7 @@ const SearchBar = ({ onSearch }) => {
                       <div
                         key={city}
                         className={`flex items-center gap-3 px-3 py-3.5 cursor-pointer rounded-xl transition-colors
-                          ${isActive ? 'bg-[#f0fdf4]' : 'hover:bg-gray-50'}`}
+                          ${isActive ? 'bg-[#f0f9ff]' : 'hover:bg-gray-50'}`}
                         onClick={() => handleCityClick(city)}
                       >
                         <FaMapMarkerAlt className={`text-base ${isActive ? 'text-primary' : 'text-gray-300'}`} />
@@ -221,7 +221,7 @@ const SearchBar = ({ onSearch }) => {
                             <div
                               key={d}
                               className={`flex items-center gap-3 px-3 py-3 cursor-pointer rounded-xl transition-colors
-                                ${on ? 'bg-[#f0fdf4]' : 'hover:bg-gray-50'}`}
+                                ${on ? 'bg-[#f0f9ff]' : 'hover:bg-gray-50'}`}
                               onClick={() => handleDistClick(d)}
                             >
                               <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0

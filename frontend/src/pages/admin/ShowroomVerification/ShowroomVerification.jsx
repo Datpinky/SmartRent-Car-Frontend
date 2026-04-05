@@ -43,7 +43,7 @@ const ShowroomVerification = () => {
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="btn-icon" onClick={() => setViewModal(row)} title="Xem hồ sơ"><FaEye /></button>
         {row.status === 'pending' && <>
-          <button className="btn-icon" style={{ borderColor: '#059669', color: '#059669' }} onClick={() => approve(row.id)} title="Phê duyệt"><FaCheckCircle /></button>
+          <button className="btn-icon" style={{ borderColor: '#0284c7', color: '#0284c7' }} onClick={() => approve(row.id)} title="Phê duyệt"><FaCheckCircle /></button>
           <button className="btn-icon danger" onClick={() => setRejectModal(row)} title="Từ chối"><FaTimesCircle /></button>
         </>}
       </div>
@@ -79,7 +79,7 @@ const ShowroomVerification = () => {
               [<FaMapMarkerAlt />, 'Địa chỉ', viewModal.address],
             ].map(([icon, label, val]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <span style={{ color: '#00b14f', marginTop: 1 }}>{icon}</span>
+                <span style={{ color: '#87ceeb', marginTop: 1 }}>{icon}</span>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{label}</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 500, color: '#111827' }}>{val}</div>

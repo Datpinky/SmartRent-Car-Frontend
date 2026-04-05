@@ -35,15 +35,15 @@ const SystemReports = () => {
       {/* KPI Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         {[
-          { label: 'Tổng doanh thu 2026', value: `${totalRevenue}M VND`,         sub: '+21.5% so năm trước', color: '#00b14f' },
+          { label: 'Tổng doanh thu 2026', value: `${totalRevenue}M VND`,         sub: '+21.5% so năm trước', color: '#87ceeb' },
           { label: 'Tổng lượt đặt xe',   value: totalBookings,                    sub: '+18.2% so năm trước', color: '#2563eb' },
           { label: 'Người dùng mới',      value: '1,247',                          sub: '+12.4% so tháng trước', color: '#6d28d9' },
-          { label: 'Tỷ lệ hoàn thành',   value: '89.4%',                          sub: 'Booking hoàn thành', color: '#059669' },
+          { label: 'Tỷ lệ hoàn thành',   value: '89.4%',                          sub: 'Booking hoàn thành', color: '#0284c7' },
         ].map(k => (
           <div key={k.label} style={{ background: '#fff', borderRadius: 14, padding: 18, border: '1px solid #f0f0f0' }}>
             <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: 6 }}>{k.label}</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: 4 }}>↑ {k.sub}</div>
+            <div style={{ fontSize: '0.72rem', color: '#0284c7', marginTop: 4 }}>↑ {k.sub}</div>
           </div>
         ))}
       </div>
@@ -55,8 +55,8 @@ const SystemReports = () => {
           <AreaChart data={REVENUE_MONTHLY} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="rGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00b14f" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#00b14f" stopOpacity={0} />
+                <stop offset="5%" stopColor="#87ceeb" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#87ceeb" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#6d28d9" stopOpacity={0.2} />
@@ -69,7 +69,7 @@ const SystemReports = () => {
             <Tooltip formatter={(v, n) => [v + 'M', n]} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
             <Area type="monotone" dataKey="target"  name="Mục tiêu"     stroke="#6d28d9" fill="url(#tGrad)" strokeDasharray="5 5" strokeWidth={1.5} dot={false} />
-            <Area type="monotone" dataKey="revenue" name="Thực tế"      stroke="#00b14f" fill="url(#rGrad)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="revenue" name="Thực tế"      stroke="#87ceeb" fill="url(#rGrad)" strokeWidth={2.5} dot={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -85,7 +85,7 @@ const SystemReports = () => {
               <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <Tooltip />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.75rem' }} />
-              <Bar dataKey="renters"   name="Khách thuê" fill="#00b14f" radius={[3,3,0,0]} />
+              <Bar dataKey="renters"   name="Khách thuê" fill="#87ceeb" radius={[3,3,0,0]} />
               <Bar dataKey="owners"    name="Chủ xe"     fill="#0891b2" radius={[3,3,0,0]} />
               <Bar dataKey="showrooms" name="Showroom"   fill="#6d28d9" radius={[3,3,0,0]} />
             </BarChart>

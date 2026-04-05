@@ -39,7 +39,7 @@ const Revenue = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         {[
           { label: 'Tổng doanh thu', val: (totalRevenue / 1000000).toFixed(1) + 'M', color: '#0891b2', sub: '7 tháng gần nhất' },
-          { label: 'Đã nhận', val: (totalPayout / 1000000).toFixed(1) + 'M', color: '#059669', sub: '90% tỷ lệ chi trả' },
+          { label: 'Đã nhận', val: (totalPayout / 1000000).toFixed(1) + 'M', color: '#0284c7', sub: '90% tỷ lệ chi trả' },
           { label: 'Đang chờ rút', val: (pending / 1000).toLocaleString() + 'K', color: '#d97706', sub: 'Tháng 3/2026' },
           { label: 'Tỷ lệ chia sẻ', val: '90%', color: '#7c3aed', sub: 'Chủ xe / SmartRent' },
         ].map(k => (
@@ -62,7 +62,7 @@ const Revenue = () => {
             <Tooltip formatter={(v, n) => [(v / 1000).toLocaleString() + 'K', n]} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
             <Bar dataKey="revenue" name="Doanh thu"  fill="#0891b2" radius={[4,4,0,0]} />
-            <Bar dataKey="payouts" name="Đã chi trả" fill="#00b14f" radius={[4,4,0,0]} />
+            <Bar dataKey="payouts" name="Đã chi trả" fill="#87ceeb" radius={[4,4,0,0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -80,7 +80,7 @@ const Revenue = () => {
               <tr key={p.id}>
                 <td><span className="code-badge">{p.id}</span></td>
                 <td style={{ fontWeight: 600 }}>{p.month}</td>
-                <td style={{ fontWeight: 700, color: '#00b14f' }}>{p.amount.toLocaleString()}đ</td>
+                <td style={{ fontWeight: 700, color: '#87ceeb' }}>{p.amount.toLocaleString()}đ</td>
                 <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>{p.method}</td>
                 <td>{p.date}</td>
                 <td><StatusBadge status={p.status} /></td>
@@ -102,9 +102,9 @@ const Revenue = () => {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 14 }}>
+            <div style={{ background: '#f0f9ff', borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Số dư có thể rút</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#00b14f' }}>{(pending / 1000).toLocaleString()}K VND</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#87ceeb' }}>{(pending / 1000).toLocaleString()}K VND</div>
             </div>
             {[['Số tiền rút (đ)', 'amount'], ['Số tài khoản', 'accountNo']].map(([label, key]) => (
               <div key={key}>
