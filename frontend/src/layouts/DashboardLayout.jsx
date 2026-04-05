@@ -7,7 +7,7 @@ import {
   FaCog, FaCalendarAlt, FaFileContract, FaChartLine, FaRobot,
   FaBuilding, FaMapMarkerAlt, FaMoneyBillWave, FaBars, FaTimes,
   FaSignOutAlt, FaAngleDown, FaAngleRight, FaExchangeAlt, FaComments,
-  FaAmbulance, FaUser
+  FaAmbulance, FaUser, FaMap
 } from 'react-icons/fa';
 import { MdVerifiedUser } from 'react-icons/md';
 
@@ -42,6 +42,7 @@ const MENUS = {
   renter: [
     { key: 'profile',   label: 'Hồ sơ cá nhân',   icon: <FaUser />,        path: '/renter/profile' },
     { key: 'bookings',  label: 'Chuyến đi của tôi', icon: <FaCalendarAlt />, path: '/renter/bookings' },
+    { key: 'map',       label: 'Bản đồ xe',          icon: <FaMap />,         path: '/renter/map' },
     { key: 'sos',       label: 'Hỗ trợ khẩn cấp',  icon: <FaAmbulance />,   path: '/renter/sos' },
   ],
 };

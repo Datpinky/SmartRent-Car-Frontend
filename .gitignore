@@ -1,0 +1,20 @@
+# ── Frontend ────────────────────────────────
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.*
+
+# ── Backend ─────────────────────────────────
+backend/node_modules/
+backend/.env
+backend/.env.*
+
+# ── Local tooling (không đẩy lên git) ────────
+postman/
+.postman/
+
+# ── OS / IDE ─────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
