@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { MdDirectionsCar, MdEmail, MdLock, MdPhone } from 'react-icons/md';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -12,37 +12,104 @@ const ROLE_REDIRECTS = {
 
 const inputCls = "w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]";
 
+/**
+ * Đặt ở ngoài Login để tránh remount input mỗi lần state đổi (mất focus khi gõ).
+ */
+const LoginFormField = ({
+  label,
+  name,
+  type = 'text',
+  icon: Icon,
+  placeholder,
+  required,
+  value,
+  onChange,
+  error,
+  extra = {},
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[0.8rem] font-semibold text-gray-700">{label}</label>
+    <div className="relative flex items-center">
+      <Icon className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
+      <input
+        className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
+        name={name}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        {...extra}
+      />
+    </div>
+    {error && (
+      <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">
+        ⚠ {error}
+      </div>
+    )}
+  </div>
+);
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const [tab, setTab] = useState('login');
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', phone: '', name: '' });
+  const [form, setForm] = useState({
+    email: '', password: '', confirmPassword: '', phone: '', name: '', accountType: 'renter',
+  });
   const [confirmError, setConfirmError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [registerError, setRegisterError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'phone') {
       const digits = value.replace(/\D/g, '').slice(0, 10);
       setForm(f => ({ ...f, phone: digits }));
+      if (registerError) setRegisterError('');
+      return;
+    }
+    if (name === 'accountType') {
+      setForm(f => ({ ...f, accountType: value }));
       return;
     }
     setForm(f => ({ ...f, [name]: value }));
+    if (tab === 'register' && registerError) setRegisterError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoginError(''); setRegisterError(''); setConfirmError(''); setRegisterSuccess('');
+
     if (tab === 'register') {
       if (form.password !== form.confirmPassword) { setConfirmError('Mật khẩu xác nhận không khớp!'); return; }
       const phoneDigits = (form.phone || '').replace(/\D/g, '');
       if (phoneDigits.length !== 10) { setRegisterError('Số điện thoại phải có đúng 10 chữ số.'); return; }
-      setConfirmError(''); setRegisterError('');
-      navigate('/');
+      setSubmitting(true);
+      const result = await register(
+        form.name,
+        form.email,
+        form.password,
+        form.phone,
+        form.accountType || 'renter',
+      );
+      setSubmitting(false);
+      if (result.success) {
+        setRegisterSuccess('Tạo tài khoản thành công! Vui lòng đăng nhập.');
+        setTab('login');
+        setForm(f => ({ ...f, password: '', confirmPassword: '' }));
+      } else {
+        setRegisterError(result.error || 'Đăng ký thất bại. Vui lòng thử lại.');
+      }
       return;
     }
-    const result = login(form.email, form.password);
+
+    setSubmitting(true);
+    const result = await login(form.email, form.password);
+    setSubmitting(false);
     if (result.success) {
       const from = location.state?.from?.pathname;
       const redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
@@ -51,30 +118,6 @@ const Login = () => {
       setLoginError(result.error || 'Đăng nhập thất bại');
     }
   };
-
-  const Field = ({ label, name, type = 'text', icon: Icon, placeholder, required, error, extra = {} }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[0.8rem] font-semibold text-gray-700">{label}</label>
-      <div className="relative flex items-center">
-        <Icon className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
-        <input
-          className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
-          name={name}
-          type={type}
-          placeholder={placeholder}
-          value={form[name]}
-          onChange={handleChange}
-          required={required}
-          {...extra}
-        />
-      </div>
-      {error && (
-        <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">
-          ⚠ {error}
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -124,34 +167,75 @@ const Login = () => {
           ))}
         </div>
 
-        {/* Demo credentials */}
-        {tab === 'login' && (
-          <div className="bg-primary-light border border-green-200 rounded-[10px] px-3.5 py-2.5 mb-3 text-[0.75rem] text-gray-700">
-            <div className="font-bold text-emerald-600 mb-1">Tài khoản demo:</div>
-            {[['admin@smartrent.com','Admin'],['showroom@smartrent.com','Showroom'],['owner@smartrent.com','Chủ xe'],['user@smartrent.com','Khách thuê']].map(([email, role]) => (
-              <div key={email} className="py-0.5 cursor-pointer" onClick={() => setForm(f => ({ ...f, email, password: '123456' }))}>
-                <span className="text-primary underline">{email}</span> <span className="text-gray-400">· {role} · 123456</span>
-              </div>
-            ))}
-          </div>
+        {registerSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700 text-[0.82rem] mb-2.5">{registerSuccess}</div>
         )}
-
         {loginError && (
           <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.82rem] mb-2.5">{loginError}</div>
         )}
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {tab === 'register' && (
-            <Field label="Họ và tên" name="name" icon={MdDirectionsCar} placeholder="Nguyễn Văn A" />
-          )}
-          {tab === 'register' && (
-            <Field
-              label="Số điện thoại (10 số)" name="phone" type="tel" icon={MdPhone}
-              placeholder="0901234567" error={registerError}
-              extra={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 10 }}
+            <LoginFormField
+              label="Họ và tên"
+              name="name"
+              icon={MdDirectionsCar}
+              placeholder="Nguyễn Văn A"
+              value={form.name}
+              onChange={handleChange}
             />
           )}
-          <Field label="Email" name="email" type="email" icon={MdEmail} placeholder="example@email.com" required />
+          {tab === 'register' && (
+            <LoginFormField
+              label="Số điện thoại (10 số)"
+              name="phone"
+              type="tel"
+              icon={MdPhone}
+              placeholder="0901234567"
+              value={form.phone}
+              onChange={handleChange}
+              error={registerError}
+              extra={{ inputMode: 'numeric', autoComplete: 'tel', maxLength: 10 }}
+            />
+          )}
+          {tab === 'register' && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[0.8rem] font-semibold text-gray-700">Tôi muốn</span>
+              <div className="flex flex-col gap-2">
+                {[
+                  { value: 'renter', label: 'Thuê xe (khách hàng)' },
+                  { value: 'owner', label: 'Cho thuê xe cá nhân (chủ xe)' },
+                ].map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors
+                      ${form.accountType === value ? 'border-primary bg-primary-light' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value={value}
+                      checked={form.accountType === value}
+                      onChange={handleChange}
+                      className="accent-primary w-4 h-4"
+                    />
+                    <span className="text-[0.88rem] text-gray-800 font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          <LoginFormField
+            label="Email"
+            name="email"
+            type="email"
+            icon={MdEmail}
+            placeholder="example@email.com"
+            required
+            value={form.email}
+            onChange={handleChange}
+            extra={{ autoComplete: tab === 'login' ? 'username' : 'email' }}
+          />
           <div className="flex flex-col gap-1.5">
             <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
             <div className="relative flex items-center">
@@ -193,17 +277,26 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
+            disabled={submitting}
+            className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
           >
-            {tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
+            {submitting ? 'Đang xử lý...' : (tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')}
           </button>
         </form>
 
-        <div className="text-center text-[0.83rem] text-gray-500 mt-5">
+        <div className="text-center text-[0.83rem] text-gray-500 mt-5 space-y-2">
           {tab === 'login'
             ? <>Chưa có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('register')}>Đăng ký ngay</span></>
             : <>Đã có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('login')}>Đăng nhập</span></>
           }
+          {tab === 'register' && (
+            <div>
+              Bạn là doanh nghiệp / showroom?{' '}
+              <Link to="/partner/register" className="text-primary font-semibold hover:underline">
+                Đăng ký đối tác
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

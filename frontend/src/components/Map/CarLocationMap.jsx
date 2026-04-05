@@ -1,19 +1,15 @@
 /**
  * CarLocationMap.jsx
- * ─────────────────────────────────────────────────────────────────────────────
- * Displays a car's location on a Leaflet map inside the Car Detail page.
- *
- * Steps:
- *  1. Takes `locationText` (e.g. "Quận 1") + optional `city` (default: "TP.HCM")
- *  2. Geocodes via LocationIQ Search API → gets lat/lng
- *  3. Renders MapContainer with a custom car marker + popup
- *  4. Shows an "Open in Maps" link
  *
  * Props
  * ─────
- * locationText : string   – human-readable address/district (required)
- * carName      : string   – car name for the popup (required)
- * city?        : string   – city appended to geocoding query (default "TP. Hồ Chí Minh, Việt Nam")
+ * locationText : string   – human-readable address (used when lat/lng not provided)
+ * lat?         : number   – direct latitude from backend vehicle_location API
+ * lng?         : number   – direct longitude from backend vehicle_location API
+ * carName?     : string   – car name for popup
+ * city?        : string   – city appended to geocoding query fallback
+ *
+ * When lat+lng are provided, geocoding is skipped entirely (faster, no API quota used).
  */
 
 import React, { useState, useEffect } from 'react';
@@ -61,6 +57,8 @@ const FlyTo = ({ latlng }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 const CarLocationMap = ({
   locationText,
+  lat,
+  lng,
   city = 'TP. Hồ Chí Minh, Việt Nam',
 }) => {
   const [latlng, setLatlng] = useState(null);
@@ -70,9 +68,19 @@ const CarLocationMap = ({
 
   const mapsSearchText = city?.trim() ? `${locationText}, ${city}` : locationText;
 
-  // ── Geocode location string → coordinates ──────────────────────────────────
   useEffect(() => {
-    if (!locationText) return;
+    // If backend provided direct coordinates, use them — skip geocoding
+    if (lat && lng) {
+      setLatlng([parseFloat(lat), parseFloat(lng)]);
+      setAddress(locationText || '');
+      setLoading(false);
+      return;
+    }
+
+    if (!locationText) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -87,8 +95,8 @@ const CarLocationMap = ({
       })
       .then((data) => {
         if (!data || data.length === 0) throw new Error('Không tìm thấy vị trí');
-        const { lat, lon, display_name } = data[0];
-        setLatlng([parseFloat(lat), parseFloat(lon)]);
+        const { lat: resLat, lon, display_name } = data[0];
+        setLatlng([parseFloat(resLat), parseFloat(lon)]);
         setAddress(display_name);
         setLoading(false);
       })
@@ -96,7 +104,7 @@ const CarLocationMap = ({
         setError(err.message);
         setLoading(false);
       });
-  }, [locationText, city, mapsSearchText]);
+  }, [locationText, city, mapsSearchText, lat, lng]);
 
   const googleMapsUrl = latlng
     ? `https://www.google.com/maps?q=${latlng[0]},${latlng[1]}`

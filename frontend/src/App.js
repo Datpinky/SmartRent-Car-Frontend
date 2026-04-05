@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import Home from './components/pages/Home/Home';
 import CarDetail from './components/pages/CarDetail/CarDetail';
 import Login from './components/pages/Login/Login';
+import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import RoleRoute from './components/common/RoleRoute';
@@ -48,9 +49,6 @@ import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
 // Admin profile
 import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
 
-// Contract pages
-import ContractBuilder from './pages/showroom/ContractBuilder/ContractBuilder';
-import ContractSign from './pages/contract/ContractSign/ContractSign';
 
 
 // Dashboard wrapper with Layout
@@ -71,20 +69,14 @@ const RenterPage = ({ children }) => (
   </ProtectedRoute>
 );
 
-// Contract page wrapper: auth required, role checked inside component
-const ContractPage = ({ children }) => (
-  <ProtectedRoute>
-    <DashboardLayout>{children}</DashboardLayout>
-  </ProtectedRoute>
-);
-
 const App = () => {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Login */}
+          {/* Login & public register */}
           <Route path="/login" element={<Login />} />
+          <Route path="/partner/register" element={<PartnerRegister />} />
 
           {/* Admin Dashboard */}
           <Route path="/admin/dashboard"   element={<DashboardPage roles={['admin']}><AdminDashboard /></DashboardPage>} />
@@ -101,7 +93,6 @@ const App = () => {
           <Route path="/showroom/vehicles"      element={<DashboardPage roles={['showroom', 'admin']}><VehicleManagement /></DashboardPage>} />
           <Route path="/showroom/bookings"      element={<DashboardPage roles={['showroom', 'admin']}><BookingManagement /></DashboardPage>} />
           <Route path="/showroom/contracts"     element={<DashboardPage roles={['showroom', 'admin']}><ContractManagement /></DashboardPage>} />
-          <Route path="/showroom/contracts/create/:bookingId" element={<DashboardPage roles={['showroom', 'admin']}><ContractBuilder /></DashboardPage>} />
           <Route path="/showroom/customers"     element={<DashboardPage roles={['showroom', 'admin']}><CustomerManagement /></DashboardPage>} />
           <Route path="/showroom/revenue"       element={<DashboardPage roles={['showroom', 'admin']}><RevenueReports /></DashboardPage>} />
           <Route path="/showroom/ai-inspection" element={<DashboardPage roles={['showroom', 'admin']}><AIInspection /></DashboardPage>} />
@@ -114,17 +105,14 @@ const App = () => {
           <Route path="/owner/revenue"   element={<DashboardPage roles={['owner', 'admin']}><Revenue /></DashboardPage>} />
           <Route path="/owner/profile"   element={<DashboardPage roles={['owner', 'admin']}><OwnerProfile /></DashboardPage>} />
 
-          {/* Renter portal */}
+          {/* Renter portal — /renter → hồ sơ (truy cập trực tiếp bằng URL ngắn) */}
+          <Route path="/renter" element={<Navigate to="/renter/profile" replace />} />
           <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/payment-result"  element={<RenterPage><PaymentResult /></RenterPage>} />
           <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
-          <Route path="/renter/map"             element={<RenterPage><MapPage /></RenterPage>} />
-
-          {/* Universal contract sign page — any authenticated role */}
-          <Route path="/contract/sign/:contractId" element={<ContractPage><ContractSign /></ContractPage>} />
 
           {/* Public pages with Navbar/Footer */}
           <Route path="/*" element={

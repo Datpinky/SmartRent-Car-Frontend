@@ -106,60 +106,12 @@ export const MOCK_SHOWROOM_VEHICLES = [
 ];
 
 export const MOCK_CONTRACTS = [
-  {
-    id: 'HD0001', type: 'rental', renter: 'Nguyễn Văn An', vehicle: 'Toyota Camry 2.5Q 2023',
-    bookingId: 'BK0001', from: '10/03/2026', to: '12/03/2026', total: 2520000, deposit: 3000000,
-    status: 'active', createdAt: '10/03/2026',
-    plate: '51G-12345', renterCCCD: '012345678901', renterPhone: '0912345678',
-    showroomName: 'Showroom Minh Hoàng', showroomAddress: '123 Lê Văn Lương, Q.7, TP.HCM', showroomRep: 'Phạm Thị Dung',
-    showroomSig: { name: 'Phạm Thị Dung', time: '10/03/2026 09:00' },
-    renterSig:   { name: 'Nguyễn Văn An', time: '10/03/2026 10:15' },
-  },
-  {
-    id: 'HD0002', type: 'rental', renter: 'Hoàng Văn Em', vehicle: 'VinFast VF8 Eco 2023',
-    bookingId: 'BK0004', from: '09/03/2026', to: '11/03/2026', total: 2205000, deposit: 2500000,
-    status: 'active', createdAt: '09/03/2026',
-    plate: '51L-45678', renterCCCD: '056789012345', renterPhone: '0956789012',
-    showroomName: 'Showroom Minh Hoàng', showroomAddress: '123 Lê Văn Lương, Q.7, TP.HCM', showroomRep: 'Phạm Thị Dung',
-    showroomSig: { name: 'Phạm Thị Dung', time: '09/03/2026 08:30' },
-    renterSig:   { name: 'Hoàng Văn Em',  time: '09/03/2026 09:00' },
-  },
-  {
-    id: 'HD0003', type: 'rental', renter: 'Vũ Thị Phương', vehicle: 'Hyundai Tucson 2.0 2023',
-    bookingId: 'BK0005', from: '12/03/2026', to: '14/03/2026', total: 1890000, deposit: 2000000,
-    status: 'active', createdAt: '12/03/2026',
-    plate: '51H-99001', renterCCCD: '067890123456', renterPhone: '0967890123',
-    showroomName: 'Xe Tốt Thủ Đức', showroomAddress: '789 Võ Văn Ngân, Thủ Đức', showroomRep: 'Hoàng Thị Lan',
-    showroomSig: { name: 'Hoàng Thị Lan', time: '12/03/2026 08:00' },
-    renterSig:   { name: 'Vũ Thị Phương', time: '12/03/2026 08:45' },
-  },
-  {
-    id: 'HD0004', type: 'service', renter: 'Showroom Minh Hoàng', vehicle: '-',
-    bookingId: '-', from: '01/01/2026', to: '31/12/2026', total: 0, deposit: 0,
-    status: 'active', createdAt: '01/01/2026',
-    plate: '-', renterCCCD: '-', renterPhone: '-',
-    showroomName: 'SmartRent Car Platform', showroomAddress: 'TP.HCM', showroomRep: 'Admin SmartRent',
-    showroomSig: { name: 'Admin SmartRent',    time: '01/01/2026 09:00' },
-    renterSig:   { name: 'Phạm Thị Dung',      time: '01/01/2026 10:00' },
-  },
-  {
-    id: 'HD0005', type: 'rental', renter: 'Trần Thị Bình', vehicle: 'Honda CR-V L 2023',
-    bookingId: 'BK0002', from: '11/03/2026', to: '13/03/2026', total: 2310000, deposit: 2500000,
-    status: 'pending_renter_sign', createdAt: '11/03/2026',
-    plate: '51H-23456', renterCCCD: '023456789012', renterPhone: '0923456789',
-    showroomName: 'Auto Center Quận 1', showroomAddress: '456 Nguyễn Trãi, Q.1, TP.HCM', showroomRep: 'Lê Văn Bình',
-    showroomSig: { name: 'Lê Văn Bình', time: '11/03/2026 08:00' },
-    renterSig: null,
-  },
-  {
-    id: 'HD0006', type: 'rental', renter: 'Lê Minh Cường', vehicle: 'Mazda CX-5 Premium 2022',
-    bookingId: 'BK0003', from: '08/03/2026', to: '09/03/2026', total: 997500, deposit: 1000000,
-    status: 'expired', createdAt: '08/03/2026',
-    plate: '51K-34567', renterCCCD: '034567890123', renterPhone: '0934567890',
-    showroomName: 'Vina Car Rental', showroomAddress: '321 Điện Biên Phủ, Bình Thạnh', showroomRep: 'Trần Văn Cường',
-    showroomSig: { name: 'Trần Văn Cường', time: '08/03/2026 07:30' },
-    renterSig:   { name: 'Lê Minh Cường',  time: '08/03/2026 08:00' },
-  },
+  { id: 'HD0001', type: 'rental',  renter: 'Nguyễn Văn An',   vehicle: 'Toyota Camry 2.5Q',  bookingId: 'BK0001', from: '10/03/2026', to: '12/03/2026', total: 2520000, status: 'signed',  createdAt: '10/03/2026' },
+  { id: 'HD0002', type: 'rental',  renter: 'Hoàng Văn Em',    vehicle: 'VinFast VF8 Eco',    bookingId: 'BK0004', from: '09/03/2026', to: '11/03/2026', total: 2205000, status: 'signed',  createdAt: '09/03/2026' },
+  { id: 'HD0003', type: 'rental',  renter: 'Vũ Thị Phương',   vehicle: 'Hyundai Tucson 2.0', bookingId: 'BK0005', from: '12/03/2026', to: '14/03/2026', total: 1890000, status: 'signed',  createdAt: '12/03/2026' },
+  { id: 'HD0004', type: 'service', renter: 'Showroom Minh Hoàng', vehicle: '-',              bookingId: '-',      from: '01/01/2026', to: '31/12/2026', total: 0,       status: 'signed',  createdAt: '01/01/2026' },
+  { id: 'HD0005', type: 'rental',  renter: 'Trần Thị Bình',   vehicle: 'Honda CR-V L',       bookingId: 'BK0002', from: '11/03/2026', to: '13/03/2026', total: 2310000, status: 'draft',   createdAt: '11/03/2026' },
+  { id: 'HD0006', type: 'rental',  renter: 'Lê Minh Cường',   vehicle: 'Mazda CX-5',         bookingId: 'BK0003', from: '08/03/2026', to: '09/03/2026', total:  997500, status: 'expired', createdAt: '08/03/2026' },
 ];
 
 export const MOCK_OWNER_VEHICLES = [
@@ -178,9 +130,56 @@ export const MOCK_OWNER_REVENUE = [
   { month: 'T3',  revenue: 2200000, payouts: 0 },
 ];
 
+// Doanh thu hàng tháng theo từng xe (simulate backend /revenue?vehicle_id=X)
+export const MOCK_REVENUE_BY_VEHICLE = {
+  all: [
+    { month: 'T9',  revenue: 3200000, payouts: 2880000 },
+    { month: 'T10', revenue: 5400000, payouts: 4860000 },
+    { month: 'T11', revenue: 4800000, payouts: 4320000 },
+    { month: 'T12', revenue: 7200000, payouts: 6480000 },
+    { month: 'T1',  revenue: 6100000, payouts: 5490000 },
+    { month: 'T2',  revenue: 5800000, payouts: 5220000 },
+    { month: 'T3',  revenue: 2200000, payouts: 0 },
+  ],
+  1: [
+    { month: 'T9',  revenue: 1100000, payouts: 990000 },
+    { month: 'T10', revenue: 2200000, payouts: 1980000 },
+    { month: 'T11', revenue: 1980000, payouts: 1782000 },
+    { month: 'T12', revenue: 3300000, payouts: 2970000 },
+    { month: 'T1',  revenue: 3300000, payouts: 2970000 },
+    { month: 'T2',  revenue: 3400000, payouts: 3060000 },
+    { month: 'T3',  revenue: 1100000, payouts: 0 },
+  ],
+  2: [
+    { month: 'T9',  revenue: 1400000, payouts: 1260000 },
+    { month: 'T10', revenue: 1750000, payouts: 1575000 },
+    { month: 'T11', revenue: 1540000, payouts: 1386000 },
+    { month: 'T12', revenue: 2100000, payouts: 1890000 },
+    { month: 'T1',  revenue: 1750000, payouts: 1575000 },
+    { month: 'T2',  revenue: 1400000, payouts: 1260000 },
+    { month: 'T3',  revenue: 700000,  payouts: 0 },
+  ],
+  3: [
+    { month: 'T9',  revenue: 700000,  payouts: 630000 },
+    { month: 'T10', revenue: 1450000, payouts: 1305000 },
+    { month: 'T11', revenue: 1280000, payouts: 1152000 },
+    { month: 'T12', revenue: 1800000, payouts: 1620000 },
+    { month: 'T1',  revenue: 1050000, payouts: 945000 },
+    { month: 'T2',  revenue: 1000000, payouts: 900000 },
+    { month: 'T3',  revenue: 400000,  payouts: 0 },
+  ],
+};
+
+// Chỉ số dashboard theo từng xe (simulate backend /dashboard?vehicle_id=X)
+export const MOCK_STATS_BY_VEHICLE = {
+  all:  { total: 34700000, received: 29250000, pending: 2200000 },
+  1:    { total: 16380000, received: 13752000, pending: 1100000 },
+  2:    { total: 10640000, received: 9946000,  pending: 700000  },
+  3:    { total: 6680000,  revenue: 6552000,   pending: 400000  },
+};
+
 export const MOCK_RENTER_BOOKINGS = [
   { id: 'BK0001', vehicle: 'Toyota Camry 2.5Q 2023',  showroom: 'Showroom Minh Hoàng', from: '10/03/2026', to: '12/03/2026', days: 2, total: 2520000, status: 'active',    payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0001' },
-  { id: 'BK0002', vehicle: 'Honda CR-V L 2023',       showroom: 'Auto Center Quận 1',  from: '11/03/2026', to: '13/03/2026', days: 2, total: 2310000, status: 'approved',  payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0005' },
   { id: 'BK0004', vehicle: 'VinFast VF8 Eco 2023',    showroom: 'Showroom Minh Hoàng', from: '01/03/2026', to: '03/03/2026', days: 2, total: 2205000, status: 'completed', payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: 'HD0002' },
   { id: 'BK0007', vehicle: 'Honda CR-V L 2023',       showroom: 'Auto Center Quận 1',  from: '20/02/2026', to: '22/02/2026', days: 2, total: 2310000, status: 'completed', payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: null },
   { id: 'BK0010', vehicle: 'Mazda CX-5 Premium 2022', showroom: 'Vina Car Rental',     from: '25/03/2026', to: '27/03/2026', days: 2, total: 1995000, status: 'approved',  payStatus: 'paid',    location: 'TP.HCM', image: null, contractId: null },

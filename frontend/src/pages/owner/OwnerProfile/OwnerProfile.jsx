@@ -33,6 +33,9 @@ const OwnerProfile = () => {
   });
   const [saved, setSaved]     = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [nameError, setNameError]   = useState('');
+  const [dobError, setDobError]     = useState('');
+  const [emailError, setEmailError] = useState('');
   const [kycStatus, setKycStatus] = useState('pending');
   const [pwForm, setPwForm]   = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
@@ -40,23 +43,118 @@ const OwnerProfile = () => {
 
   const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'OW';
 
+  // Viết hoa chữ cái đầu mỗi từ (không strip ký tự để bộ gõ Telex/VNI hoạt động)
+  const toTitleCase = (str) =>
+    str.split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
+
   const handleFieldChange = (key, value) => {
+    if (key === 'name') {
+      setNameError('');
+      setForm(f => ({ ...f, name: toTitleCase(value) }));
+      return;
+    }
     if (key === 'phone') {
+      // Only allow digits, max 10
       const digits = String(value).replace(/\D/g, '').slice(0, 10);
       setForm(f => ({ ...f, phone: digits }));
       setPhoneError('');
       return;
     }
+    if (key === 'email') {
+      setEmailError('');
+    }
+    if (key === 'dob') {
+      setDobError('');
+    }
     setForm(f => ({ ...f, [key]: value }));
   };
 
   const handleSave = () => {
+    let hasError = false;
+
+    // Name validation
+    const trimmedName = (form.name || '').trim();
+    if (!trimmedName) {
+      setNameError('Họ và tên không được để trống.');
+      hasError = true;
+    } else if (/[^a-zA-ZÀ-ỹ\s]/.test(trimmedName)) {
+      setNameError('Họ và tên chỉ được chứa chữ cái.');
+      hasError = true;
+    } else {
+      setNameError('');
+    }
+
+    // DOB validation
+    const dobParts = (form.dob || '').split('/');
+    if (dobParts.length === 3) {
+      const day   = parseInt(dobParts[0], 10);
+      const month = parseInt(dobParts[1], 10);
+      const year  = parseInt(dobParts[2], 10);
+
+      if (isNaN(day) || isNaN(month) || isNaN(year)) {
+        setDobError('Ngày sinh không hợp lệ (định dạng DD/MM/YYYY).');
+        hasError = true;
+      } else if (month < 1 || month > 12) {
+        setDobError('Tháng không hợp lệ, phải từ 1 đến 12.');
+        hasError = true;
+      } else {
+        // Tính số ngày hợp lệ trong tháng
+        const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        const maxDays = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
+
+        if (day < 1 || day > maxDays) {
+          if (month === 2) {
+            setDobError(`Tháng 2 năm ${year} chỉ có ${maxDays} ngày${isLeap ? ' (năm nhuận)' : ''}.`);
+          } else {
+            setDobError(`Tháng ${month} chỉ có ${maxDays} ngày.`);
+          }
+          hasError = true;
+        } else {
+          const dob   = new Date(year, month - 1, day);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const age = today.getFullYear() - year -
+            (today < new Date(today.getFullYear(), month - 1, day) ? 1 : 0);
+
+          if (dob >= today) {
+            setDobError('Ngày sinh không được là ngày trong tương lai.');
+            hasError = true;
+          } else if (age < 18) {
+            setDobError('Bạn phải đủ 18 tuổi để đăng ký.');
+            hasError = true;
+          } else {
+            setDobError('');
+          }
+        }
+      }
+    } else {
+      setDobError('Ngày sinh không hợp lệ (định dạng DD/MM/YYYY).');
+      hasError = true;
+    }
+
+    // Phone validation
     const phoneDigits = (form.phone || '').replace(/\D/g, '');
     if (phoneDigits.length !== 10) {
       setPhoneError('Số điện thoại phải có đúng 10 chữ số.');
-      return;
+      hasError = true;
+    } else if (!phoneDigits.startsWith('0')) {
+      setPhoneError('Số điện thoại phải bắt đầu bằng số 0.');
+      hasError = true;
+    } else {
+      setPhoneError('');
     }
-    setPhoneError('');
+
+    // Email validation
+    const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(form.email || '')) {
+      setEmailError('Email không hợp lệ (ví dụ: name@domain.com).');
+      hasError = true;
+    } else {
+      setEmailError('');
+    }
+
+    if (hasError) return;
+
     updateUser({ name: form.name, phone: form.phone });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -132,24 +230,61 @@ const OwnerProfile = () => {
         <div className="op-card">
           <h3 className="op-section-title">Thông tin cá nhân</h3>
           <div className="op-form-grid">
-            {[
-              ['Họ và tên',          'name',    'text'],
-              ['Email',              'email',   'email'],
-              ['Số điện thoại (10 số)', 'phone',   'tel'],
-              ['Ngày sinh',          'dob',     'text'],
-            ].map(([label, key, type]) => (
-              <div key={key}>
-                <label className="op-label">{label}</label>
-                <input
-                  type={type}
-                  value={form[key]}
-                  onChange={e => handleFieldChange(key, e.target.value)}
-                  className="op-input"
-                  {...(key === 'phone' ? { maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' } : {})}
-                />
-              </div>
-            ))}
-            {phoneError && <div style={{ gridColumn: 'span 2', color: '#dc2626', fontSize: '0.82rem', marginTop: 6 }}>{phoneError}</div>}
+            {/* Name */}
+            <div>
+              <label className="op-label">Họ và tên</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => handleFieldChange('name', e.target.value)}
+                className="op-input"
+                placeholder="Nguyễn Văn A"
+              />
+              {nameError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{nameError}</div>}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="op-label">Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => handleFieldChange('email', e.target.value)}
+                className="op-input"
+                placeholder="name@domain.com"
+              />
+              {emailError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{emailError}</div>}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="op-label">Số điện thoại (10 số)</label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={e => handleFieldChange('phone', e.target.value)}
+                className="op-input"
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="0xxxxxxxxx"
+              />
+              {phoneError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{phoneError}</div>}
+            </div>
+
+            {/* DOB */}
+            <div>
+              <label className="op-label">Ngày sinh (DD/MM/YYYY)</label>
+              <input
+                type="text"
+                value={form.dob}
+                onChange={e => handleFieldChange('dob', e.target.value)}
+                className="op-input"
+                placeholder="DD/MM/YYYY"
+                maxLength={10}
+              />
+              {dobError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{dobError}</div>}
+            </div>
             <div style={{ gridColumn: 'span 2' }}>
               <label className="op-label">Địa chỉ</label>
               <input

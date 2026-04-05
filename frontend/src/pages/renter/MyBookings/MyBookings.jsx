@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
-import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaFileContract, FaEye, FaComments, FaSignature } from 'react-icons/fa';
+import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaFileContract, FaEye, FaComments } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import { MOCK_RENTER_BOOKINGS } from '../../../components/data/mockDashboard';
-import { getContractById } from '../../../components/data/contractHelpers';
 import { useNavigate } from 'react-router-dom';
 
 const TABS = [
@@ -27,14 +26,6 @@ const MyBookings = () => {
     if (b.status === 'completed') return { label: 'Đánh giá', action: () => {}, color: '#d97706' };
     if (b.status === 'approved') return { label: 'Xem chi tiết', action: () => setDetailModal(b), color: '#2563eb' };
     return null;
-  };
-
-  const getContractAction = (b) => {
-    if (!b.contractId) return null;
-    const c = getContractById(b.contractId);
-    if (!c) return null;
-    const needsSign = c.status === 'pending_renter_sign' && !c.renterSig;
-    return { contractId: b.contractId, needsSign };
   };
 
   return (
@@ -80,7 +71,6 @@ const MyBookings = () => {
         )}
         {displayed.map(b => {
           const action = getStatusAction(b);
-          const contractAction = getContractAction(b);
           return (
             <div key={b.id} className="booking-card-item">
               <div className="booking-card-left">
@@ -111,28 +101,9 @@ const MyBookings = () => {
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                   <button className="btn-icon" onClick={() => setDetailModal(b)} title="Chi tiết"><FaEye /></button>
-                  {contractAction && (
-                    <button
-                      className="btn-icon"
-                      onClick={() => navigate(`/contract/sign/${contractAction.contractId}`)}
-                      title={contractAction.needsSign ? 'Ký hợp đồng' : 'Xem hợp đồng'}
-                      style={contractAction.needsSign ? { borderColor: '#d97706', color: '#d97706' } : {}}
-                    >
-                      {contractAction.needsSign ? <FaSignature /> : <FaFileContract />}
-                    </button>
-                  )}
+                  {b.contractId && <button className="btn-icon" title="Xem hợp đồng"><FaFileContract /></button>}
                   <button className="btn-icon" title="Liên hệ showroom"><FaComments /></button>
-                  {contractAction?.needsSign && (
-                    <button
-                      style={{ background: '#d97706', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                      onClick={() => navigate(`/contract/sign/${contractAction.contractId}`)}
-                    >
-                      <FaSignature size={11} /> Ký hợp đồng
-                    </button>
-                  )}
-                  {action && !contractAction?.needsSign && (
-                    <button style={{ background: action.color, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }} onClick={action.action}>{action.label}</button>
-                  )}
+                  {action && <button style={{ background: action.color, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }} onClick={action.action}>{action.label}</button>}
                 </div>
               </div>
             </div>
@@ -163,12 +134,8 @@ const MyBookings = () => {
               </div>
             ))}
             {detailModal.contractId && (
-              <button
-                className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => { setDetailModal(null); navigate(`/contract/sign/${detailModal.contractId}`); }}
-              >
-                <FaFileContract /> Xem / Ký hợp đồng điện tử
+              <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                <FaFileContract /> Xem hợp đồng điện tử
               </button>
             )}
           </div>

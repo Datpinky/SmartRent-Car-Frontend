@@ -1,10 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
+import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
-import { cars } from '../../data/cars';
+import { cars as MOCK_CARS } from '../../data/cars';
 import CarLocationMap from '../../Map/CarLocationMap';
+import vehicleService from '../../../services/vehicleService';
+import reviewService from '../../../services/reviewService';
+import favoriteService from '../../../services/favoriteService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const SpecItem = ({ icon, label, value }) => (
   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -18,24 +22,136 @@ const SpecItem = ({ icon, label, value }) => (
 
 const sectionTitle = "text-[0.9rem] font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100";
 
+const StarRow = ({ rating, count }) => (
+  <span className="flex items-center gap-1 text-[0.85rem]">
+    {[1, 2, 3, 4, 5].map(i => (
+      <FaStar key={i} size={13} color={i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb'} />
+    ))}
+    <strong className="ml-1">{rating}</strong>
+    {count !== undefined && <span className="text-gray-400">({count} đánh giá)</span>}
+  </span>
+);
+
+const isMongoId = (str) => /^[a-f\d]{24}$/i.test(str);
+
 const CarDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const car = cars.find(c => c.id === Number(id));
+  const { user } = useAuth();
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+  const [car, setCar] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsMeta, setReviewsMeta] = useState({ total: 0 });
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+
+  // New review form state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  const loadCar = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (isMongoId(id)) {
+        const apiCar = await vehicleService.getById(id);
+        setCar(apiCar || null);
+      } else {
+        // Numeric id from mock data
+        const mockCar = MOCK_CARS.find(c => c.id === Number(id));
+        setCar(mockCar || null);
+      }
+    } catch {
+      const mockCar = MOCK_CARS.find(c => c.id === Number(id));
+      setCar(mockCar || null);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
-  if (!car) return (
-    <div className="text-center py-20 px-5">
-      <div className="text-[4rem] mb-4">🚗</div>
-      <h2 className="text-xl font-bold text-gray-800 mb-5">Không tìm thấy xe</h2>
-      <button className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors" onClick={() => navigate('/')}>Về trang chủ</button>
-    </div>
-  );
+  const loadReviews = useCallback(async () => {
+    if (!isMongoId(id)) return;
+    setReviewsLoading(true);
+    try {
+      const res = await reviewService.getByVehicleId(id);
+      setReviews(res.data || []);
+      setReviewsMeta(res.pagination || { total: 0 });
+    } catch {
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    loadCar();
+    loadReviews();
+  }, [loadCar, loadReviews]);
+
+  const handleToggleFavorite = async (e) => {
+    e.stopPropagation();
+    if (!user) { navigate('/login'); return; }
+    if (!isMongoId(id)) { setLiked(p => !p); return; }
+    setLikeLoading(true);
+    try {
+      const res = await favoriteService.toggle(id);
+      setLiked(res.favorited);
+    } catch {
+      setLiked(p => !p);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) { navigate('/login'); return; }
+    setReviewError('');
+    setReviewSubmitting(true);
+    try {
+      await reviewService.create({ vehicle_id: id, ...reviewForm });
+      setShowReviewForm(false);
+      setReviewForm({ rating: 5, comment: '' });
+      loadReviews();
+    } catch (err) {
+      setReviewError(err.message);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-[1280px] mx-auto px-5 py-20 text-center">
+        <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-500">Đang tải thông tin xe...</p>
+      </div>
+    );
+  }
+
+  if (!car) {
+    return (
+      <div className="text-center py-20 px-5">
+        <div className="text-[4rem] mb-4">🚗</div>
+        <h2 className="text-xl font-bold text-gray-800 mb-5">Không tìm thấy xe</h2>
+        <button
+          className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
+          onClick={() => navigate('/')}
+        >
+          Về trang chủ
+        </button>
+      </div>
+    );
+  }
 
   const hue = Math.abs(car.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 360;
+  const avgRating = reviews.length
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : (car.rating || 0);
+  const tripCount = reviewsMeta.total || car.trips || 0;
 
   return (
     <div className="max-w-[1280px] mx-auto px-5 py-6">
@@ -72,11 +188,18 @@ const CarDetail = () => {
 
           {/* Actions */}
           <div className="flex gap-3 mt-3 mb-6">
-            {[{ icon: <FaShareAlt size={13} />, label: 'Chia sẻ' }, { icon: <FaHeart size={13} />, label: 'Yêu thích' }].map(({ icon, label }) => (
-              <button key={label} className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-full text-[0.82rem] text-gray-600 cursor-pointer bg-white hover:border-primary hover:text-primary transition-colors">
-                {icon} {label}
-              </button>
-            ))}
+            <button className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-full text-[0.82rem] text-gray-600 cursor-pointer bg-white hover:border-primary hover:text-primary transition-colors">
+              <FaShareAlt size={13} /> Chia sẻ
+            </button>
+            <button
+              onClick={handleToggleFavorite}
+              disabled={likeLoading}
+              className={`flex items-center gap-1.5 px-4 py-2 border rounded-full text-[0.82rem] cursor-pointer bg-white transition-colors
+                ${liked ? 'border-red-400 text-red-500 hover:border-red-500' : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
+            >
+              {liked ? <FaHeart size={13} /> : <FaRegHeart size={13} />}
+              {liked ? 'Đã yêu thích' : 'Yêu thích'}
+            </button>
           </div>
 
           {/* Info card */}
@@ -84,46 +207,50 @@ const CarDetail = () => {
             <h1 className="text-2xl font-extrabold text-gray-900">{car.name}</h1>
 
             <div className="flex flex-wrap gap-3">
-              <span className="flex items-center gap-1 text-[0.85rem] text-primary font-medium"><FaMapMarkerAlt size={12} /> {car.address}</span>
-              {car.showroom && (
-                <span className="flex items-center gap-1 text-[0.82rem] text-gray-500"><FaStore size={12} className="text-gray-400" /> {car.showroom}</span>
-              )}
-              <span className="flex items-center gap-1 text-[0.85rem]">
-                {[1,2,3,4,5].map(i => <FaStar key={i} size={13} color={i <= Math.round(car.rating) ? '#f59e0b' : '#e5e7eb'} />)}
-                <strong className="ml-1">{car.rating}</strong>
-                <span className="text-gray-400">({car.trips} chuyến)</span>
+              <span className="flex items-center gap-1 text-[0.85rem] text-primary font-medium">
+                <FaMapMarkerAlt size={12} /> {car.address || car.location || 'Chưa có địa chỉ'}
               </span>
-              <span className="flex items-center gap-1 text-primary font-semibold text-[0.85rem]"><MdVerified size={15} /> {car.type}</span>
+              {car.showroom && (
+                <span className="flex items-center gap-1 text-[0.82rem] text-gray-500">
+                  <FaStore size={12} className="text-gray-400" /> {car.showroom}
+                </span>
+              )}
+              <StarRow rating={avgRating} count={tripCount} />
+              <span className="flex items-center gap-1 text-primary font-semibold text-[0.85rem]">
+                <MdVerified size={15} /> {car.type || car.category}
+              </span>
             </div>
 
             {/* Specs */}
             <div>
               <div className={sectionTitle}>Thông số kỹ thuật</div>
               <div className="grid grid-cols-2 gap-3 max-[480px]:grid-cols-1">
-                <SpecItem icon={<MdPeople size={18} />} label="Số chỗ" value={`${car.seats} chỗ ngồi`} />
-                <SpecItem icon={<MdSettings size={18} />} label="Hộp số" value={car.transmission} />
-                <SpecItem icon={car.fuel === 'Điện' ? <BsLightningChargeFill size={16} color="#2196f3" /> : <FaGasPump size={16} />} label="Nhiên liệu" value={car.fuel} />
-                <SpecItem icon={<MdDirectionsCar size={18} />} label="Loại xe" value={car.category} />
+                <SpecItem icon={<MdPeople size={18} />} label="Số chỗ" value={`${car.seats || 5} chỗ ngồi`} />
+                <SpecItem icon={<MdSettings size={18} />} label="Hộp số" value={car.transmission || 'Số tự động'} />
+                <SpecItem
+                  icon={car.fuel === 'Điện' ? <BsLightningChargeFill size={16} color="#2196f3" /> : <FaGasPump size={16} />}
+                  label="Nhiên liệu"
+                  value={car.fuel || 'Xăng'}
+                />
+                <SpecItem icon={<MdDirectionsCar size={18} />} label="Loại xe" value={car.category || car.type || 'Sedan'} />
               </div>
             </div>
 
-            {/* Map — vị trí nhận xe */}
-            {car.address && (
+            {/* Map */}
+            {(car.address || car.location) && (
               <div>
                 <div className={sectionTitle}>Vị trí nhận xe</div>
-                <CarLocationMap locationText={car.address} city="" />
+                <CarLocationMap locationText={car.address || car.location} city="" />
               </div>
             )}
 
             {/* Description */}
-            <div>
-              <div className={sectionTitle}>Mô tả xe</div>
-              <p className="text-[0.875rem] text-gray-600 leading-[1.8]">
-                {car.name} là lựa chọn tuyệt vời cho những chuyến đi trong và ngoài thành phố.
-                Xe được bảo dưỡng định kỳ, đảm bảo an toàn và thoải mái cho người lái.
-                Xe có đầy đủ các tiện nghi hiện đại, điều hòa, camera lùi, hỗ trợ đỗ xe, và hệ thống âm thanh chất lượng cao.
-              </p>
-            </div>
+            {car.description && (
+              <div>
+                <div className={sectionTitle}>Mô tả xe</div>
+                <p className="text-[0.875rem] text-gray-600 leading-[1.8]">{car.description}</p>
+              </div>
+            )}
 
             {/* Features */}
             <div>
@@ -144,14 +271,86 @@ const CarDetail = () => {
               </div>
             </div>
 
+            {/* Reviews section */}
+            <div>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                <span className="text-[0.9rem] font-bold text-gray-800">
+                  Đánh giá {reviewsMeta.total > 0 && `(${reviewsMeta.total})`}
+                </span>
+                {user && isMongoId(id) && (
+                  <button
+                    onClick={() => setShowReviewForm(p => !p)}
+                    className="text-[0.8rem] text-primary font-semibold hover:underline"
+                  >
+                    {showReviewForm ? 'Hủy' : '+ Viết đánh giá'}
+                  </button>
+                )}
+              </div>
+
+              {showReviewForm && (
+                <form onSubmit={handleReviewSubmit} className="bg-gray-50 rounded-xl p-4 mb-4 flex flex-col gap-3 border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[0.82rem] text-gray-600 font-medium">Điểm:</span>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                      >
+                        <FaStar size={20} color={n <= reviewForm.rating ? '#f59e0b' : '#e5e7eb'} />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Nhận xét của bạn..."
+                    value={reviewForm.comment}
+                    onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[0.85rem] outline-none focus:border-primary resize-none"
+                  />
+                  {reviewError && <p className="text-red-500 text-[0.8rem]">{reviewError}</p>}
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="self-end px-5 py-2 bg-primary text-white rounded-lg text-[0.85rem] font-semibold hover:bg-primary-dark transition-colors disabled:opacity-60"
+                  >
+                    {reviewSubmitting ? 'Đang gửi...' : 'Gửi đánh giá'}
+                  </button>
+                </form>
+              )}
+
+              {reviewsLoading && <p className="text-gray-400 text-[0.82rem] py-2">Đang tải đánh giá...</p>}
+
+              {!reviewsLoading && reviews.length === 0 && (
+                <p className="text-gray-400 text-[0.82rem] py-2">Chưa có đánh giá nào.</p>
+              )}
+
+              {reviews.map(r => (
+                <div key={r._id} className="border-b border-gray-100 py-3 last:border-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[0.75rem] font-bold shrink-0">
+                      {(r.user?.name || 'U')[0]}
+                    </div>
+                    <span className="text-[0.85rem] font-semibold text-gray-800">{r.user?.name || 'Ẩn danh'}</span>
+                    <StarRow rating={r.rating} />
+                  </div>
+                  {r.comment && <p className="text-[0.82rem] text-gray-600 ml-9">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+
             {/* Terms */}
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="font-bold text-[0.88rem] text-gray-800 mb-2">Điều khoản</div>
-              <div className="text-[0.8rem] font-semibold text-gray-600 mb-1.5">Quy định khác:</div>
               <div className="text-[0.8rem] text-gray-600 leading-[1.8] flex flex-col gap-0.5">
-                {['Sử dụng xe đúng mục đích.','Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.','Không sử dụng xe thuê để cầm cố, thế chấp.','Không hút thuốc, nhả kẹo cao su, xả rác trong xe.','Không chở hàng quốc cấm dễ cháy nổ.','Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !'].map((t,i) => (
-                  <p key={i}>– {t}</p>
-                ))}
+                {[
+                  'Sử dụng xe đúng mục đích.',
+                  'Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.',
+                  'Không sử dụng xe thuê để cầm cố, thế chấp.',
+                  'Không hút thuốc, nhả kẹo cao su, xả rác trong xe.',
+                  'Không chở hàng quốc cấm dễ cháy nổ.',
+                  'Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !',
+                ].map((t, i) => <p key={i}>– {t}</p>)}
               </div>
             </div>
           </div>
@@ -161,12 +360,15 @@ const CarDetail = () => {
         <div className="sticky top-[76px]">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-[1.8rem] font-extrabold text-primary">{car.price.toLocaleString()}K</span>
-              <span className="text-[0.9rem] text-gray-500">/ngày</span>
+              <span className="text-[1.8rem] font-extrabold text-primary">
+                {car.price ? car.price.toLocaleString() : '—'}
+                {car.currency === 'VND' ? 'đ' : car.currency || 'K'}
+              </span>
+              <span className="text-[0.9rem] text-gray-500">/{car.chargeUnit === 'day' ? 'ngày' : car.chargeUnit}</span>
             </div>
             <div className="h-px bg-gray-100 my-4" />
 
-            {[{ label: 'Thời gian nhận xe', def: '2026-02-24T15:00' }, { label: 'Thời gian trả xe', def: '2026-02-26T19:00' }].map(({ label, def }) => (
+            {[{ label: 'Thời gian nhận xe', def: '2026-04-02T15:00' }, { label: 'Thời gian trả xe', def: '2026-04-04T19:00' }].map(({ label, def }) => (
               <div key={label} className="mb-3">
                 <div className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{label}</div>
                 <input type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
@@ -177,8 +379,8 @@ const CarDetail = () => {
 
             <div className="flex flex-col gap-2 mb-4">
               {[
-                [`${car.price.toLocaleString()}K × 2 ngày`, `${(car.price * 2).toLocaleString()}K`],
-                ['Phí dịch vụ (5%)', `${Math.round(car.price * 2 * 0.05).toLocaleString()}K`],
+                [`${car.price ? car.price.toLocaleString() : 0} × 2 ngày`, `${car.price ? (car.price * 2).toLocaleString() : 0}`],
+                ['Phí dịch vụ (5%)', `${car.price ? Math.round(car.price * 2 * 0.05).toLocaleString() : 0}`],
                 ['Bảo hiểm', 'Miễn phí'],
               ].map(([label, val]) => (
                 <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
@@ -189,7 +391,10 @@ const CarDetail = () => {
               <div className="h-px bg-gray-100 my-1" />
               <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
                 <span>Tổng cộng</span>
-                <span className="text-primary">{(car.price * 2 + Math.round(car.price * 2 * 0.05)).toLocaleString()}K</span>
+                <span className="text-primary">
+                  {car.price ? (car.price * 2 + Math.round(car.price * 2 * 0.05)).toLocaleString() : 0}
+                  {car.currency === 'VND' ? 'đ' : 'K'}
+                </span>
               </div>
             </div>
 
@@ -198,14 +403,13 @@ const CarDetail = () => {
             </button>
             <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
 
-            {/* Owner */}
             <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
                 {car.showroom ? car.showroom[0] : 'C'}
               </div>
               <div>
                 <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
-                <div className="text-[0.75rem] text-gray-400">⭐ 4.9 · Phản hồi trong 5 phút</div>
+                <div className="text-[0.75rem] text-gray-400">⭐ {avgRating} · Phản hồi trong 5 phút</div>
               </div>
             </div>
           </div>

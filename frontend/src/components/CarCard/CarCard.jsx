@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaHeart, FaRegHeart, FaStar, FaMapMarkerAlt, FaGasPump, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
+import favoriteService from '../../services/favoriteService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CarColorBg = ({ color, name }) => {
   const hue = Math.abs(
@@ -34,11 +36,29 @@ const StarRating = ({ rating }) => (
   </div>
 );
 
+const isMongoId = (str) => /^[a-f\d]{24}$/i.test(String(str || ''));
+
 const CarCard = ({ car }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
-  const handleLike = (e) => { e.stopPropagation(); setLiked(!liked); };
+  const handleLike = async (e) => {
+    e.stopPropagation();
+    if (!user) { navigate('/login'); return; }
+    if (!isMongoId(car.id)) { setLiked(p => !p); return; }
+    setLikeLoading(true);
+    try {
+      const res = await favoriteService.toggle(car.id);
+      setLiked(res.favorited);
+    } catch {
+      setLiked(p => !p);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
   const handleClick = () => { navigate(`/xe/${car.id}`); };
 
   const isOwner = car.type === 'Gặp chủ xe';
@@ -61,8 +81,9 @@ const CarCard = ({ car }) => {
 
         {/* Favorite */}
         <button
-          className={`absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform z-[2] hover:scale-110 ${liked ? 'text-red-500' : 'text-gray-400'}`}
+          className={`absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform z-[2] hover:scale-110 ${liked ? 'text-red-500' : 'text-gray-400'} ${likeLoading ? 'opacity-50 cursor-wait' : ''}`}
           onClick={handleLike}
+          disabled={likeLoading}
           aria-label="Yêu thích"
         >
           {liked ? <FaHeart size={14} /> : <FaRegHeart size={14} />}

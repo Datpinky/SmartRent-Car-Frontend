@@ -1,13 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import authService from '../services/authService';
 
 const AuthContext = createContext(null);
-
-const MOCK_USERS = [
-  { id: 1, email: 'admin@smartrent.com', password: '123456', role: 'admin', name: 'Admin SmartRent', phone: '0900000001' },
-  { id: 2, email: 'showroom@smartrent.com', password: '123456', role: 'showroom', name: 'Showroom Minh Hoàng', phone: '0900000002', showroomId: 1 },
-  { id: 3, email: 'owner@smartrent.com', password: '123456', role: 'owner', name: 'Nguyễn Văn Khoa', phone: '0900000003' },
-  { id: 4, email: 'user@smartrent.com', password: '123456', role: 'renter', name: 'Trần Thị Mai', phone: '0900000004' },
-];
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -23,20 +17,38 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
-    const found = MOCK_USERS.find(u => u.email === email && u.password === password);
-    if (found) {
-      const { password: _, ...userData } = found;
-      setUser(userData);
-      localStorage.setItem('smartrent_user', JSON.stringify(userData));
-      return { success: true, user: userData };
+  const login = async (email, password) => {
+    try {
+      const { user: apiUser } = await authService.login(email, password);
+      setUser(apiUser);
+      localStorage.setItem('smartrent_user', JSON.stringify(apiUser));
+      return { success: true, user: apiUser };
+    } catch (err) {
+      return { success: false, error: err.message || 'Email hoặc mật khẩu không đúng' };
     }
-    return { success: false, error: 'Email hoặc mật khẩu không đúng' };
+  };
+
+  /**
+   * Register consumer: account_type 'renter' | 'owner' → backend user | owner.
+   */
+  const register = async (name, email, password, phone, account_type = 'renter') => {
+    try {
+      await authService.registerConsumer({
+        name,
+        email,
+        password,
+        phone,
+        account_type,
+      });
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
   const logout = () => {
+    authService.logout();
     setUser(null);
-    localStorage.removeItem('smartrent_user');
   };
 
   const updateUser = (updates) => {
@@ -46,7 +58,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
