@@ -24,6 +24,24 @@ const STATUS_MAP = {
   reserved: 'Đã đặt',
 };
 
+/** Bỏ URL ảnh demo/seed không tồn tại (vd. cdn.example.com) — tránh lỗi net::ERR_NAME_NOT_RESOLVED */
+export function sanitizeVehicleImageUrl(url) {
+  if (url == null || typeof url !== 'string') return '';
+  const t = url.trim();
+  if (!t) return '';
+  try {
+    const u = new URL(t);
+    const host = u.hostname.toLowerCase();
+    if (host === 'example.com' || host === 'cdn.example.com' || host.endsWith('.example.com')) {
+      return '';
+    }
+  } catch {
+    // Đường dẫn tương đối hoặc không parse được — giữ nguyên
+    return t;
+  }
+  return t;
+}
+
 /**
  * Maps a backend Vehicle document to the shape expected by frontend components.
  * This is the central adapter – update here if either schema changes.
@@ -34,7 +52,8 @@ export function mapVehicle(v) {
     [v.vehicle_brand || v.brand, v.vehicle_model || v.model].filter(Boolean).join(' ') ||
     'Xe không tên';
 
-  const images = [...(v.vehicle_images_paths || []), ...(v.images || [])].filter(Boolean);
+  const rawImages = [...(v.vehicle_images_paths || []), ...(v.images || [])].filter(Boolean);
+  const images = rawImages.map(sanitizeVehicleImageUrl).filter(Boolean);
 
   return {
     // Identifiers (use MongoDB _id as primary)

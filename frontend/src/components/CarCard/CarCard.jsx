@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaHeart, FaRegHeart, FaStar, FaMapMarkerAlt, FaGasPump, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar } from 'react-icons/md';
@@ -43,6 +43,11 @@ const CarCard = ({ car }) => {
   const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [car.id, car.image]);
 
   const handleLike = async (e) => {
     e.stopPropagation();
@@ -73,10 +78,17 @@ const CarCard = ({ car }) => {
     >
       {/* Image */}
       <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16/10' }}>
-        {car.image
-          ? <img src={car.image} alt={car.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105" />
-          : <CarColorBg color={car.color} name={car.name} />
-        }
+        {car.image && !imgFailed ? (
+          <img
+            src={car.image}
+            alt={car.name}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <CarColorBg color={car.color} name={car.name} />
+        )}
         <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
 
         {/* Favorite */}
