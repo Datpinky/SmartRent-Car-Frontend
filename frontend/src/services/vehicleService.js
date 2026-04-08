@@ -142,6 +142,17 @@ export const vehicleService = {
   },
 
   /**
+   * Update a vehicle (requires auth; only the owner can update).
+   * payload fields: vehicle_brand, vehicle_model, vehicle_type, vehicle_plate_number,
+   *   number_of_seats, transmission, fuel_type, vehicle_hire_rate_in_figures,
+   *   vehicle_images_paths, description, vehicle_engine_number, vehicle_identification_number
+   */
+  async update(vehicleId, payload) {
+    const res = await apiClient.put(`/api/vehicles/updateVehicle/${vehicleId}`, payload);
+    return mapVehicle(res.data.data);
+  },
+
+  /**
    * Delete a vehicle by id (requires auth; currently no role guard in backend).
    */
   async deleteById(vehicleId) {

@@ -21,7 +21,7 @@ const ShowroomProfile = () => {
           <h1 className="page-title">Hồ sơ Showroom</h1>
           <p className="page-subtitle">Quản lý thông tin và cài đặt showroom</p>
         </div>
-        <button className="btn-primary" onClick={handleSave}><FaSave /> {saved ? 'Đã lưu!' : 'Lưu thay đổi'}</button>
+        <button type="button" className="btn-primary" onClick={handleSave}><FaSave aria-hidden="true" /> {saved ? 'Đã lưu!' : 'Lưu thay đổi'}</button>
       </div>
 
       {/* Header Card */}
@@ -30,14 +30,14 @@ const ShowroomProfile = () => {
         <div>
           <div className="flex items-center gap-2" style={{ fontSize: '1.2rem', fontWeight: 800 }}>
             {form.name}
-            <FaMapMarkerAlt className="shrink-0" style={{ fontSize: '0.9rem', opacity: 0.85 }} />
+            <FaMapMarkerAlt aria-hidden="true" className="shrink-0" style={{ fontSize: '0.9rem', opacity: 0.85 }} />
           </div>
           <div style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: 4 }}>
             {form.address}
           </div>
           <div className="flex items-center gap-4 mt-2 text-[0.8rem] opacity-80">
             <div className="flex items-center gap-1.5">
-              <FaStar className="shrink-0 text-amber-500" />
+              <FaStar aria-hidden="true" className="shrink-0 text-amber-500" />
               <span>4.8 · 156 đánh giá</span>
             </div>
             <span>45 xe · 312 chuyến</span>
@@ -49,7 +49,7 @@ const ShowroomProfile = () => {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 10, padding: 4, marginBottom: 20, width: 'fit-content' }}>
         {[['info', 'Thông tin cơ bản'], ['policy', 'Chính sách'], ['logo', 'Logo & Hình ảnh']].map(([key, label]) => (
-          <button key={key} onClick={() => setActiveTab(key)} style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: activeTab === key ? '#fff' : 'transparent', fontWeight: 600, fontSize: '0.82rem', color: activeTab === key ? '#111827' : '#6b7280', cursor: 'pointer', boxShadow: activeTab === key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+          <button type="button" key={key} onClick={() => setActiveTab(key)} style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: activeTab === key ? '#fff' : 'transparent', fontWeight: 600, fontSize: '0.82rem', color: activeTab === key ? '#111827' : '#6b7280', cursor: 'pointer', boxShadow: activeTab === key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
             {label}
           </button>
         ))}
@@ -64,34 +64,56 @@ const ShowroomProfile = () => {
               ['Giờ mở cửa', 'openHours'], ['Giấy phép kinh doanh', 'license'],
             ].map(([label, key]) => (
               <div key={key}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>{label}</label>
-                <input value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                  style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
+                <label htmlFor={`sp-${key}`} style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>{label}</label>
+                <input
+                  id={`sp-${key}`}
+                  value={form[key]}
+                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                />
               </div>
             ))}
               <div style={{ gridColumn: 'span 2' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Địa chỉ</label>
-                <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                  style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
+                <label htmlFor="sp-address" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Địa chỉ</label>
+                <input
+                  id="sp-address"
+                  value={form.address}
+                  onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                />
               </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Mô tả</label>
-              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
-                style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+              <label htmlFor="sp-description" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Mô tả</label>
+              <textarea
+                id="sp-description"
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                rows={3}
+                className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }}
+              />
             </div>
           </div>
         )}
         {activeTab === 'policy' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {[
-              ['Yêu cầu đặt cọc', '20% tổng giá trị chuyến đi'],
-              ['Phụ phí vượt km', '3.000đ/km sau 200km'],
-              ['Phụ phí trả muộn', '50.000đ/giờ'],
-              ['Chính sách hủy đặt', 'Miễn phí trước 24h, 50% sau 24h'],
-            ].map(([label, val]) => (
-              <div key={label}>
-                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>{label}</label>
-                <input defaultValue={val} style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
+              ['Yêu cầu đặt cọc', '20% tổng giá trị chuyến đi', 'deposit-requirement'],
+              ['Phụ phí vượt km', '3.000đ/km sau 200km', 'extra-km-surcharge'],
+              ['Phụ phí trả muộn', '50.000đ/giờ', 'late-return-surcharge'],
+              ['Chính sách hủy đặt', 'Miễn phí trước 24h, 50% sau 24h', 'cancellation-policy'],
+            ].map(([label, val, name]) => (
+              <div key={name}>
+                <label htmlFor={`sp-${name}`} style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>{label}</label>
+                <input
+                  id={`sp-${name}`}
+                  name={name}
+                  defaultValue={val}
+                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '9px 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                />
               </div>
             ))}
           </div>

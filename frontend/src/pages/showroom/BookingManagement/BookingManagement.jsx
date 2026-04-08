@@ -30,18 +30,18 @@ const BookingManagement = () => {
     { key: 'from', label: 'Nhận xe', accessor: 'from' },
     { key: 'to',   label: 'Trả xe',  accessor: 'to' },
     { key: 'days', label: 'Ngày', accessor: 'days', align: 'center' },
-    { key: 'total', label: 'Tổng tiền', render: row => <span style={{ fontWeight: 700, color: '#00b14f', whiteSpace: 'nowrap' }}>{row.total.toLocaleString()}đ</span>, sortable: true, accessor: 'total' },
+    { key: 'total', label: 'Tổng tiền', render: row => <span className="tabular-nums" style={{ fontWeight: 700, color: '#00b14f', whiteSpace: 'nowrap' }}>{row.total.toLocaleString()}đ</span>, sortable: true, accessor: 'total' },
     { key: 'status', label: 'Trạng thái', render: row => <StatusBadge status={row.status} /> },
     { key: 'actions', label: 'Hành động', render: row => (
       <div style={{ display: 'flex', gap: 5 }}>
-        <button className="btn-icon" onClick={() => setViewModal(row)} title="Chi tiết"><FaEye /></button>
+        <button type="button" className="btn-icon" onClick={() => setViewModal(row)} title="Chi tiết" aria-label="Xem chi tiết đặt xe"><FaEye aria-hidden="true" /></button>
         {row.status === 'pending' && <>
-          <button className="btn-icon" style={{ borderColor: '#059669', color: '#059669' }} onClick={() => approve(row.id)} title="Duyệt"><FaCheckCircle /></button>
-          <button className="btn-icon danger" onClick={() => setRejectModal(row)} title="Từ chối"><FaTimes /></button>
+          <button type="button" className="btn-icon" style={{ borderColor: '#059669', color: '#059669' }} onClick={() => approve(row.id)} title="Duyệt" aria-label="Phê duyệt"><FaCheckCircle aria-hidden="true" /></button>
+          <button type="button" className="btn-icon danger" onClick={() => setRejectModal(row)} title="Từ chối" aria-label="Từ chối"><FaTimes aria-hidden="true" /></button>
         </>}
         {['approved', 'delivering', 'renting', 'returned'].includes(row.status) && (
-          <button className="btn-icon" style={{ borderColor: '#2563eb', color: '#2563eb', fontSize: '0.72rem', whiteSpace: 'nowrap', padding: '5px 8px' }} onClick={() => advance(row)} title={`Chuyển sang: ${FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(row.status) + 1]]}`}>
-            <FaArrowRight />
+          <button type="button" className="btn-icon" style={{ borderColor: '#2563eb', color: '#2563eb', fontSize: '0.72rem', whiteSpace: 'nowrap', padding: '5px 8px' }} onClick={() => advance(row)} aria-label={`Chuyển sang: ${FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(row.status) + 1]]}`} title={`Chuyển sang: ${FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(row.status) + 1]]}`}>
+            <FaArrowRight aria-hidden="true" />
           </button>
         )}
       </div>
@@ -68,7 +68,7 @@ const BookingManagement = () => {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: bookings.some(b => b.status === s) ? '#00b14f' : '#e5e7eb' }} />
                 <span style={{ fontSize: '0.68rem', color: '#6b7280', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>{FLOW_LABELS[s]}</span>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#111827' }}>{bookings.filter(b => b.status === s).length}</span>
+                <span className="tabular-nums" style={{ fontSize: '0.7rem', fontWeight: 700, color: '#111827' }}>{bookings.filter(b => b.status === s).length}</span>
               </div>
               {i < BOOKING_FLOW.length - 1 && <div style={{ height: 1, background: '#e5e7eb', flex: 2 }} />}
             </React.Fragment>
@@ -79,14 +79,14 @@ const BookingManagement = () => {
       {/* Filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         {['all', 'pending', 'approved', 'renting', 'completed', 'cancelled'].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} style={{ padding: '5px 12px', borderRadius: 50, border: '1.5px solid', borderColor: statusFilter === s ? '#00b14f' : '#e5e7eb', background: statusFilter === s ? '#00b14f' : '#fff', color: statusFilter === s ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+          <button type="button" key={s} onClick={() => setStatusFilter(s)} style={{ padding: '5px 12px', borderRadius: 50, border: '1.5px solid', borderColor: statusFilter === s ? '#00b14f' : '#e5e7eb', background: statusFilter === s ? '#00b14f' : '#fff', color: statusFilter === s ? '#fff' : '#374151', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
             {s === 'all' ? 'Tất cả' : FLOW_LABELS[s] || s}
-            {s !== 'all' && <span style={{ marginLeft: 5, opacity: 0.7 }}>({bookings.filter(b => b.status === s).length})</span>}
+            {s !== 'all' && <span className="tabular-nums" style={{ marginLeft: 5, opacity: 0.7 }}>({bookings.filter(b => b.status === s).length})</span>}
           </button>
         ))}
       </div>
 
-      <DataTable columns={columns} data={filtered} searchPlaceholder="Tìm theo tên khách, xe..." />
+      <DataTable columns={columns} data={filtered} searchPlaceholder="Tìm theo tên khách, xe…" />
 
       {/* Detail Modal */}
       <Modal isOpen={!!viewModal} onClose={() => setViewModal(null)} title="Chi tiết đặt xe" width={500}>
@@ -112,12 +112,12 @@ const BookingManagement = () => {
             ))}
             <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
               {viewModal.status === 'pending' && <>
-                <button className="btn-danger" style={{ flex: 1 }} onClick={() => { reject(viewModal.id); setViewModal(null); }}>Từ chối</button>
-                <button className="btn-success" style={{ flex: 1 }} onClick={() => { approve(viewModal.id); setViewModal(null); }}>Phê duyệt</button>
+                <button type="button" className="btn-danger" style={{ flex: 1 }} onClick={() => { reject(viewModal.id); setViewModal(null); }}>Từ chối</button>
+                <button type="button" className="btn-success" style={{ flex: 1 }} onClick={() => { approve(viewModal.id); setViewModal(null); }}>Phê duyệt</button>
               </>}
               {['approved', 'delivering', 'renting', 'returned'].includes(viewModal.status) && (
-                <button className="btn-primary" style={{ flex: 1 }} onClick={() => { advance(viewModal); setViewModal(null); }}>
-                  Chuyển trạng thái: {FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(viewModal.status) + 1]]} <FaArrowRight />
+                <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => { advance(viewModal); setViewModal(null); }}>
+                  Chuyển trạng thái: {FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(viewModal.status) + 1]]} <FaArrowRight aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -127,7 +127,7 @@ const BookingManagement = () => {
 
       {/* Reject confirm */}
       <Modal isOpen={!!rejectModal} onClose={() => setRejectModal(null)} title="Xác nhận từ chối đặt xe" width={420}
-        footer={<><button className="btn-outline" onClick={() => setRejectModal(null)}>Hủy bỏ</button><button className="btn-danger" onClick={() => { reject(rejectModal.id); setRejectModal(null); }}>Xác nhận từ chối</button></>}
+        footer={<><button type="button" className="btn-outline" onClick={() => setRejectModal(null)}>Hủy bỏ</button><button type="button" className="btn-danger" onClick={() => { reject(rejectModal.id); setRejectModal(null); }}>Xác nhận từ chối</button></>}
       >
         {rejectModal && <p style={{ fontSize: '0.85rem', color: '#374151' }}>Bạn đang từ chối booking <b>{rejectModal.id}</b> của khách hàng <b>{rejectModal.renter}</b>. Hành động này không thể hoàn tác.</p>}
       </Modal>

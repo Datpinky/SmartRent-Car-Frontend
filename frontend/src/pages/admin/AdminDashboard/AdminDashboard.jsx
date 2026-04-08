@@ -4,17 +4,12 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaEye } from 'react-icons/fa';
-import { MdWarning } from 'react-icons/md';
 import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
 import { REVENUE_MONTHLY, USER_GROWTH, VEHICLE_STATUS_PIE, MOCK_BOOKINGS } from '../../../components/data/mockDashboard';
 import { useNavigate } from 'react-router-dom';
 
-const ALERTS = [
-  { id: 1, type: 'warning', msg: 'Showroom "Xe Tốt Thủ Đức" đang chờ xác minh', action: '/admin/showrooms', actionLabel: 'Xem ngay' },
-  { id: 2, type: 'info',    msg: 'Hệ thống AI phát hiện 1 hư hỏng mới trên Honda CR-V BKS 51H-23456', action: '/admin/reports', actionLabel: 'Xem báo cáo' },
-  { id: 3, type: 'warning', msg: '3 hồ sơ eKYC đang chờ xét duyệt', action: '/admin/users', actionLabel: 'Xét duyệt' },
-];
+const currentMonthYear = new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(new Date());
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload) return null;
@@ -39,7 +34,7 @@ const AdminDashboard = () => {
           <h1 className="page-title">Tổng quan hệ thống</h1>
           <p className="page-subtitle">Chào mừng trở lại! Đây là tóm tắt hoạt động hệ thống SmartRent Car.</p>
         </div>
-        <div className="page-header-date">Tháng 3, 2026</div>
+        <div className="page-header-date">{currentMonthYear}</div>
       </div>
 
       {/* Stat Cards */}
@@ -52,22 +47,6 @@ const AdminDashboard = () => {
         <StatCard title="Chờ duyệt"           value="5"       icon={<FaExclamationTriangle />} color="#f59e0b" subtext="showroom + xe" />
       </div>
 
-      {/* Alerts */}
-      {ALERTS.length > 0 && (
-        <div className="alert-section">
-          <div className="section-title">Cảnh báo cần xử lý</div>
-          <div className="alert-list">
-            {ALERTS.map(a => (
-              <div key={a.id} className={`alert-item ${a.type}`}>
-                <MdWarning className="alert-icon" />
-                <span className="alert-msg">{a.msg}</span>
-                <button className="alert-action" onClick={() => navigate(a.action)}>{a.actionLabel}</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Charts row */}
       <div className="charts-grid">
         {/* Revenue Chart */}
@@ -76,7 +55,7 @@ const AdminDashboard = () => {
             <div className="chart-title">Doanh thu & lượt đặt xe theo tháng</div>
             <div className="chart-tabs">
               {['revenue', 'bookings'].map(t => (
-                <button key={t} className={activeTab === t ? 'active' : ''} onClick={() => setActiveTab(t)}>
+                <button key={t} type="button" className={activeTab === t ? 'active' : ''} aria-pressed={activeTab === t} onClick={() => setActiveTab(t)}>
                   {t === 'revenue' ? 'Doanh thu' : 'Lượt đặt'}
                 </button>
               ))}
@@ -146,7 +125,7 @@ const AdminDashboard = () => {
       <div className="section-card" style={{ marginTop: 20 }}>
         <div className="section-header">
           <div className="section-title">Đặt xe gần đây</div>
-          <button className="btn-link" onClick={() => navigate('/admin/transactions')}>Xem tất cả <FaEye /></button>
+          <button type="button" className="btn-link" onClick={() => navigate('/admin/transactions')}>Xem tất cả <FaEye aria-hidden="true" /></button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="simple-table">
@@ -159,7 +138,7 @@ const AdminDashboard = () => {
                   <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.vehicle}</td>
                   <td>{b.from}</td>
                   <td>{b.to}</td>
-                  <td style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
+                  <td className="tabular-nums" style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
                   <td><StatusBadge status={b.status} /></td>
                 </tr>
               ))}

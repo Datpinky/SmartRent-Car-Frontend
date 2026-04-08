@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { MdDirectionsCar, MdEmail, MdLock, MdPhone } from 'react-icons/md';
+import { MdDirectionsCar, MdEmail, MdPhone } from 'react-icons/md';
+import { PasswordStrengthInput, PasswordToggleInput, passwordMeetsPolicy } from '../../../components/common/PasswordInput';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const ROLE_REDIRECTS = {
@@ -8,6 +9,14 @@ const ROLE_REDIRECTS = {
   showroom: '/showroom/dashboard',
   owner: '/owner/dashboard',
   renter: '/renter/profile',
+};
+
+/** Sau đăng nhập từ nút "Đặt xe ngay" (CarDetail) — cùng logic với BOOK_NOW_DESTINATIONS */
+const BOOK_NOW_AFTER_LOGIN = {
+  renter: '/renter/bookings',
+  admin: '/renter/bookings',
+  owner: '/owner/dashboard',
+  showroom: '/showroom/bookings',
 };
 
 const inputCls = "w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]";
@@ -28,10 +37,11 @@ const LoginFormField = ({
   extra = {},
 }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[0.8rem] font-semibold text-gray-700">{label}</label>
+    <label htmlFor={`field-${name}`} className="text-[0.8rem] font-semibold text-gray-700">{label}</label>
     <div className="relative flex items-center">
-      <Icon className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
+      <Icon aria-hidden="true" className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
       <input
+        id={`field-${name}`}
         className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
         name={name}
         type={type}
@@ -39,11 +49,13 @@ const LoginFormField = ({
         value={value}
         onChange={onChange}
         required={required}
+        aria-invalid={!!error}
+        aria-describedby={error ? `field-${name}-error` : undefined}
         {...extra}
       />
     </div>
     {error && (
-      <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">
+      <div id={`field-${name}-error`} role="alert" className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">
         ⚠ {error}
       </div>
     )}
@@ -85,6 +97,10 @@ const Login = () => {
     setLoginError(''); setRegisterError(''); setConfirmError(''); setRegisterSuccess('');
 
     if (tab === 'register') {
+      if (!passwordMeetsPolicy(form.password)) {
+        setRegisterError('Mật khẩu chưa đủ độ mạnh. Vui lòng đáp ứng đủ các yêu cầu bên dưới ô mật khẩu.');
+        return;
+      }
       if (form.password !== form.confirmPassword) { setConfirmError('Mật khẩu xác nhận không khớp!'); return; }
       const phoneDigits = (form.phone || '').replace(/\D/g, '');
       if (phoneDigits.length !== 10) { setRegisterError('Số điện thoại phải có đúng 10 chữ số.'); return; }
@@ -111,6 +127,11 @@ const Login = () => {
     const result = await login(form.email, form.password);
     setSubmitting(false);
     if (result.success) {
+      if (location.state?.bookNow) {
+        const dest = BOOK_NOW_AFTER_LOGIN[result.user.role] || '/renter/bookings';
+        setTimeout(() => navigate(dest, { replace: true }), 0);
+        return;
+      }
       const from = location.state?.from?.pathname;
       const redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
       setTimeout(() => navigate(redirect, { replace: true }), 0);
@@ -130,7 +151,7 @@ const Login = () => {
         <div className="relative z-[1] max-w-[440px]">
           <div className="flex items-center gap-3 text-[1.75rem] font-black text-white mb-10">
             <div className="w-11 h-11 bg-primary rounded-full flex items-center justify-center">
-              <MdDirectionsCar size={22} color="white" />
+              <MdDirectionsCar aria-hidden="true" size={22} color="white" />
             </div>
             SmartRent Car
           </div>
@@ -146,33 +167,41 @@ const Login = () => {
 
       {/* Right panel */}
       <div className="w-full md:w-[480px] flex flex-col justify-center bg-white px-12 py-[60px] max-[480px]:px-6 max-[480px]:py-10">
-        <div className="text-[1.75rem] font-extrabold text-gray-900 mb-2">
-          {tab === 'login' ? 'Chào mừng trở lại!' : 'Tạo tài khoản'}
-        </div>
+          <h1 className="text-[1.75rem] font-extrabold text-gray-900 mb-2">
+            {tab === 'login' ? 'Chào mừng trở lại!' : 'Tạo tài khoản'}
+          </h1>
         <div className="text-[0.875rem] text-gray-500 mb-8">
           {tab === 'login' && 'Đăng nhập để tiếp tục thuê xe'}
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b-2 border-gray-200 mb-7">
+        <div role="tablist" className="flex border-b-2 border-gray-200 mb-7">
           {['login', 'register'].map(t => (
-            <div
+            <button
               key={t}
-              className={`flex-1 py-2.5 text-center text-[0.9rem] font-semibold cursor-pointer border-b-2 -mb-0.5 transition-all
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              className={`flex-1 py-2.5 text-center text-[0.9rem] font-semibold cursor-pointer border-b-2 -mb-0.5 transition-[color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary
                 ${tab === t ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
               onClick={() => setTab(t)}
             >
               {t === 'login' ? 'Đăng nhập' : 'Đăng ký'}
-            </div>
+            </button>
           ))}
         </div>
 
-        {registerSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700 text-[0.82rem] mb-2.5">{registerSuccess}</div>
-        )}
-        {loginError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.82rem] mb-2.5">{loginError}</div>
-        )}
+        <div aria-live="polite" aria-atomic="true" className="space-y-2">
+          {registerSuccess && (
+            <div role="status" className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700 text-[0.82rem]">{registerSuccess}</div>
+          )}
+          {loginError && (
+            <div role="alert" className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.82rem]">{loginError}</div>
+          )}
+          {tab === 'register' && registerError && (
+            <div role="alert" className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.82rem]">{registerError}</div>
+          )}
+        </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {tab === 'register' && (
@@ -194,7 +223,6 @@ const Login = () => {
               placeholder="0901234567"
               value={form.phone}
               onChange={handleChange}
-              error={registerError}
               extra={{ inputMode: 'numeric', autoComplete: 'tel', maxLength: 10 }}
             />
           )}
@@ -236,39 +264,48 @@ const Login = () => {
             onChange={handleChange}
             extra={{ autoComplete: tab === 'login' ? 'username' : 'email' }}
           />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
-            <div className="relative flex items-center">
-              <MdLock className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
-              <input
-                className={inputCls}
+          {tab === 'login' && (
+            <>
+              <PasswordToggleInput
+                id="login-password"
                 name="password"
-                type="password"
-                placeholder="Nhập mật khẩu"
+                label="Mật khẩu"
                 value={form.password}
                 onChange={handleChange}
+                placeholder="Nhập mật khẩu"
+                autoComplete="current-password"
                 required
               />
-            </div>
-            {tab === 'login' && (
-              <div className="text-[0.78rem] text-primary cursor-pointer text-right font-medium">Quên mật khẩu?</div>
-            )}
-          </div>
+              <button type="button" className="text-[0.78rem] text-primary text-right font-medium -mt-1 focus-visible:outline-none focus-visible:underline">Quên mật khẩu?</button>
+            </>
+          )}
           {tab === 'register' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.8rem] font-semibold text-gray-700">Xác nhận mật khẩu</label>
-              <div className="relative flex items-center">
-                <MdLock className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
-                <input
-                  className={`${inputCls} ${confirmError ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Nhập lại mật khẩu"
-                  value={form.confirmPassword}
-                  onChange={(e) => { handleChange(e); setConfirmError(''); }}
-                  required
-                />
-              </div>
+              <label className="text-[0.8rem] font-semibold text-gray-700" htmlFor="register-password">
+                Mật khẩu
+              </label>
+              <PasswordStrengthInput
+                id="register-password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                error={!!registerError && registerError.includes('độ mạnh')}
+              />
+            </div>
+          )}
+          {tab === 'register' && (
+            <div className="flex flex-col gap-1.5">
+              <PasswordToggleInput
+                id="register-confirm-password"
+                name="confirmPassword"
+                label="Xác nhận mật khẩu"
+                value={form.confirmPassword}
+                onChange={(e) => { handleChange(e); setConfirmError(''); }}
+                placeholder="Nhập lại mật khẩu"
+                error={!!confirmError}
+                autoComplete="new-password"
+                required
+              />
               {confirmError && (
                 <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">⚠ {confirmError}</div>
               )}
@@ -280,14 +317,14 @@ const Login = () => {
             disabled={submitting}
             className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
           >
-            {submitting ? 'Đang xử lý...' : (tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')}
+            {submitting ? 'Đang xử lý…' : (tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')}
           </button>
         </form>
 
         <div className="text-center text-[0.83rem] text-gray-500 mt-5 space-y-2">
           {tab === 'login'
-            ? <>Chưa có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('register')}>Đăng ký ngay</span></>
-            : <>Đã có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('login')}>Đăng nhập</span></>
+            ? <>Chưa có tài khoản? <button type="button" className="text-primary font-semibold focus-visible:outline-none focus-visible:underline" onClick={() => setTab('register')}>Đăng ký ngay</button></>
+            : <>Đã có tài khoản? <button type="button" className="text-primary font-semibold focus-visible:outline-none focus-visible:underline" onClick={() => setTab('login')}>Đăng nhập</button></>
           }
           {tab === 'register' && (
             <div>

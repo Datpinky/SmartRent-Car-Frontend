@@ -53,7 +53,7 @@ const ChartTooltip = ({ active, payload, label }) => {
       {payload.map((p) => (
         <p key={p.dataKey} style={{ color: p.color }} className="flex items-center gap-1.5">
           <span className="inline-block w-2 h-2 rounded-full" style={{ background: p.color }} />
-          {p.name}: <span className="font-bold">{fmtNum(p.value)}{p.name?.includes('thu') || p.name?.includes('Doanh') ? 'M' : ''}</span>
+          {p.name}: <span className="font-bold tabular-nums">{fmtNum(p.value)}{p.name?.includes('thu') || p.name?.includes('Doanh') ? 'M' : ''}</span>
         </p>
       ))}
     </div>
@@ -70,10 +70,10 @@ const SummaryBar = ({ period }) => {
   const newCustomers = 18;
 
   const kpis = [
-    { label: 'Doanh thu', value: fmtVND(totalRevenue * 1_000_000), trend: 14.2, up: true, icon: <DollarSign size={14} /> },
-    { label: 'Tổng đặt xe', value: fmtNum(totalBookings), trend: 9.1, up: true, icon: <CalendarCheck size={14} /> },
-    { label: 'Giá trị TB/đơn', value: fmtVND(avgOrder), trend: -2.3, up: false, icon: <BarChart2 size={14} /> },
-    { label: 'Khách hàng mới', value: fmtNum(newCustomers), trend: 22.0, up: true, icon: <Users size={14} /> },
+    { label: 'Doanh thu', value: fmtVND(totalRevenue * 1_000_000), trend: 14.2, up: true, icon: <DollarSign size={14} aria-hidden="true" /> },
+    { label: 'Tổng đặt xe', value: fmtNum(totalBookings), trend: 9.1, up: true, icon: <CalendarCheck size={14} aria-hidden="true" /> },
+    { label: 'Giá trị TB/đơn', value: fmtVND(avgOrder), trend: -2.3, up: false, icon: <BarChart2 size={14} aria-hidden="true" /> },
+    { label: 'Khách hàng mới', value: fmtNum(newCustomers), trend: 22.0, up: true, icon: <Users size={14} aria-hidden="true" /> },
   ];
 
   return (
@@ -85,10 +85,10 @@ const SummaryBar = ({ period }) => {
           </span>
           <div className="min-w-0">
             <p className="text-xs text-gray-400 font-medium">{k.label}</p>
-            <p className="text-[1.1rem] font-extrabold text-gray-900 leading-tight">{k.value}</p>
+            <p className="text-[1.1rem] font-extrabold text-gray-900 leading-tight tabular-nums">{k.value}</p>
             <span className={`inline-flex items-center gap-0.5 text-[0.65rem] font-bold px-1.5 py-px rounded-full ${k.up ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}`}>
-              {k.up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-              {Math.abs(k.trend)}%
+              {k.up ? <TrendingUp size={9} aria-hidden="true" /> : <TrendingDown size={9} aria-hidden="true" />}
+              <span className="tabular-nums">{Math.abs(k.trend)}%</span>
             </span>
           </div>
         </div>
@@ -122,7 +122,7 @@ const Variant1Layout = ({ period, navigate }) => {
     { key: 'to', label: 'Trả xe', accessor: 'to' },
     {
       key: 'total', label: 'Tổng', accessor: 'total',
-      render: r => <span className="font-semibold text-primary">{fmtVND(r.total)}</span>
+      render: r => <span className="font-semibold text-primary tabular-nums">{fmtVND(r.total)}</span>
     },
     { key: 'status', label: 'Trạng thái', render: r => <StatusBadge status={r.status} /> },
   ];
@@ -188,10 +188,11 @@ const Variant1Layout = ({ period, navigate }) => {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <p className="text-sm font-bold text-gray-800">Đặt xe gần đây</p>
           <button
+            type="button"
             onClick={() => navigate('/showroom/bookings')}
             className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
           >
-            Xem tất cả <ArrowRight size={13} />
+            Xem tất cả <ArrowRight size={13} aria-hidden="true" />
           </button>
         </div>
         <DataTable
@@ -242,20 +243,23 @@ const Variant2Layout = ({ period }) => {
       {/* Filter toolbar */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-3.5 py-2 flex-1 min-w-[180px]">
-          <Search size={14} className="text-gray-400 shrink-0" />
+          <Search size={14} className="text-gray-400 shrink-0" aria-hidden="true" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Tìm khách thuê hoặc xe..."
-            className="bg-transparent border-none outline-none text-sm text-gray-700 w-full"
+            placeholder="Tìm khách thuê hoặc xe…"
+            name="search"
+            aria-label="Tìm kiếm"
+            className="bg-transparent border-none text-sm text-gray-700 w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
         <div className="flex items-center gap-2 border border-gray-200 rounded-full px-3.5 py-2 bg-gray-50 text-sm text-gray-600">
-          <ChevronDown size={14} className="text-gray-400" />
+          <ChevronDown size={14} className="text-gray-400" aria-hidden="true" />
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm text-gray-700 cursor-pointer"
+            aria-label="Lọc trạng thái"
+            className="bg-transparent border-none text-sm text-gray-700 cursor-pointer focus:outline-none focus-visible:ring-primary"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="pending">Đang chờ</option>
@@ -264,7 +268,7 @@ const Variant2Layout = ({ period }) => {
             <option value="cancelled">Đã hủy</option>
           </select>
         </div>
-        <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
+        <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-medium tabular-nums">
           {filteredBookings.length} kết quả
         </span>
       </div>
@@ -283,15 +287,15 @@ const Variant2Layout = ({ period }) => {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-gray-700">{f.stage}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-gray-900">{fmtNum(f.count)}</span>
+                    <span className="font-bold text-gray-900 tabular-nums">{fmtNum(f.count)}</span>
                     {f.abandon && (
-                      <span className="text-[0.62rem] text-red-400 bg-red-50 px-1.5 py-px rounded-full">-{f.abandon}</span>
+                      <span className="text-[0.62rem] text-red-400 bg-red-50 px-1.5 py-px rounded-full tabular-nums">-{f.abandon}</span>
                     )}
                   </div>
                 </div>
                 <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-700"
+                    className="h-full rounded-full transition-[width] duration-700"
                     style={{ width: `${f.pct}%`, background: f.color }}
                   />
                 </div>
@@ -299,7 +303,7 @@ const Variant2Layout = ({ period }) => {
             ))}
           </div>
           <p className="text-xs text-gray-400 mt-4">
-            Tỷ lệ hoàn tất: <span className="font-bold text-gray-700">11.5%</span>
+            Tỷ lệ hoàn tất: <span className="font-bold text-gray-700 tabular-nums">11.5%</span>
           </p>
         </div>
 
@@ -334,7 +338,7 @@ const Variant2Layout = ({ period }) => {
             {filteredBookings.slice(0, 5).map(b => (
               <div key={b.id} className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Car size={14} />
+                  <Car size={14} aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-gray-800 truncate">{b.renter}</p>
@@ -357,9 +361,9 @@ const Variant2Layout = ({ period }) => {
               <div key={v.id} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-gray-700 truncate max-w-[140px]">
-                    <span className="text-gray-400 mr-1">#{i + 1}</span>{v.name}
+                    <span className="text-gray-400 mr-1 tabular-nums">#{i + 1}</span>{v.name}
                   </span>
-                  <span className="font-bold text-gray-900 shrink-0">{v.trips} chuyến</span>
+                  <span className="font-bold text-gray-900 shrink-0 tabular-nums">{v.trips} chuyến</span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
@@ -396,7 +400,7 @@ const Variant2Layout = ({ period }) => {
               <div key={d.name} className="flex items-center gap-2 text-xs">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
                 <span className="flex-1 text-gray-600">{d.name}</span>
-                <span className="font-bold text-gray-900">{d.value}</span>
+                <span className="font-bold text-gray-900 tabular-nums">{d.value}</span>
               </div>
             ))}
           </div>
@@ -417,10 +421,10 @@ const Variant3Layout = ({ period, setPeriod }) => {
   const avgRating = (MOCK_SHOWROOM_VEHICLES.reduce((s, v) => s + v.rating, 0) / MOCK_SHOWROOM_VEHICLES.length).toFixed(1);
 
   const KPI_RAIL = [
-    { label: 'Tổng xe',     value: MOCK_SHOWROOM_VEHICLES.length,        icon: <Car size={14} />,          color: '#00b14f' },
-    { label: 'Đang thuê',   value: MOCK_SHOWROOM_VEHICLES.filter(v => v.status === 'active').length, icon: <Activity size={14} />, color: '#2563eb' },
-    { label: 'Bảo dưỡng',   value: MOCK_SHOWROOM_VEHICLES.filter(v => v.status === 'maintenance').length, icon: <Package size={14} />, color: '#d97706' },
-    { label: 'Hợp đồng đã ký', value: MOCK_CONTRACTS.filter(c => c.status === 'signed').length, icon: <CheckCircle size={14} />, color: '#7c3aed' },
+    { label: 'Tổng xe',     value: MOCK_SHOWROOM_VEHICLES.length,        icon: <Car size={14} aria-hidden="true" />,          color: '#00b14f' },
+    { label: 'Đang thuê',   value: MOCK_SHOWROOM_VEHICLES.filter(v => v.status === 'active').length, icon: <Activity size={14} aria-hidden="true" />, color: '#2563eb' },
+    { label: 'Bảo dưỡng',   value: MOCK_SHOWROOM_VEHICLES.filter(v => v.status === 'maintenance').length, icon: <Package size={14} aria-hidden="true" />, color: '#d97706' },
+    { label: 'Hợp đồng đã ký', value: MOCK_CONTRACTS.filter(c => c.status === 'signed').length, icon: <CheckCircle size={14} aria-hidden="true" />, color: '#7c3aed' },
   ];
 
   return (
@@ -437,13 +441,13 @@ const Variant3Layout = ({ period, setPeriod }) => {
             <p className="text-xs text-gray-400 mt-0.5">{showroom.address}</p>
             <div className="flex items-center gap-1.5 mt-1.5">
               <span className="flex items-center gap-0.5 text-xs font-bold text-amber-500">
-                <Star size={11} fill="currentColor" /> {avgRating}
+                <Star size={11} fill="currentColor" aria-hidden="true" /> <span className="tabular-nums">{avgRating}</span>
               </span>
               <span className="text-gray-200">·</span>
-              <span className="text-xs text-gray-400">{showroom.vehicles} xe</span>
+              <span className="text-xs text-gray-400 tabular-nums">{showroom.vehicles} xe</span>
               <span className="text-gray-200">·</span>
               <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
-                <CheckCircle size={9} /> Đã xác minh
+                <CheckCircle size={9} aria-hidden="true" /> Đã xác minh
               </span>
             </div>
           </div>
@@ -455,9 +459,11 @@ const Variant3Layout = ({ period, setPeriod }) => {
           <div className="flex flex-wrap gap-1.5">
             {PERIODS.map(p => (
               <button
+                type="button"
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-all ${
+                aria-pressed={period === p}
+                className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-colors ${
                   period === p
                     ? 'bg-primary text-white border-primary'
                     : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary'
@@ -478,7 +484,7 @@ const Variant3Layout = ({ period, setPeriod }) => {
             { label: 'Đánh giá TB', value: avgRating + '★', bg: 'bg-purple-50 text-purple-700' },
           ].map(k => (
             <span key={k.label} className={`inline-flex flex-col items-center px-3 py-2 rounded-xl text-xs font-semibold ${k.bg}`}>
-              <span className="text-[1rem] font-extrabold">{k.value}</span>
+              <span className="text-[1rem] font-extrabold tabular-nums">{k.value}</span>
               <span className="font-medium opacity-70">{k.label}</span>
             </span>
           ))}
@@ -546,7 +552,7 @@ const Variant3Layout = ({ period, setPeriod }) => {
                     {k.icon}
                   </span>
                   <span className="text-xs text-gray-600 flex-1">{k.label}</span>
-                  <span className="text-sm font-extrabold text-gray-900">{k.value}</span>
+                  <span className="text-sm font-extrabold text-gray-900 tabular-nums">{k.value}</span>
                 </div>
               ))}
             </div>
@@ -576,7 +582,7 @@ const Variant3Layout = ({ period, setPeriod }) => {
                 <div key={d.name} className="flex items-center gap-1.5 text-[0.65rem]">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
                   <span className="text-gray-600 truncate">{d.name}</span>
-                  <span className="ml-auto font-bold text-gray-900">{d.value}</span>
+                  <span className="ml-auto font-bold text-gray-900 tabular-nums">{d.value}</span>
                 </div>
               ))}
             </div>
@@ -585,8 +591,8 @@ const Variant3Layout = ({ period, setPeriod }) => {
           {/* Alerts */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Bell size={14} className="text-amber-500" />
-              <p className="text-xs font-bold text-gray-800">Cần xử lý ({alerts.length})</p>
+              <Bell size={14} className="text-amber-500" aria-hidden="true" />
+              <p className="text-xs font-bold text-gray-800">Cần xử lý (<span className="tabular-nums">{alerts.length}</span>)</p>
             </div>
             <div className="flex flex-col gap-2">
               {alerts.length === 0 && (
@@ -601,13 +607,15 @@ const Variant3Layout = ({ period, setPeriod }) => {
                       : 'bg-blue-50 border border-blue-100 text-blue-800'
                   }`}
                 >
-                  <AlertTriangle size={13} className="shrink-0 mt-px" />
+                  <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden="true" />
                   <span className="flex-1 leading-snug">{a.msg}</span>
                   <button
+                    type="button"
                     onClick={() => setAlerts(prev => prev.filter(x => x.id !== a.id))}
+                    aria-label="Đóng thông báo"
                     className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
                   >
-                    <X size={12} />
+                    <X size={12} aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -628,9 +636,9 @@ const ShowroomDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('Tháng 3');
 
   const VARIANTS = [
-    { id: 1, icon: <LayoutGrid size={15} />,     label: 'Tổng quan' },
-    { id: 2, icon: <List size={15} />,           label: 'Phân tích' },
-    { id: 3, icon: <LayoutTemplate size={15} />, label: 'Điều hành' },
+    { id: 1, icon: <LayoutGrid size={15} aria-hidden="true" />,     label: 'Tổng quan' },
+    { id: 2, icon: <List size={15} aria-hidden="true" />,           label: 'Phân tích' },
+    { id: 3, icon: <LayoutTemplate size={15} aria-hidden="true" />, label: 'Điều hành' },
   ];
 
   return (
@@ -647,29 +655,33 @@ const ShowroomDashboard = () => {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period select */}
           <div className="flex items-center gap-1.5 border border-gray-200 bg-white rounded-full px-3 py-1.5">
-            <ChevronDown size={13} className="text-gray-400" />
+            <ChevronDown size={13} className="text-gray-400" aria-hidden="true" />
             <select
               value={selectedPeriod}
               onChange={e => setSelectedPeriod(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm text-gray-700 font-medium cursor-pointer pr-1"
+              aria-label="Chọn kỳ"
+              className="bg-transparent border-none text-sm text-gray-700 font-medium cursor-pointer pr-1 focus:outline-none focus-visible:ring-primary"
             >
               {PERIODS.map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
 
           {/* Export */}
-          <button className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 border border-gray-200 bg-white rounded-full px-4 py-1.5 hover:border-primary hover:text-primary transition-colors">
-            <Download size={14} /> Xuất báo cáo
+          <button type="button" className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 border border-gray-200 bg-white rounded-full px-4 py-1.5 hover:border-primary hover:text-primary transition-colors">
+            <Download size={14} aria-hidden="true" /> Xuất báo cáo
           </button>
 
           {/* Variant toggles */}
           <div className="flex items-center border border-gray-200 bg-white rounded-full p-1 gap-0.5">
             {VARIANTS.map(v => (
               <button
+                type="button"
                 key={v.id}
                 onClick={() => setActiveVariant(v.id)}
                 title={v.label}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                aria-label={v.label}
+                aria-pressed={activeVariant === v.id}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   activeVariant === v.id
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'

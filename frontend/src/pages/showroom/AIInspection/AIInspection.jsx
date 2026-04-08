@@ -41,8 +41,8 @@ const AIInspection = () => {
 
       {/* Tabs */}
       <div className="ai-tabs">
-        {[['new', <FaCamera />, 'Kiểm tra mới'], ['history', <FaHistory />, 'Lịch sử kiểm tra']].map(([key, icon, label]) => (
-          <button key={key} className={`ai-tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
+        {[['new', <FaCamera aria-hidden="true" />, 'Kiểm tra mới'], ['history', <FaHistory aria-hidden="true" />, 'Lịch sử kiểm tra']].map(([key, icon, label]) => (
+          <button type="button" key={key} className={`ai-tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
             {icon} {label}
           </button>
         ))}
@@ -55,7 +55,7 @@ const AIInspection = () => {
             {[['1', 'Chọn xe & booking'], ['2', 'Tải ảnh'], ['3', 'Kết quả AI']].map(([num, label], i) => (
               <React.Fragment key={num}>
                 <div className={`ai-step ${step >= parseInt(num) ? 'active' : ''} ${step > parseInt(num) ? 'done' : ''}`}>
-                  <div className="ai-step-num">{step > parseInt(num) ? <FaCheckCircle /> : num}</div>
+                  <div className="ai-step-num">{step > parseInt(num) ? <FaCheckCircle aria-hidden="true" /> : num}</div>
                   <span>{label}</span>
                 </div>
                 {i < 2 && <div className={`ai-step-line ${step > parseInt(num) ? 'done' : ''}`} />}
@@ -69,15 +69,20 @@ const AIInspection = () => {
               <h3 className="ai-card-title">Chọn xe cần kiểm tra</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {['Toyota Camry 2.5Q – BK0001', 'Honda CR-V L – BK0004', 'Kia Carnival – BK0007'].map(v => (
-                  <div key={v} onClick={() => setSelectedVehicle(v)} style={{ padding: 14, borderRadius: 12, border: `2px solid ${selectedVehicle === v ? '#00b14f' : '#e5e7eb'}`, background: selectedVehicle === v ? '#f0fdf4' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  <button
+                    type="button"
+                    key={v}
+                    onClick={() => setSelectedVehicle(v)}
+                    style={{ padding: 14, borderRadius: 12, border: `2px solid ${selectedVehicle === v ? '#00b14f' : '#e5e7eb'}`, background: selectedVehicle === v ? '#f0fdf4' : '#fff', cursor: 'pointer', transition: 'border-color 0.15s, background-color 0.15s', width: '100%', textAlign: 'left' }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <FaCar style={{ color: '#00b14f', fontSize: '1.2rem' }} />
+                      <FaCar aria-hidden="true" style={{ color: '#00b14f', fontSize: '1.2rem' }} />
                       <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827' }}>{v}</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
-              <button className="btn-primary" disabled={!selectedVehicle} onClick={() => setStep(2)} style={{ opacity: selectedVehicle ? 1 : 0.5 }}>
+              <button type="button" className="btn-primary" disabled={!selectedVehicle} onClick={() => setStep(2)} style={{ opacity: selectedVehicle ? 1 : 0.5 }}>
                 Tiếp theo →
               </button>
             </div>
@@ -104,9 +109,19 @@ const AIInspection = () => {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button className="btn-outline" onClick={() => setStep(1)}>← Quay lại</button>
-                <button className="btn-primary" onClick={handleAnalyze} disabled={analyzing} style={{ minWidth: 160 }}>
-                  {analyzing ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', marginRight: 6 }} />Đang phân tích AI...</> : <><FaRobot /> Phân tích AI</>}
+                <button type="button" className="btn-outline" onClick={() => setStep(1)}>← Quay lại</button>
+                <button type="button" className="btn-primary" onClick={handleAnalyze} disabled={analyzing} style={{ minWidth: 160 }}>
+                  {analyzing ? (
+                    <>
+                      <span
+                        className="motion-reduce:animate-none"
+                        style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', marginRight: 6 }}
+                      />
+                      Đang phân tích AI…
+                    </>
+                  ) : (
+                    <><FaRobot aria-hidden="true" /> Phân tích AI</>
+                  )}
                 </button>
               </div>
               <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -118,7 +133,7 @@ const AIInspection = () => {
             <div className="ai-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <div style={{ background: '#fef3c7', borderRadius: 12, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <MdWarning style={{ color: '#d97706', fontSize: '1.2rem' }} />
+                  <MdWarning aria-hidden="true" style={{ color: '#d97706', fontSize: '1.2rem' }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>AI phát hiện {MOCK_DAMAGES.length} hư hỏng mới</div>
                     <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Độ tin cậy: 87% – Cần xác nhận thủ công</div>
@@ -151,8 +166,18 @@ const AIInspection = () => {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                <button className="btn-outline" onClick={() => { setStep(1); setAnalyzed(false); setSelectedVehicle(''); }}>Kiểm tra mới</button>
-                <button className="btn-primary">Tạo báo cáo & Gửi khách</button>
+                <button type="button" className="btn-outline" onClick={() => { setStep(1); setAnalyzed(false); setSelectedVehicle(''); }}>Kiểm tra mới</button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    if (window.confirm('Xác nhận tạo báo cáo và gửi cho khách hàng?')) {
+                      // submit report
+                    }
+                  }}
+                >
+                  Tạo báo cáo &amp; Gửi khách
+                </button>
               </div>
             </div>
           )}
@@ -172,14 +197,14 @@ const AIInspection = () => {
                   <td>{h.date}</td>
                   <td style={{ textAlign: 'center' }}>
                     {h.damages > 0
-                      ? <span style={{ fontWeight: 700, color: '#dc2626' }}>{h.damages} vết</span>
+                      ? <span className="tabular-nums" style={{ fontWeight: 700, color: '#dc2626' }}>{h.damages} vết</span>
                       : <span style={{ color: '#059669', fontWeight: 600 }}>0</span>
                     }
                   </td>
                   <td>
                     {h.status === 'clean'
-                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontSize: '0.8rem', fontWeight: 600 }}><FaCheckCircle /> Không hư hỏng</span>
-                      : <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}><FaExclamationTriangle /> Phát hiện hư hỏng</span>
+                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontSize: '0.8rem', fontWeight: 600 }}><FaCheckCircle aria-hidden="true" /> Không hư hỏng</span>
+                      : <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}><FaExclamationTriangle aria-hidden="true" /> Phát hiện hư hỏng</span>
                     }
                   </td>
                 </tr>

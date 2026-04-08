@@ -15,7 +15,10 @@ const ContentModeration = () => {
   const [filter, setFilter] = useState('all');
 
   const approve = (id) => setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r));
-  const remove  = (id) => setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
+  const remove  = (id) => {
+    if (!window.confirm('Bạn có chắc muốn từ chối nội dung này?')) return;
+    setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
+  };
 
   const filtered = filter === 'all' ? reviews : filter === 'reported' ? reviews.filter(r => r.reported) : reviews.filter(r => r.status === filter);
 
@@ -33,7 +36,7 @@ const ContentModeration = () => {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {['all', 'pending', 'reported', 'approved'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ padding: '6px 14px', borderRadius: 50, border: '1.5px solid', borderColor: filter === f ? '#00b14f' : '#e5e7eb', background: filter === f ? '#00b14f' : '#fff', color: filter === f ? '#fff' : '#374151', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+          <button key={f} type="button" onClick={() => setFilter(f)} style={{ padding: '6px 14px', borderRadius: 50, border: '1.5px solid', borderColor: filter === f ? '#00b14f' : '#e5e7eb', background: filter === f ? '#00b14f' : '#fff', color: filter === f ? '#fff' : '#374151', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
             {f === 'all' ? 'Tất cả' : f === 'pending' ? 'Chờ duyệt' : f === 'reported' ? '⚠ Bị báo cáo' : 'Đã duyệt'}
             <span style={{ marginLeft: 6, background: 'rgba(255,255,255,0.3)', borderRadius: 50, padding: '0 6px', fontSize: '0.72rem' }}>
               {f === 'all' ? reviews.length : f === 'reported' ? reviews.filter(r => r.reported).length : reviews.filter(r => r.status === f).length}
@@ -53,8 +56,8 @@ const ContentModeration = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
                   <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#111827' }}>{r.user}</span>
                   <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>→ {r.vehicle}</span>
-                  <div style={{ display: 'flex', gap: 2 }}>
-                    {Array.from({ length: 5 }).map((_, i) => <FaStar key={i} size={11} color={i < r.rating ? '#f59e0b' : '#e5e7eb'} />)}
+                  <div style={{ display: 'flex', gap: 2 }} aria-label={`${r.rating} sao`}>
+                    {Array.from({ length: 5 }).map((_, i) => <FaStar key={i} aria-hidden="true" size={11} color={i < r.rating ? '#f59e0b' : '#e5e7eb'} />)}
                   </div>
                   <StatusBadge status={r.status} />
                   <span style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{r.date}</span>
@@ -69,8 +72,8 @@ const ContentModeration = () => {
                 )}
                 {r.status === 'pending' && (
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn-success" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => approve(r.id)} title="Duyệt"><FaCheck /></button>
-                    <button className="btn-danger"  style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => remove(r.id)} title="Từ chối"><FaTimes /></button>
+                    <button type="button" className="btn-success" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => approve(r.id)} title="Duyệt" aria-label="Duyệt nội dung"><FaCheck /></button>
+                    <button type="button" className="btn-danger"  style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => remove(r.id)} title="Từ chối" aria-label="Từ chối nội dung"><FaTimes /></button>
                   </div>
                 )}
               </div>

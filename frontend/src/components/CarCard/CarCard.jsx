@@ -29,7 +29,7 @@ const CarColorBg = ({ color, name }) => {
 };
 
 const StarRating = ({ rating }) => (
-  <div className="flex items-center gap-px text-[0.8rem]">
+  <div className="flex items-center gap-px text-[0.8rem]" aria-hidden="true">
     {[1, 2, 3, 4, 5].map(i => (
       <FaStar key={i} style={{ color: i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb' }} />
     ))}
@@ -73,8 +73,12 @@ const CarCard = ({ car }) => {
 
   return (
     <article
-      className="bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-[250ms] cursor-pointer border border-gray-100 flex flex-col group hover:shadow-[0_8px_32px_rgba(0,0,0,0.14)] hover:-translate-y-1 hover:border-gray-200"
+      role="button"
+      tabIndex={0}
+      aria-label={`Xem chi tiết ${car.name}`}
+      className="bg-white rounded-2xl overflow-hidden shadow-sm transition-[box-shadow,transform,border-color] duration-[250ms] cursor-pointer border border-gray-100 flex flex-col group hover:shadow-[0_8px_32px_rgba(0,0,0,0.14)] hover:-translate-y-1 hover:border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
     >
       {/* Image */}
       <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16/10' }}>
@@ -83,6 +87,8 @@ const CarCard = ({ car }) => {
             src={car.image}
             alt={car.name}
             loading="lazy"
+            width={320}
+            height={200}
             className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
             onError={() => setImgFailed(true)}
           />
@@ -93,20 +99,23 @@ const CarCard = ({ car }) => {
 
         {/* Favorite */}
         <button
-          className={`absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform z-[2] hover:scale-110 ${liked ? 'text-red-500' : 'text-gray-400'} ${likeLoading ? 'opacity-50 cursor-wait' : ''}`}
+          type="button"
+          className={`absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform z-[2] hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${liked ? 'text-red-500' : 'text-gray-400'} ${likeLoading ? 'opacity-50 cursor-wait' : ''}`}
           onClick={handleLike}
           disabled={likeLoading}
-          aria-label="Yêu thích"
+          aria-label={liked ? `Bỏ yêu thích ${car.name}` : `Yêu thích ${car.name}`}
+          aria-pressed={liked}
         >
-          {liked ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
+          {liked ? <FaHeart aria-hidden="true" size={14} /> : <FaRegHeart aria-hidden="true" size={14} />}
         </button>
 
         {/* Type badge */}
         <span
+          aria-hidden="true"
           className={`absolute bottom-2.5 right-2.5 flex items-center gap-1 px-2.5 py-[5px] rounded-full text-[0.7rem] font-medium text-white backdrop-blur-sm border border-white/15 z-[2]
             ${isOwner ? 'bg-purple-800/85' : 'bg-black/65'}`}
         >
-          <MdDirectionsCar size={12} />
+          <MdDirectionsCar aria-hidden="true" size={12} />
           {car.type}
         </span>
       </div>
@@ -117,13 +126,13 @@ const CarCard = ({ car }) => {
 
         {car.showroom && (
           <div className="flex items-center gap-1 text-[0.72rem] text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
-            <FaStore size={10} />
+            <FaStore aria-hidden="true" size={10} />
             {car.showroom}
           </div>
         )}
 
         <div className="flex items-center gap-1 text-[0.78rem] text-primary font-medium">
-          <FaMapMarkerAlt size={11} />
+          <FaMapMarkerAlt aria-hidden="true" size={11} />
           {car.location}
         </div>
 

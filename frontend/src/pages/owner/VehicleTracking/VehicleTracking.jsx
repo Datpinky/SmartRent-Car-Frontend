@@ -37,9 +37,9 @@ const VehicleTracking = () => {
             {/* Header */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <MdDirectionsCar style={{ fontSize: '1.6rem', color: '#0891b2' }} />
+                <MdDirectionsCar style={{ fontSize: '1.6rem', color: '#0891b2' }} aria-hidden="true" />
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>{v.name}</div>
                 <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: 2 }}>BKS: {v.plate} · {v.showroom}</div>
               </div>
@@ -50,19 +50,19 @@ const VehicleTracking = () => {
             {v.status === 'active' && (
               <div style={{ padding: '12px 20px', background: '#eff6ff', borderBottom: '1px solid #dbeafe', display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: '0.82rem' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#2563eb', fontWeight: 600 }}>
-                  <FaUser /> Đang thuê: Nguyễn Văn An
+                  <FaUser aria-hidden="true" /> Đang thuê: Nguyễn Văn An
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#374151' }}>
-                  <FaCalendarAlt size={12} /> Trả xe: 13/03/2026 10:00
+                  <FaCalendarAlt size={12} aria-hidden="true" /> Trả xe: 13/03/2026 10:00
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#374151' }}>
-                  <FaMapMarkerAlt size={12} /> TP.HCM
+                  <FaMapMarkerAlt size={12} aria-hidden="true" /> TP.HCM
                 </span>
               </div>
             )}
             {v.status === 'maintenance' && (
               <div style={{ padding: '12px 20px', background: '#faf5ff', borderBottom: '1px solid #e9d5ff', fontSize: '0.82rem', color: '#7c3aed', fontWeight: 600 }}>
-                🔧 Đang bảo dưỡng – Dự kiến hoàn tất: 15/03/2026
+                <span aria-hidden="true">🔧</span> Đang bảo dưỡng – Dự kiến hoàn tất: 15/03/2026
               </div>
             )}
 
@@ -76,7 +76,7 @@ const VehicleTracking = () => {
                       <div style={{ width: 10, height: 10, borderRadius: '50%', background: TYPE_COLORS[event.type] || '#9ca3af', marginTop: 3, flexShrink: 0 }} />
                       {i < (VEHICLE_TIMELINE[v.id] || []).length - 1 && <div style={{ width: 1, flex: 1, background: '#e5e7eb', marginTop: 4 }} />}
                     </div>
-                    <div style={{ flex: 1, paddingBottom: 4 }}>
+                    <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
                       <div style={{ fontSize: '0.82rem', color: '#374151', fontWeight: 500 }}>{event.event}</div>
                       <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>{event.date}{event.end ? ` → ${event.end}` : ''}</div>
                     </div>

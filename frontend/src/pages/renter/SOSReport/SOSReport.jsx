@@ -4,18 +4,18 @@ import { FaPhone, FaMapMarkerAlt, FaCheckCircle, FaExclamationTriangle, FaAmbula
 import { MdLocalPolice, MdFireTruck } from 'react-icons/md';
 
 const INCIDENT_TYPES = [
-  { id: 'accident', label: 'Tai nạn giao thông', icon: <FaCar />, color: '#dc2626' },
-  { id: 'breakdown', label: 'Xe hỏng/chết máy', icon: <FaCar />, color: '#d97706' },
-  { id: 'flat', label: 'Xịt lốp/thủng xe', icon: <FaCar />, color: '#d97706' },
-  { id: 'lock', label: 'Khóa cửa xe/mất chìa', icon: <FaCar />, color: '#7c3aed' },
-  { id: 'other', label: 'Sự cố khác', icon: <FaExclamationTriangle />, color: '#6b7280' },
+  { id: 'accident', label: 'Tai nạn giao thông', icon: <FaCar aria-hidden="true" />, color: '#dc2626' },
+  { id: 'breakdown', label: 'Xe hỏng/chết máy', icon: <FaCar aria-hidden="true" />, color: '#d97706' },
+  { id: 'flat', label: 'Xịt lốp/thủng xe', icon: <FaCar aria-hidden="true" />, color: '#d97706' },
+  { id: 'lock', label: 'Khóa cửa xe/mất chìa', icon: <FaCar aria-hidden="true" />, color: '#7c3aed' },
+  { id: 'other', label: 'Sự cố khác', icon: <FaExclamationTriangle aria-hidden="true" />, color: '#6b7280' },
 ];
 
 const HOTLINES = [
-  { label: 'SmartRent Hỗ trợ', number: '1900 1234', icon: <FaPhone />, color: '#87ceeb', desc: '24/7 – Miễn phí' },
-  { label: 'Cấp cứu', number: '115', icon: <FaAmbulance />, color: '#dc2626', desc: 'Khẩn cấp y tế' },
-  { label: 'Cảnh sát', number: '113', icon: <MdLocalPolice />, color: '#2563eb', desc: 'Tai nạn, sự cố' },
-  { label: 'Cứu hỏa', number: '114', icon: <MdFireTruck />, color: '#d97706', desc: 'Cháy nổ' },
+  { label: 'SmartRent Hỗ trợ', number: '1900 1234', icon: <FaPhone aria-hidden="true" />, color: '#87ceeb', desc: '24/7 – Miễn phí' },
+  { label: 'Cấp cứu', number: '115', icon: <FaAmbulance aria-hidden="true" />, color: '#dc2626', desc: 'Khẩn cấp y tế' },
+  { label: 'Cảnh sát', number: '113', icon: <MdLocalPolice aria-hidden="true" />, color: '#2563eb', desc: 'Tai nạn, sự cố' },
+  { label: 'Cứu hỏa', number: '114', icon: <MdFireTruck aria-hidden="true" />, color: '#d97706', desc: 'Cháy nổ' },
 ];
 
 const SOSReport = () => {
@@ -37,9 +37,9 @@ const SOSReport = () => {
 
   if (submitted) {
     return (
-      <div className="sos-page">
+      <div className="sos-page" aria-live="polite">
         <div className="sos-success">
-          <div className="sos-success-icon"><FaCheckCircle /></div>
+          <div className="sos-success-icon"><FaCheckCircle aria-hidden="true" /></div>
           <h2>Báo cáo đã được gửi!</h2>
           <p>Đội hỗ trợ SmartRent đã nhận được báo cáo của bạn và sẽ liên hệ trong vòng <b>5 phút</b>.</p>
           <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, width: '100%', marginBottom: 20 }}>
@@ -68,7 +68,7 @@ const SOSReport = () => {
     <div className="sos-page">
       {/* Header */}
       <div className="sos-header">
-        <div className="sos-header-icon"><FaExclamationTriangle /></div>
+        <div className="sos-header-icon"><FaExclamationTriangle aria-hidden="true" /></div>
         <div>
           <h1 className="sos-title">Báo cáo sự cố khẩn cấp</h1>
           <p className="sos-sub">Hotline hỗ trợ 24/7: <a href="tel:19001234" className="sos-phone">1900 1234</a></p>
@@ -92,10 +92,29 @@ const SOSReport = () => {
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111827', marginBottom: 16 }}>Gửi báo cáo sự cố</h3>
 
         <div style={{ marginBottom: 16 }}>
-          <label className="form-label">Loại sự cố *</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+          <label className="form-label" id="incident-type-label">Loại sự cố *</label>
+          <div
+            role="radiogroup"
+            aria-labelledby="incident-type-label"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}
+          >
             {INCIDENT_TYPES.map(t => (
-              <button key={t.id} onClick={() => setIncidentType(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, border: `2px solid ${incidentType === t.id ? t.color : '#e5e7eb'}`, background: incidentType === t.id ? t.color + '10' : '#fff', color: incidentType === t.id ? t.color : '#374151', fontWeight: incidentType === t.id ? 700 : 500, cursor: 'pointer', fontSize: '0.8rem', textAlign: 'left', transition: 'all 0.15s' }}>
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={incidentType === t.id}
+                onClick={() => setIncidentType(t.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10,
+                  border: `2px solid ${incidentType === t.id ? t.color : '#e5e7eb'}`,
+                  background: incidentType === t.id ? t.color + '10' : '#fff',
+                  color: incidentType === t.id ? t.color : '#374151',
+                  fontWeight: incidentType === t.id ? 700 : 500,
+                  cursor: 'pointer', fontSize: '0.8rem', textAlign: 'left',
+                  transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                }}
+              >
                 {t.icon} {t.label}
               </button>
             ))}
@@ -103,21 +122,31 @@ const SOSReport = () => {
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <label className="form-label">Mô tả sự cố</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
-            placeholder="Mô tả chi tiết tình huống (vị trí, tình trạng xe, thương tích nếu có...)"
-            style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '10px 12px', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+          <label className="form-label" htmlFor="sos-description">Mô tả sự cố</label>
+          <textarea
+            id="sos-description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={4}
+            placeholder="Mô tả chi tiết tình huống (vị trí, tình trạng xe, thương tích nếu có…)"
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '10px 12px', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }}
+          />
         </div>
 
         <div style={{ marginBottom: 16 }}>
           <label className="form-label">Chia sẻ vị trí</label>
           {!locationShared ? (
-            <button onClick={shareLocation} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 10, color: '#2563eb', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-              <FaMapMarkerAlt /> Chia sẻ vị trí hiện tại
+            <button
+              type="button"
+              onClick={shareLocation}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 10, color: '#2563eb', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              <FaMapMarkerAlt aria-hidden="true" /> Chia sẻ vị trí hiện tại
             </button>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 10, color: '#0284c7', fontSize: '0.85rem', fontWeight: 600 }}>
-              <FaCheckCircle /> Đã chia sẻ vị trí
+              <FaCheckCircle aria-hidden="true" /> Đã chia sẻ vị trí
             </div>
           )}
         </div>
@@ -126,9 +155,13 @@ const SOSReport = () => {
           <FileUpload label="Ảnh hiện trường" multiple hint="Chụp ảnh xe, vết va chạm, biển báo khu vực – tối đa 10 ảnh" />
         </div>
 
-        <button onClick={handleSubmit} disabled={!incidentType}
-          style={{ width: '100%', padding: '13px 0', background: incidentType ? '#dc2626' : '#e5e7eb', color: incidentType ? '#fff' : '#9ca3af', border: 'none', borderRadius: 10, fontWeight: 800, fontSize: '0.95rem', cursor: incidentType ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <FaExclamationTriangle /> Gửi báo cáo sự cố
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!incidentType}
+          style={{ width: '100%', padding: '13px 0', background: incidentType ? '#dc2626' : '#e5e7eb', color: incidentType ? '#fff' : '#9ca3af', border: 'none', borderRadius: 10, fontWeight: 800, fontSize: '0.95rem', cursor: incidentType ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
+          <FaExclamationTriangle aria-hidden="true" /> Gửi báo cáo sự cố
         </button>
       </div>
     </div>

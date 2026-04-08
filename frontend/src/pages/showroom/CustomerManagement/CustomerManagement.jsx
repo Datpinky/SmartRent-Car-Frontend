@@ -35,7 +35,6 @@ const CustomerManagement = () => {
       </span>
     )},
     { key: 'lastBooking', label: 'Lần cuối thuê', accessor: 'lastBooking' },
-    { key: 'kyc', label: 'eKYC', render: row => <StatusBadge status={row.kyc} /> },
     { key: 'status', label: 'TK', render: row => <StatusBadge status={row.status} /> },
   ];
 

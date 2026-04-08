@@ -1,23 +1,15 @@
 import React, { useState } from 'react';
-import FileUpload from '../../../components/common/FileUpload';
-import StatusBadge from '../../../components/common/StatusBadge';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
-  FaSave, FaIdCard, FaCheckCircle, FaUser, FaShieldAlt, FaCar,
+  FaSave, FaCheckCircle, FaUser, FaShieldAlt, FaCar,
   FaKey, FaMoneyBillWave, FaExclamationCircle,
 } from 'react-icons/fa';
 import { MdVerifiedUser, MdDirectionsCar } from 'react-icons/md';
 
 const OWNER_STATS = [
-  { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar />, color: '#6d28d9' },
-  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave />, color: '#059669' },
-  { label: 'Chờ rút tiền',     value: '8,200,000₫',  icon: <FaExclamationCircle />, color: '#d97706' },
-];
-
-const KYC_DOCS = [
-  { key: 'cccd',  label: 'CCCD / Căn cước công dân',  hint: 'Chụp 2 mặt CCCD rõ nét (PNG/JPG, ≤ 5MB)' },
-  { key: 'gplx',  label: 'Giấy phép lái xe',           hint: 'Chụp 2 mặt GPLX còn hiệu lực (PNG/JPG, ≤ 5MB)' },
-  { key: 'sohong', label: 'Sổ hồng / Đăng ký xe',     hint: 'Giấy tờ chứng minh quyền sở hữu xe (PNG/JPG, ≤ 5MB)' },
+  { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar aria-hidden="true" />, color: '#6d28d9' },
+  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave aria-hidden="true" />, color: '#059669' },
+  { label: 'Chờ rút tiền',     value: '8,200,000₫',  icon: <FaExclamationCircle aria-hidden="true" />, color: '#d97706' },
 ];
 
 const OwnerProfile = () => {
@@ -36,7 +28,6 @@ const OwnerProfile = () => {
   const [nameError, setNameError]   = useState('');
   const [dobError, setDobError]     = useState('');
   const [emailError, setEmailError] = useState('');
-  const [kycStatus, setKycStatus] = useState('pending');
   const [pwForm, setPwForm]   = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSaved, setPwSaved] = useState(false);
@@ -160,8 +151,6 @@ const OwnerProfile = () => {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleKycSubmit = () => setKycStatus('pending');
-
   const handlePwSave = () => {
     if (!pwForm.current)            { setPwError('Vui lòng nhập mật khẩu hiện tại'); return; }
     if (pwForm.next.length < 6)     { setPwError('Mật khẩu mới phải có ít nhất 6 ký tự'); return; }
@@ -173,9 +162,8 @@ const OwnerProfile = () => {
   };
 
   const TABS = [
-    ['info',     <FaUser />,         'Thông tin'],
-    ['kyc',      <FaIdCard />,       'Xác minh danh tính'],
-    ['security', <FaShieldAlt />,    'Bảo mật'],
+    ['info',     <FaUser aria-hidden="true" />,      'Thông tin'],
+    ['security', <FaShieldAlt aria-hidden="true" />, 'Bảo mật'],
   ];
 
   return (
@@ -183,7 +171,7 @@ const OwnerProfile = () => {
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
           <h1 className="page-title">Hồ sơ Chủ xe</h1>
-          <p className="page-subtitle">Quản lý thông tin, xác minh danh tính và bảo mật tài khoản</p>
+          <p className="page-subtitle">Quản lý thông tin và bảo mật tài khoản</p>
         </div>
       </div>
 
@@ -191,21 +179,22 @@ const OwnerProfile = () => {
       <div className="op-hero">
         <div className="op-avatar-wrap">
           <div className="op-avatar">{initials}</div>
-          <div className="op-avatar-badge"><FaCar /></div>
+          <div className="op-avatar-badge"><FaCar aria-hidden="true" /></div>
         </div>
         <div className="op-hero-info">
           <div className="op-hero-name">{user?.name}</div>
           <div className="op-hero-email">{user?.email}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="op-role-badge"><MdVerifiedUser style={{ fontSize: '0.8rem' }} /> Chủ xe ký gửi</span>
-            <StatusBadge status={kycStatus} />
+            <span className="op-role-badge">
+              <MdVerifiedUser style={{ fontSize: '0.8rem' }} aria-hidden="true" /> Chủ xe ký gửi
+            </span>
           </div>
         </div>
         <div className="op-hero-stats">
           {OWNER_STATS.map(s => (
             <div key={s.label} className="op-stat">
               <div className="op-stat-icon" style={{ color: s.color }}>{s.icon}</div>
-              <div className="op-stat-val">{s.value}</div>
+              <div className="op-stat-val tabular-nums">{s.value}</div>
               <div className="op-stat-label">{s.label}</div>
             </div>
           ))}
@@ -216,6 +205,7 @@ const OwnerProfile = () => {
       <div className="op-tabs">
         {TABS.map(([key, icon, label]) => (
           <button
+            type="button"
             key={key}
             className={`op-tab ${tab === key ? 'active' : ''}`}
             onClick={() => setTab(key)}
@@ -232,34 +222,43 @@ const OwnerProfile = () => {
           <div className="op-form-grid">
             {/* Name */}
             <div>
-              <label className="op-label">Họ và tên</label>
+              <label className="op-label" htmlFor="owner-name">Họ và tên</label>
               <input
+                id="owner-name"
+                name="name"
+                autoComplete="name"
                 type="text"
                 value={form.name}
                 onChange={e => handleFieldChange('name', e.target.value)}
                 className="op-input"
                 placeholder="Nguyễn Văn A"
               />
-              {nameError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{nameError}</div>}
+              {nameError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{nameError}</div>}
             </div>
 
             {/* Email */}
             <div>
-              <label className="op-label">Email</label>
+              <label className="op-label" htmlFor="owner-email">Email</label>
               <input
+                id="owner-email"
+                name="email"
+                autoComplete="email"
                 type="email"
                 value={form.email}
                 onChange={e => handleFieldChange('email', e.target.value)}
                 className="op-input"
                 placeholder="name@domain.com"
               />
-              {emailError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{emailError}</div>}
+              {emailError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{emailError}</div>}
             </div>
 
             {/* Phone */}
             <div>
-              <label className="op-label">Số điện thoại (10 số)</label>
+              <label className="op-label" htmlFor="owner-phone">Số điện thoại (10 số)</label>
               <input
+                id="owner-phone"
+                name="tel"
+                autoComplete="tel"
                 type="tel"
                 value={form.phone}
                 onChange={e => handleFieldChange('phone', e.target.value)}
@@ -269,13 +268,16 @@ const OwnerProfile = () => {
                 pattern="[0-9]*"
                 placeholder="0xxxxxxxxx"
               />
-              {phoneError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{phoneError}</div>}
+              {phoneError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{phoneError}</div>}
             </div>
 
             {/* DOB */}
             <div>
-              <label className="op-label">Ngày sinh (DD/MM/YYYY)</label>
+              <label className="op-label" htmlFor="owner-dob">Ngày sinh (DD/MM/YYYY)</label>
               <input
+                id="owner-dob"
+                name="bday"
+                autoComplete="bday"
                 type="text"
                 value={form.dob}
                 onChange={e => handleFieldChange('dob', e.target.value)}
@@ -283,19 +285,27 @@ const OwnerProfile = () => {
                 placeholder="DD/MM/YYYY"
                 maxLength={10}
               />
-              {dobError && <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{dobError}</div>}
+              {dobError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{dobError}</div>}
             </div>
+
             <div style={{ gridColumn: 'span 2' }}>
-              <label className="op-label">Địa chỉ</label>
+              <label className="op-label" htmlFor="owner-address">Địa chỉ</label>
               <input
+                id="owner-address"
+                name="street-address"
+                autoComplete="street-address"
                 value={form.address}
                 onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                 className="op-input"
               />
             </div>
+
             <div style={{ gridColumn: 'span 2' }}>
-              <label className="op-label">Tài khoản ngân hàng nhận tiền</label>
+              <label className="op-label" htmlFor="owner-bank">Tài khoản ngân hàng nhận tiền</label>
               <input
+                id="owner-bank"
+                name="bank-account"
+                autoComplete="off"
                 value={form.bank}
                 onChange={e => setForm(f => ({ ...f, bank: e.target.value }))}
                 className="op-input"
@@ -303,42 +313,18 @@ const OwnerProfile = () => {
               />
             </div>
           </div>
-          <button className="op-btn-primary" onClick={handleSave} style={{ marginTop: 18 }}>
-            <FaSave /> {saved ? 'Đã lưu!' : 'Lưu thay đổi'}
-          </button>
-        </div>
-      )}
 
-      {/* KYC Tab */}
-      {tab === 'kyc' && (
-        <div className="op-card">
-          <h3 className="op-section-title">Xác minh danh tính (eKYC)</h3>
-          <div style={{ marginBottom: 18, padding: '12px 16px', background: kycStatus === 'pending' ? '#fffbeb' : kycStatus === 'verified' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${kycStatus === 'pending' ? '#fde68a' : kycStatus === 'verified' ? '#bbf7d0' : '#fecaca'}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {kycStatus === 'verified'   && <><FaCheckCircle style={{ color: '#059669' }} /> <span style={{ fontSize: '0.83rem', color: '#166534', fontWeight: 600 }}>Tài khoản đã được xác minh.</span></>}
-            {kycStatus === 'pending'    && <><FaExclamationCircle style={{ color: '#d97706' }} /> <span style={{ fontSize: '0.83rem', color: '#92400e', fontWeight: 600 }}>Hồ sơ đang chờ duyệt. Admin sẽ xem xét trong 24–48 giờ.</span></>}
-            {kycStatus === 'unverified' && <><FaIdCard style={{ color: '#dc2626' }} /> <span style={{ fontSize: '0.83rem', color: '#991b1b', fontWeight: 600 }}>Chưa xác minh – Vui lòng tải lên tài liệu bên dưới.</span></>}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {KYC_DOCS.map(doc => (
-              <div key={doc.key}>
-                <label className="op-label" style={{ marginBottom: 6 }}>{doc.label}</label>
-                <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: 8 }}>{doc.hint}</div>
-                <FileUpload
-                  accept="image/*"
-                  maxFiles={2}
-                  onFilesChange={() => {}}
-                  label={`Tải lên ${doc.label}`}
-                />
+          <div aria-live="polite">
+            {saved && (
+              <div role="status" style={{ marginTop: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FaCheckCircle aria-hidden="true" /> Thông tin đã được lưu!
               </div>
-            ))}
+            )}
           </div>
 
-          {kycStatus !== 'verified' && (
-            <button className="op-btn-primary" style={{ marginTop: 20 }} onClick={handleKycSubmit}>
-              <FaIdCard /> Gửi hồ sơ xác minh
-            </button>
-          )}
+          <button type="button" className="op-btn-primary" onClick={handleSave} style={{ marginTop: 18 }}>
+            <FaSave aria-hidden="true" /> {saved ? 'Đã lưu!' : 'Lưu thay đổi'}
+          </button>
         </div>
       )}
 
@@ -348,15 +334,18 @@ const OwnerProfile = () => {
           <h3 className="op-section-title">Đổi mật khẩu</h3>
           <div style={{ maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              ['Mật khẩu hiện tại',     'current'],
-              ['Mật khẩu mới',          'next'],
-              ['Xác nhận mật khẩu mới', 'confirm'],
-            ].map(([label, key]) => (
-              <div key={key}>
-                <label className="op-label">{label}</label>
+              ['Mật khẩu hiện tại',     'pw-current', 'current', 'current-password'],
+              ['Mật khẩu mới',          'pw-new',     'next',    'new-password'],
+              ['Xác nhận mật khẩu mới', 'pw-confirm', 'confirm', 'new-password'],
+            ].map(([label, id, key, autoComplete]) => (
+              <div key={id}>
+                <label className="op-label" htmlFor={id}>{label}</label>
                 <div style={{ position: 'relative' }}>
-                  <FaKey style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.8rem' }} />
+                  <FaKey style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.8rem' }} aria-hidden="true" />
                   <input
+                    id={id}
+                    name={autoComplete}
+                    autoComplete={autoComplete}
                     type="password"
                     value={pwForm[key]}
                     onChange={e => setPwForm(f => ({ ...f, [key]: e.target.value }))}
@@ -368,17 +357,19 @@ const OwnerProfile = () => {
               </div>
             ))}
             {pwError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.82rem' }}>
+              <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.82rem' }}>
                 {pwError}
               </div>
             )}
-            {pwSaved && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <FaCheckCircle /> Mật khẩu đã được cập nhật!
-              </div>
-            )}
-            <button className="op-btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handlePwSave}>
-              <FaShieldAlt /> Cập nhật mật khẩu
+            <div aria-live="polite">
+              {pwSaved && (
+                <div role="status" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FaCheckCircle aria-hidden="true" /> Mật khẩu đã được cập nhật!
+                </div>
+              )}
+            </div>
+            <button type="button" className="op-btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handlePwSave}>
+              <FaShieldAlt aria-hidden="true" /> Cập nhật mật khẩu
             </button>
           </div>
         </div>

@@ -4,13 +4,14 @@ const StatCard = ({ title, value, subtext, icon, color = '#00b14f', trend, trend
   return (
     <div className="bg-white rounded-[14px] p-5 flex items-center gap-4 shadow-[0_1px_4px_rgba(0,0,0,0.07)] border border-[#f0f0f0] transition-shadow duration-200 hover:shadow-md">
       <div
+        aria-hidden="true"
         className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-[1.4rem] shrink-0"
         style={{ background: color + '20', color }}
       >
         {icon}
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="text-[1.6rem] font-extrabold text-gray-900 leading-none">{value}</div>
+        <div className="text-[1.6rem] font-extrabold text-gray-900 leading-none tabular-nums">{value}</div>
         <div className="text-[0.82rem] text-gray-500 mt-0.5 font-medium">{title}</div>
         {(trend !== undefined || subtext || trendLabel) && (
           <div className="flex flex-nowrap items-center gap-1.5 mt-1 min-w-0">

@@ -87,8 +87,9 @@ const ShowroomVerification = () => {
       label: 'Tên doanh nghiệp',
       accessor: 'name',
       sortable: true,
+      width: '26%',
       render: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0, width: '100%' }}>
           <div
             style={{
               width: 36,
@@ -102,9 +103,9 @@ const ShowroomVerification = () => {
               flexShrink: 0,
             }}
           >
-            <FaBuilding />
+            <FaBuilding aria-hidden="true" />
           </div>
-          <div>
+          <div style={{ minWidth: 0, flex: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             <div style={{ fontWeight: 600, fontSize: '0.83rem', color: '#111827' }}>{row.name}</div>
             <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{row.email}</div>
           </div>
@@ -138,7 +139,7 @@ const ShowroomVerification = () => {
       label: 'Hành động',
       render: (row) => (
         <div style={{ display: 'flex', gap: 6 }}>
-          <button type="button" className="btn-icon" onClick={() => setViewModal(row)} title="Xem hồ sơ">
+          <button type="button" className="btn-icon" onClick={() => setViewModal(row)} title="Xem hồ sơ" aria-label="Xem hồ sơ">
             <FaEye />
           </button>
           {row.status === 'pending' && (
@@ -150,6 +151,7 @@ const ShowroomVerification = () => {
                 disabled={submitting}
                 onClick={() => approve(row)}
                 title="Phê duyệt"
+                aria-label="Phê duyệt"
               >
                 <FaCheckCircle />
               </button>
@@ -159,6 +161,7 @@ const ShowroomVerification = () => {
                 disabled={submitting}
                 onClick={() => setRejectModal(row)}
                 title="Từ chối"
+                aria-label="Từ chối"
               >
                 <FaTimesCircle />
               </button>
@@ -230,7 +233,12 @@ const ShowroomVerification = () => {
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Đang tải…</div>
       ) : (
-        <DataTable columns={columns} data={showrooms} searchPlaceholder="Tìm theo tên, email, MST…" />
+        <DataTable
+          columns={columns}
+          data={showrooms}
+          searchPlaceholder="Tìm theo tên, email, MST…"
+          searchFields={['name', 'contactName', 'email', 'tax_code']}
+        />
       )}
 
       <Modal isOpen={!!viewModal} onClose={() => setViewModal(null)} title="Hồ sơ Showroom" width={540}>
@@ -241,10 +249,10 @@ const ShowroomVerification = () => {
               <StatusBadge status={viewModal.status} />
             </div>
             {[
-              [<FaBuilding />, 'Người liên hệ', viewModal.contactName],
-              [<FaPhone />, 'Điện thoại', viewModal.phone || '—'],
-              [<FaEnvelope />, 'Email', viewModal.email],
-              [<FaIdCard />, 'Mã số thuế', viewModal.tax_code || '—'],
+              [<FaBuilding aria-hidden="true" />, 'Người liên hệ', viewModal.contactName],
+              [<FaPhone aria-hidden="true" />, 'Điện thoại', viewModal.phone || '—'],
+              [<FaEnvelope aria-hidden="true" />, 'Email', viewModal.email],
+              [<FaIdCard aria-hidden="true" />, 'Mã số thuế', viewModal.tax_code || '—'],
             ].map(([icon, label, val]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <span style={{ color: '#00b14f', marginTop: 1 }}>{icon}</span>
@@ -322,7 +330,11 @@ const ShowroomVerification = () => {
             <p style={{ fontSize: '0.85rem', color: '#374151', marginBottom: 12 }}>
               Bạn đang từ chối showroom <b>{rejectModal.name}</b>. Có thể nhập lý do (tùy chọn):
             </p>
+            <label htmlFor="reject-reason-input" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+              Lý do từ chối (tùy chọn)
+            </label>
             <textarea
+              id="reject-reason-input"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Nhập lý do từ chối…"
@@ -334,7 +346,6 @@ const ShowroomVerification = () => {
                 padding: '10px 12px',
                 fontSize: '0.85rem',
                 resize: 'vertical',
-                outline: 'none',
                 boxSizing: 'border-box',
               }}
             />

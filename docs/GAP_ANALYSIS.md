@@ -118,8 +118,6 @@
 | 36 | PUT | /api/users/me | Cập nhật profile | **P0** | Profile.jsx, AdminProfile.jsx |
 | 37 | PUT | /api/users/me/password | Đổi mật khẩu | P1 | Profile settings |
 | 38 | POST | /api/users/me/avatar | Upload ảnh đại diện | P1 | Profile.jsx (FileUpload) |
-| 39 | GET | /api/users/me/kyc | Trạng thái eKYC | P2 | Profile.jsx KYC section |
-| 40 | POST | /api/users/me/kyc | Gửi tài liệu eKYC | P2 | Profile.jsx KYC section |
 
 ---
 
@@ -134,7 +132,6 @@
 | Payment Result (real) | /renter/payment-result | Xác nhận kết quả, hiện booking detail | Payment callback, Booking getById |
 | My Bookings (real) | /renter/bookings | Danh sách booking từ API, lọc theo status | Booking my-bookings |
 | Booking Detail | /renter/bookings/:id | Chi tiết chuyến đi + hợp đồng + timeline | Booking getById, Contract |
-| eKYC / Identity | /renter/kyc | Upload CCCD trước/sau, selfie | User KYC, Upload |
 
 ### Owner Portal (P0)
 
@@ -209,7 +206,7 @@
 ```
 13. Real-time chat (Socket.IO)
 14. AI Damage Detection API
-15. eKYC integration
+15. Identity verification integration
 16. Payment gateway (VNPay / MoMo)
 17. Push notifications
 ```

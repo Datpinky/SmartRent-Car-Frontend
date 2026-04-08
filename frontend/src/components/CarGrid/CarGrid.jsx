@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CarCard from '../CarCard/CarCard';
 import { MdDirectionsCar } from 'react-icons/md';
 
-const shimmerClass = "bg-gradient-to-r from-[#f0f0f0] via-[#e0e0e0] to-[#f0f0f0] bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]";
+const shimmerClass = "bg-gradient-to-r from-[#f0f0f0] via-[#e0e0e0] to-[#f0f0f0] bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] motion-reduce:animate-none motion-reduce:bg-gray-100";
 
 const SkeletonCard = () => (
   <div className="bg-white rounded-2xl overflow-hidden border border-gray-100">
@@ -36,7 +36,7 @@ const CarGrid = ({ cars, loading = false, title = 'Xe tự lái' }) => {
             ? visible.map(car => <CarCard key={car.id} car={car} />)
             : (
               <div className="col-span-full text-center py-[60px] px-5">
-                <div className="text-[4rem] mb-4 opacity-40 flex justify-center">
+                <div aria-hidden="true" className="text-[4rem] mb-4 opacity-40 flex justify-center">
                   <MdDirectionsCar />
                 </div>
                 <h3 className="text-[1.1rem] text-gray-600 mb-2">Không tìm thấy xe phù hợp</h3>
@@ -49,7 +49,8 @@ const CarGrid = ({ cars, loading = false, title = 'Xe tự lái' }) => {
       {hasMore && (
         <div className="text-center mt-8">
           <button
-            className="inline-flex items-center gap-2 px-8 py-3 border-2 border-primary rounded-full text-[0.9rem] font-semibold text-primary bg-transparent transition-all hover:bg-primary hover:text-white hover:shadow-[0_4px_16px_rgba(0,177,79,0.3)] hover:-translate-y-px"
+            type="button"
+            className="inline-flex items-center gap-2 px-8 py-3 border-2 border-primary rounded-full text-[0.9rem] font-semibold text-primary bg-transparent transition-[background-color,color,box-shadow,transform] hover:bg-primary hover:text-white hover:shadow-[0_4px_16px_rgba(0,177,79,0.3)] hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             onClick={() => setVisibleCount(v => v + 8)}
           >
             Xem thêm xe

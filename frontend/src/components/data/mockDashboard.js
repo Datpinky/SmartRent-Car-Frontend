@@ -42,18 +42,18 @@ export const VEHICLE_CATEGORY_PIE = [
 ];
 
 export const MOCK_USERS = [
-  { id: 1, name: 'Nguyễn Văn An',     email: 'an.nguyen@gmail.com',     role: 'renter',   status: 'verified',   phone: '0912345678', createdAt: '10/01/2026', bookings: 8,  kyc: 'verified' },
-  { id: 2, name: 'Trần Thị Bình',     email: 'binh.tran@gmail.com',     role: 'renter',   status: 'unverified', phone: '0923456789', createdAt: '15/01/2026', bookings: 2,  kyc: 'pending' },
-  { id: 3, name: 'Lê Minh Cường',     email: 'cuong.le@gmail.com',      role: 'owner',    status: 'verified',   phone: '0934567890', createdAt: '20/01/2026', bookings: 0,  kyc: 'verified' },
-  { id: 4, name: 'Phạm Thị Dung',     email: 'dung.pham@gmail.com',     role: 'showroom', status: 'approved',   phone: '0945678901', createdAt: '05/02/2026', bookings: 0,  kyc: 'verified' },
-  { id: 5, name: 'Hoàng Văn Em',      email: 'em.hoang@gmail.com',      role: 'renter',   status: 'locked',     phone: '0956789012', createdAt: '08/02/2026', bookings: 15, kyc: 'verified' },
-  { id: 6, name: 'Vũ Thị Phương',     email: 'phuong.vu@gmail.com',     role: 'renter',   status: 'verified',   phone: '0967890123', createdAt: '12/02/2026', bookings: 4,  kyc: 'verified' },
-  { id: 7, name: 'Đặng Minh Giang',   email: 'giang.dang@gmail.com',    role: 'owner',    status: 'unverified', phone: '0978901234', createdAt: '18/02/2026', bookings: 0,  kyc: 'pending' },
-  { id: 8, name: 'Ngô Thị Hoa',       email: 'hoa.ngo@gmail.com',       role: 'renter',   status: 'verified',   phone: '0989012345', createdAt: '22/02/2026', bookings: 6,  kyc: 'verified' },
-  { id: 9, name: 'Đinh Văn Inh',      email: 'inh.dinh@gmail.com',      role: 'renter',   status: 'verified',   phone: '0990123456', createdAt: '01/03/2026', bookings: 11, kyc: 'verified' },
-  { id: 10, name: 'Bùi Thị Kim',      email: 'kim.bui@gmail.com',       role: 'owner',    status: 'verified',   phone: '0901234567', createdAt: '05/03/2026', bookings: 0,  kyc: 'verified' },
-  { id: 11, name: 'Trương Văn Long',   email: 'long.truong@gmail.com',   role: 'renter',   status: 'unverified', phone: '0912345670', createdAt: '08/03/2026', bookings: 1,  kyc: 'unverified' },
-  { id: 12, name: 'Lý Thị Mơ',        email: 'mo.ly@gmail.com',         role: 'renter',   status: 'verified',   phone: '0923456780', createdAt: '10/03/2026', bookings: 3,  kyc: 'verified' },
+  { id: 1, name: 'Nguyễn Văn An',     email: 'an.nguyen@gmail.com',     role: 'renter',   status: 'verified',   phone: '0912345678', createdAt: '10/01/2026', bookings: 8 },
+  { id: 2, name: 'Trần Thị Bình',     email: 'binh.tran@gmail.com',     role: 'renter',   status: 'unverified', phone: '0923456789', createdAt: '15/01/2026', bookings: 2 },
+  { id: 3, name: 'Lê Minh Cường',     email: 'cuong.le@gmail.com',      role: 'owner',    status: 'verified',   phone: '0934567890', createdAt: '20/01/2026', bookings: 0 },
+  { id: 4, name: 'Phạm Thị Dung',     email: 'dung.pham@gmail.com',     role: 'showroom', status: 'approved',   phone: '0945678901', createdAt: '05/02/2026', bookings: 0 },
+  { id: 5, name: 'Hoàng Văn Em',      email: 'em.hoang@gmail.com',      role: 'renter',   status: 'locked',     phone: '0956789012', createdAt: '08/02/2026', bookings: 15 },
+  { id: 6, name: 'Vũ Thị Phương',     email: 'phuong.vu@gmail.com',     role: 'renter',   status: 'verified',   phone: '0967890123', createdAt: '12/02/2026', bookings: 4 },
+  { id: 7, name: 'Đặng Minh Giang',   email: 'giang.dang@gmail.com',    role: 'owner',    status: 'unverified', phone: '0978901234', createdAt: '18/02/2026', bookings: 0 },
+  { id: 8, name: 'Ngô Thị Hoa',       email: 'hoa.ngo@gmail.com',       role: 'renter',   status: 'verified',   phone: '0989012345', createdAt: '22/02/2026', bookings: 6 },
+  { id: 9, name: 'Đinh Văn Inh',      email: 'inh.dinh@gmail.com',      role: 'renter',   status: 'verified',   phone: '0990123456', createdAt: '01/03/2026', bookings: 11 },
+  { id: 10, name: 'Bùi Thị Kim',      email: 'kim.bui@gmail.com',       role: 'owner',    status: 'verified',   phone: '0901234567', createdAt: '05/03/2026', bookings: 0 },
+  { id: 11, name: 'Trương Văn Long',  email: 'long.truong@gmail.com',   role: 'renter',   status: 'unverified', phone: '0912345670', createdAt: '08/03/2026', bookings: 1 },
+  { id: 12, name: 'Lý Thị Mơ',        email: 'mo.ly@gmail.com',         role: 'renter',   status: 'verified',   phone: '0923456780', createdAt: '10/03/2026', bookings: 3 },
 ];
 
 export const MOCK_SHOWROOMS = [

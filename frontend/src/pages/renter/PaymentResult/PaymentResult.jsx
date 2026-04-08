@@ -13,8 +13,11 @@ const PaymentResult = () => {
       <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', maxWidth: 440, width: '100%', textAlign: 'center', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', border: '1px solid #f0f0f0' }}>
         {isSuccess ? (
           <>
-            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', animation: 'popIn 0.4s ease' }}>
-              <FaCheckCircle style={{ fontSize: '3rem', color: '#059669' }} />
+            <div
+              className="motion-reduce:animate-none"
+              style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', animation: 'popIn 0.4s ease' }}
+            >
+              <FaCheckCircle style={{ fontSize: '3rem', color: '#059669' }} aria-hidden="true" />
             </div>
             <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thành công!</h2>
             <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
@@ -24,7 +27,7 @@ const PaymentResult = () => {
               {[['Mã đặt xe', 'BK' + Math.floor(Math.random() * 10000).toString().padStart(4, '0')], ['Thời gian', '15/03/2026 10:00 – 17/03/2026 10:00'], ['Tổng tiền', '2.520.000đ']].map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.82rem' }}>
                   <span style={{ color: '#9ca3af' }}>{k}</span>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>{v}</span>
+                  <span style={{ fontWeight: 600, color: '#111827' }} className="tabular-nums">{v}</span>
                 </div>
               ))}
             </div>
@@ -32,7 +35,7 @@ const PaymentResult = () => {
         ) : (
           <>
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} />
+              <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} aria-hidden="true" />
             </div>
             <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thất bại</h2>
             <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>Giao dịch không thể thực hiện. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.</p>
@@ -40,14 +43,29 @@ const PaymentResult = () => {
         )}
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => navigate('/')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-            <FaHome /> Trang chủ
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+          >
+            <FaHome aria-hidden="true" /> Trang chủ
           </button>
           {isSuccess
-            ? <button onClick={() => navigate('/renter/bookings')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>
-                <FaList /> Xem chuyến đi
+            ? <button
+                type="button"
+                onClick={() => navigate('/renter/bookings')}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                <FaList aria-hidden="true" /> Xem chuyến đi
               </button>
-            : <button onClick={() => navigate(-1)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>
+            : <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+              >
                 Thử lại
               </button>
           }

@@ -1,22 +1,391 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import FileUpload from '../../../components/common/FileUpload';
-import { FaPlus, FaEdit } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaSpinner, FaExclamationCircle } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
-import { MOCK_OWNER_VEHICLES } from '../../../components/data/mockDashboard';
+import vehicleService from '../../../services/vehicleService';
+import { useAuth } from '../../../contexts/AuthContext';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const VEHICLE_TYPES = ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Truck', 'Bike', 'Bicycle', 'others'];
+const FUEL_OPTIONS  = [
+  { value: 'petrol',   label: 'Xăng' },
+  { value: 'diesel',   label: 'Dầu'  },
+  { value: 'electric', label: 'Điện' },
+  { value: 'hybrid',   label: 'Hybrid' },
+  { value: 'others',   label: 'Khác' },
+];
+const TRANS_OPTIONS = [
+  { value: 'automatic', label: 'Số tự động' },
+  { value: 'manual',    label: 'Số sàn'     },
+  { value: 'semi-auto', label: 'Bán tự động' },
+];
+
+const EMPTY_FORM = {
+  vehicle_brand: '',
+  vehicle_model: '',
+  vehicle_plate_number: '',
+  vehicle_type: 'Sedan',
+  transmission: 'automatic',
+  fuel_type: 'petrol',
+  /** Chuỗi để tránh `Number('') === 0` khi người dùng xóa hết (input type=number) */
+  number_of_seats: '',
+  vehicle_hire_rate_in_figures: '',
+  vehicle_images_paths: [],
+  description: '',
+};
+
+/** Parse số chỗ gửi API: rỗng → mặc định 5; chỉ chữ số 1–20 */
+function parseSeatsForApi(raw) {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  const n = parseInt(digits, 10);
+  if (!Number.isFinite(n)) return 5;
+  return Math.min(20, Math.max(1, n));
+}
+
+function parsePriceForApi(raw) {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  const n = parseInt(digits, 10);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return n;
+}
+
+// ─── Small helpers ─────────────────────────────────────────────────────────────
+
+const FieldRow = ({ label, required, children, id }) => (
+  <div>
+    <label
+      htmlFor={id}
+      style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}
+    >
+      {label}{required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const inputStyle = {
+  width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9,
+  padding: '8px 12px', fontSize: '0.85rem', boxSizing: 'border-box',
+};
+const inputCls = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary';
+const selectStyle = { ...inputStyle, background: '#fff' };
+
+// ─── Vehicle Form (shared by Add & Edit) ──────────────────────────────────────
+
+const VehicleForm = ({ form, onChange }) => {
+  const set = (key, val) => onChange({ ...form, [key]: val });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Row 1: brand + model */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <FieldRow label="Thương hiệu (Toyota, VinFast…)" required id="vehicle-brand">
+          <input
+            id="vehicle-brand"
+            name="vehicle_brand"
+            autoComplete="off"
+            className={inputCls}
+            style={inputStyle}
+            value={form.vehicle_brand}
+            placeholder="Toyota"
+            onChange={e => set('vehicle_brand', e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label="Dòng xe (Camry, VF e34…)" required id="vehicle-model">
+          <input
+            id="vehicle-model"
+            name="vehicle_model"
+            autoComplete="off"
+            className={inputCls}
+            style={inputStyle}
+            value={form.vehicle_model}
+            placeholder="Camry"
+            onChange={e => set('vehicle_model', e.target.value)}
+          />
+        </FieldRow>
+      </div>
+
+      {/* Row 2: plate + type */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <FieldRow label="Biển số xe" required id="vehicle-plate">
+          <input
+            id="vehicle-plate"
+            name="vehicle_plate_number"
+            autoComplete="off"
+            className={inputCls}
+            style={inputStyle}
+            value={form.vehicle_plate_number}
+            placeholder="51A-123.45"
+            onChange={e => set('vehicle_plate_number', e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label="Loại xe" id="vehicle-type">
+          <select
+            id="vehicle-type"
+            name="vehicle_type"
+            className={inputCls}
+            style={selectStyle}
+            value={form.vehicle_type}
+            onChange={e => set('vehicle_type', e.target.value)}
+          >
+            {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </FieldRow>
+      </div>
+
+      {/* Row 3: transmission + fuel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <FieldRow label="Hộp số" id="vehicle-transmission">
+          <select
+            id="vehicle-transmission"
+            name="transmission"
+            className={inputCls}
+            style={selectStyle}
+            value={form.transmission}
+            onChange={e => set('transmission', e.target.value)}
+          >
+            {TRANS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </FieldRow>
+        <FieldRow label="Nhiên liệu" id="vehicle-fuel">
+          <select
+            id="vehicle-fuel"
+            name="fuel_type"
+            className={inputCls}
+            style={selectStyle}
+            value={form.fuel_type}
+            onChange={e => set('fuel_type', e.target.value)}
+          >
+            {FUEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </FieldRow>
+      </div>
+
+      {/* Row 4: seats + price — text + inputMode để không có mũi tên tăng/giảm của trình duyệt */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <FieldRow label="Số chỗ ngồi" id="vehicle-seats">
+          <input
+            id="vehicle-seats"
+            name="number_of_seats"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            className={inputCls}
+            style={inputStyle}
+            value={form.number_of_seats}
+            onChange={e => {
+              const digits = e.target.value.replace(/\D/g, '').slice(0, 2);
+              set('number_of_seats', digits);
+            }}
+          />
+        </FieldRow>
+        <FieldRow label="Giá thuê (VNĐ/ngày)" id="vehicle-price">
+          <input
+            id="vehicle-price"
+            name="vehicle_hire_rate_in_figures"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            className={inputCls}
+            style={inputStyle}
+            value={form.vehicle_hire_rate_in_figures}
+            onChange={e => {
+              const digits = e.target.value.replace(/\D/g, '');
+              set('vehicle_hire_rate_in_figures', digits);
+            }}
+          />
+        </FieldRow>
+      </div>
+
+      {/* Description */}
+      <FieldRow label="Mô tả ngắn gọn (tối đa 500 ký tự)" id="vehicle-description">
+        <textarea
+          id="vehicle-description"
+          name="description"
+          rows={3}
+          maxLength={500}
+          className={inputCls}
+          style={{ ...inputStyle, resize: 'vertical' }}
+          value={form.description}
+          placeholder="Xe đẹp, nội thất sạch sẽ…"
+          onChange={e => set('description', e.target.value)}
+        />
+        <div style={{ fontSize: '0.72rem', color: '#9ca3af', textAlign: 'right' }}>
+          <span className="tabular-nums">{form.description.length}</span>/500
+        </div>
+      </FieldRow>
+
+      {/* Images */}
+      <FieldRow label="Danh sách URL ảnh xe" id="vehicle-images">
+        <ImageUrlsEditor
+          urls={form.vehicle_images_paths}
+          onChange={urls => set('vehicle_images_paths', urls)}
+        />
+      </FieldRow>
+    </div>
+  );
+};
+
+// Manage image URLs as a list (upload via FileUpload OR paste URL directly)
+const ImageUrlsEditor = ({ urls, onChange }) => {
+  const handleUpload = (newUrls) => {
+    onChange([...urls, ...newUrls]);
+  };
+  const remove = (idx) => onChange(urls.filter((_, i) => i !== idx));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <FileUpload
+        multiple
+        maxFiles={6}
+        hint="Kéo thả hoặc chọn ảnh xe — sẽ tự upload lên Cloudinary"
+        onUpload={handleUpload}
+      />
+      {urls.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          {urls.map((url, i) => (
+            <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
+              <img src={url} alt={`Ảnh xe ${i + 1}`}
+                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <button
+                type="button"
+                aria-label={`Xóa ảnh ${i + 1}`}
+                onClick={() => remove(i)}
+                style={{
+                  position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff',
+                  border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer',
+                  fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 const MyVehicles = () => {
-  const [vehicles, setVehicles] = useState(MOCK_OWNER_VEHICLES.map(v => ({ ...v, rating: 4.7, consignDate: '01/01/2026' })));
-  const [addModal, setAddModal] = useState(false);
-  const [form, setForm] = useState({ name: '', plate: '', brand: '', category: 'SUV', price: '', seats: 5, fuel: 'Xăng' });
+  const { user } = useAuth();
 
-  const handleAdd = () => {
-    setVehicles(prev => [...prev, { ...form, id: Date.now(), showroom: 'Chưa phân bổ', status: 'pending', trips: 0, revenue: 0, pendingRevenue: 0, rating: 0, consignDate: new Date().toLocaleDateString('vi-VN') }]);
-    setAddModal(false);
-    setForm({ name: '', plate: '', brand: '', category: 'SUV', price: '', seats: 5, fuel: 'Xăng' });
+  const [vehicles, setVehicles]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+
+  // Add modal
+  const [addModal, setAddModal]   = useState(false);
+  const [addForm, setAddForm]     = useState(EMPTY_FORM);
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError]   = useState('');
+
+  // Edit modal
+  const [editModal, setEditModal]     = useState(false);
+  const [editTarget, setEditTarget]   = useState(null); // full vehicle object
+  const [editForm, setEditForm]       = useState(EMPTY_FORM);
+  const [editSaving, setEditSaving]   = useState(false);
+  const [editError, setEditError]     = useState('');
+
+  // ── Load vehicles ──────────────────────────────────────────────────────────
+  const loadVehicles = useCallback(async () => {
+    if (!user?._id) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await vehicleService.getList({ added_by: user._id, limit: 100 });
+      setVehicles(res.data);
+    } catch (e) {
+      setError(e.message || 'Không tải được danh sách xe. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?._id]);
+
+  useEffect(() => { loadVehicles(); }, [loadVehicles]);
+
+  // ── Add handlers ───────────────────────────────────────────────────────────
+  const openAdd = () => {
+    setAddForm(EMPTY_FORM);
+    setAddError('');
+    setAddModal(true);
   };
 
+  const handleAdd = async () => {
+    if (!addForm.vehicle_brand.trim() || !addForm.vehicle_model.trim() || !addForm.vehicle_plate_number.trim()) {
+      setAddError('Vui lòng nhập đủ Thương hiệu, Dòng xe và Biển số xe.');
+      return;
+    }
+    setAddSaving(true);
+    setAddError('');
+    try {
+      const payload = {
+        ...addForm,
+        number_of_seats: parseSeatsForApi(addForm.number_of_seats),
+        vehicle_hire_rate_in_figures: parsePriceForApi(addForm.vehicle_hire_rate_in_figures),
+        vehicle_hire_rate_currency: 'VND',
+        vehicle_hire_charge_per_timing: 'day',
+      };
+      const created = await vehicleService.create(payload);
+      setVehicles(prev => [created, ...prev]);
+      setAddModal(false);
+    } catch (e) {
+      setAddError(e.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
+  // ── Edit handlers ──────────────────────────────────────────────────────────
+  const openEdit = (v) => {
+    setEditTarget(v);
+    setEditForm({
+      vehicle_brand: v.brand || '',
+      vehicle_model: v.model || '',
+      vehicle_plate_number: v.plateNumber || '',
+      vehicle_type: v.type || 'Sedan',
+      transmission: toApiTransmission(v.transmission),
+      fuel_type: toApiFuel(v.fuel),
+      number_of_seats:
+        v.seats != null && v.seats !== '' && Number(v.seats) >= 1
+          ? String(v.seats)
+          : '',
+      vehicle_hire_rate_in_figures:
+        v.price != null && v.price !== '' && Number(v.price) > 0 ? String(v.price) : '',
+      vehicle_images_paths: v.images || [],
+      description: v.description || '',
+    });
+    setEditError('');
+    setEditModal(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editForm.vehicle_brand.trim() || !editForm.vehicle_model.trim()) {
+      setEditError('Vui lòng nhập đủ Thương hiệu và Dòng xe.');
+      return;
+    }
+    setEditSaving(true);
+    setEditError('');
+    try {
+      const payload = {
+        ...editForm,
+        number_of_seats: parseSeatsForApi(editForm.number_of_seats),
+        vehicle_hire_rate_in_figures: parsePriceForApi(editForm.vehicle_hire_rate_in_figures),
+      };
+      const updated = await vehicleService.update(editTarget._id, payload);
+      setVehicles(prev => prev.map(v => v._id === updated._id ? updated : v));
+      setEditModal(false);
+    } catch (e) {
+      setEditError(e.message || 'Cập nhật thất bại. Vui lòng thử lại.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       <div className="page-header" style={{ marginBottom: 20 }}>
@@ -24,86 +393,169 @@ const MyVehicles = () => {
           <h1 className="page-title">Xe của tôi</h1>
           <p className="page-subtitle">Quản lý và theo dõi các xe đang ký gửi</p>
         </div>
-        <button className="btn-primary" onClick={() => setAddModal(true)}><FaPlus /> Đăng ký ký gửi xe mới</button>
+        <button type="button" className="btn-primary" onClick={openAdd}>
+          <FaPlus aria-hidden="true" /> Đăng ký ký gửi xe mới
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, alignItems: 'stretch' }}>
-        {vehicles.map(v => (
-          <div key={v.id} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', borderRadius: 16, padding: 18, border: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <MdDirectionsCar style={{ fontSize: '1.8rem', color: '#0891b2' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>{v.name}</div>
-                <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>BKS: {v.plate}</div>
-                <div style={{ marginTop: 6 }}><StatusBadge status={v.status} /></div>
-              </div>
-              <button className="btn-icon" style={{ flexShrink: 0 }} title="Chỉnh sửa"><FaEdit /></button>
-            </div>
-
-            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-              {[
-                ['Showroom', v.showroom || 'Chưa phân bổ'],
-                ['Giá thuê', v.price ? v.price + 'K/ngày' : '—'],
-                ['Số chuyến', v.trips],
-                ['Đánh giá', v.rating > 0 ? `★ ${v.rating}` : '—'],
-              ].map(([k, val]) => (
-                <div key={k} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 10px', minHeight: k === 'Showroom' ? 48 : undefined }}>
-                  <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>{k}</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#111827', marginTop: 2, ...(k === 'Showroom' ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {}) }}>{val}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
-              <div>
-                <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>Tổng doanh thu</div>
-                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#00b14f' }}>{(v.revenue / 1000000).toFixed(1)}M VND</div>
-              </div>
-              {v.pendingRevenue > 0 && (
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>Chờ nhận</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#d97706' }}>{(v.pendingRevenue / 1000).toLocaleString()}K</div>
-                </div>
-              )}
-            </div>
+      <div aria-live="polite">
+        {loading && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+            <FaSpinner style={{ fontSize: '2rem', color: '#00b14f', animation: 'spin 1s linear infinite' }} aria-label="Đang tải…" />
           </div>
-        ))}
+        )}
       </div>
 
-      <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Đăng ký ký gửi xe mới" width={560}
-        footer={<><button className="btn-outline" onClick={() => setAddModal(false)}>Hủy</button><button className="btn-primary" onClick={handleAdd}>Gửi đăng ký</button></>}
+      {!loading && error && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 12, padding: 16,
+          display: 'flex', alignItems: 'center', gap: 10, color: '#b91c1c', fontSize: '0.875rem' }}>
+          <FaExclamationCircle aria-hidden="true" /> {error}
+          <button
+            type="button"
+            onClick={loadVehicles}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none',
+              color: '#b91c1c', cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && vehicles.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#9ca3af' }}>
+          <MdDirectionsCar style={{ fontSize: '3rem', marginBottom: 12 }} aria-hidden="true" />
+          <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#6b7280' }}>Bạn chưa có xe nào được đăng ký</div>
+          <div style={{ fontSize: '0.82rem', marginTop: 6 }}>Nhấn <strong>Đăng ký ký gửi xe mới</strong> để bắt đầu</div>
+        </div>
+      )}
+
+      {!loading && !error && vehicles.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, alignItems: 'stretch' }}>
+          {vehicles.map(v => (
+            <div key={v._id || v.id} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', borderRadius: 16, padding: 18, border: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                {v.image ? (
+                  <img src={v.image} alt={v.name}
+                    style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'cover', flexShrink: 0 }}
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                  />
+                ) : null}
+                <div style={{
+                  width: 56, height: 56, borderRadius: 14, background: '#e0f2fe',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  display: v.image ? 'none' : 'flex',
+                }}>
+                  <MdDirectionsCar style={{ fontSize: '1.8rem', color: '#0891b2' }} aria-hidden="true" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>{v.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>BKS: {v.plateNumber || '—'}</div>
+                  <div style={{ marginTop: 6 }}><StatusBadge status={v.status} /></div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  style={{ flexShrink: 0 }}
+                  aria-label="Chỉnh sửa xe"
+                  title="Chỉnh sửa"
+                  onClick={() => openEdit(v)}
+                >
+                  <FaEdit aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* Stats grid */}
+              <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                {[
+                  ['Showroom', v.showroom || 'Chưa phân bổ'],
+                  ['Giá thuê', v.price ? v.price.toLocaleString('vi-VN') + ' ₫/ngày' : '—'],
+                  ['Số chỗ', v.seats || '—'],
+                  ['Nhiên liệu', v.fuel || '—'],
+                ].map(([k, val]) => (
+                  <div key={k} style={{ background: '#f9fafb', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>{k}</div>
+                    <div style={{
+                      fontWeight: 700, fontSize: '0.82rem', color: '#111827', marginTop: 2,
+                      ...(k === 'Showroom' ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {}),
+                    }} className={k === 'Giá thuê' || k === 'Số chỗ' ? 'tabular-nums' : ''}>{val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>Số chuyến</div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }} className="tabular-nums">{v.trips || 0}</div>
+                </div>
+                {v.rating > 0 && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>Đánh giá</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f59e0b' }} className="tabular-nums">★ {v.rating}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ─── Add Modal ─────────────────────────────────────────────────────── */}
+      <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Đăng ký ký gửi xe mới" width={600}
+        footer={
+          <>
+            <button type="button" className="btn-outline" onClick={() => setAddModal(false)} disabled={addSaving}>Hủy</button>
+            <button type="button" className="btn-primary" onClick={handleAdd} disabled={addSaving}>
+              {addSaving ? <><FaSpinner style={{ marginRight: 6, display: 'inline', animation: 'spin 1s linear infinite' }} aria-hidden="true" />Đang gửi…</> : 'Gửi đăng ký'}
+            </button>
+          </>
+        }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: 12, fontSize: '0.8rem', color: '#92400e' }}>
             Sau khi đăng ký, nhân viên SmartRent sẽ liên hệ để kiểm tra xe và ký hợp đồng ký gửi.
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[['Tên xe', 'name'], ['Biển số (BKS)', 'plate'], ['Thương hiệu', 'brand'], ['Số chỗ', 'seats']].map(([label, key]) => (
-              <div key={key}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>{label}</label>
-                <input value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '8px 12px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
-              </div>
-            ))}
-            <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Loại xe</label>
-              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '8px 12px', fontSize: '0.85rem', outline: 'none', background: '#fff', boxSizing: 'border-box' }}>
-                {['Sedan','SUV','MPV','Hatchback','Bán tải'].map(o => <option key={o}>{o}</option>)}
-              </select>
+          {addError && (
+            <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', color: '#b91c1c', display: 'flex', gap: 8 }}>
+              <FaExclamationCircle style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" /> {addError}
             </div>
-            <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Nhiên liệu</label>
-              <select value={form.fuel} onChange={e => setForm(f => ({ ...f, fuel: e.target.value }))} style={{ width: '100%', border: '1.5px solid #e5e7eb', borderRadius: 9, padding: '8px 12px', fontSize: '0.85rem', outline: 'none', background: '#fff', boxSizing: 'border-box' }}>
-                {['Xăng','Dầu','Điện','Hybrid'].map(o => <option key={o}>{o}</option>)}
-              </select>
+          )}
+          <VehicleForm form={addForm} onChange={setAddForm} />
+        </div>
+      </Modal>
+
+      {/* ─── Edit Modal ─────────────────────────────────────────────────────── */}
+      <Modal isOpen={editModal} onClose={() => setEditModal(false)}
+        title={editTarget ? `Chỉnh sửa — ${editTarget.name}` : 'Chỉnh sửa xe'} width={600}
+        footer={
+          <>
+            <button type="button" className="btn-outline" onClick={() => setEditModal(false)} disabled={editSaving}>Hủy</button>
+            <button type="button" className="btn-primary" onClick={handleEdit} disabled={editSaving}>
+              {editSaving ? <><FaSpinner style={{ marginRight: 6, display: 'inline', animation: 'spin 1s linear infinite' }} aria-hidden="true" />Đang lưu…</> : 'Lưu thay đổi'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {editError && (
+            <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', color: '#b91c1c', display: 'flex', gap: 8 }}>
+              <FaExclamationCircle style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" /> {editError}
             </div>
-          </div>
-          <FileUpload label="Ảnh xe" multiple hint="Ảnh chụp toàn cảnh xe (4 góc + nội thất)" />
+          )}
+          <VehicleForm form={editForm} onChange={setEditForm} />
         </div>
       </Modal>
     </div>
   );
 };
+
+// ─── Reverse-mapping helpers ───────────────────────────────────────────────────
+
+const FUEL_LABEL_TO_API = { 'Xăng': 'petrol', 'Dầu': 'diesel', 'Điện': 'electric', 'Hybrid': 'hybrid', 'Khác': 'others' };
+const TRANS_LABEL_TO_API = { 'Số tự động': 'automatic', 'Số sàn': 'manual', 'Bán tự động': 'semi-auto' };
+
+function toApiFuel(label)  { return FUEL_LABEL_TO_API[label]  || label || 'petrol'; }
+function toApiTransmission(label) { return TRANS_LABEL_TO_API[label] || label || 'automatic'; }
 
 export default MyVehicles;

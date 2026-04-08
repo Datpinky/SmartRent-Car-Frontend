@@ -22,13 +22,13 @@ const SystemReports = () => {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 9, padding: '3px' }}>
             {['month', 'quarter', 'year'].map(p => (
-              <button key={p} onClick={() => setPeriod(p)} style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: period === p ? '#fff' : 'transparent', fontWeight: 600, fontSize: '0.8rem', color: period === p ? '#111827' : '#6b7280', cursor: 'pointer', boxShadow: period === p ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+              <button key={p} type="button" aria-pressed={period === p} onClick={() => setPeriod(p)} style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: period === p ? '#fff' : 'transparent', fontWeight: 600, fontSize: '0.8rem', color: period === p ? '#111827' : '#6b7280', cursor: 'pointer', boxShadow: period === p ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
                 {p === 'month' ? 'Tháng' : p === 'quarter' ? 'Quý' : 'Năm'}
               </button>
             ))}
           </div>
-          <button className="btn-outline"><FaDownload /> Xuất Excel</button>
-          <button className="btn-primary"><FaDownload /> Xuất PDF</button>
+          <button type="button" className="btn-outline"><FaDownload aria-hidden="true" /> Xuất Excel</button>
+          <button type="button" className="btn-primary"><FaDownload aria-hidden="true" /> Xuất PDF</button>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ const SystemReports = () => {
         ].map(k => (
           <div key={k.label} style={{ background: '#fff', borderRadius: 14, padding: 18, border: '1px solid #f0f0f0' }}>
             <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: 6 }}>{k.label}</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: k.color }}>{k.value}</div>
+            <div className="tabular-nums" style={{ fontSize: '1.5rem', fontWeight: 800, color: k.color }}>{k.value}</div>
             <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: 4 }}>↑ {k.sub}</div>
           </div>
         ))}

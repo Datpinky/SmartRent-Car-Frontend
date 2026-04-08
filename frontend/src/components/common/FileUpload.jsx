@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useId } from 'react';
 import { FaCloudUploadAlt, FaTimes, FaCheckCircle, FaSpinner, FaExclamationCircle } from 'react-icons/fa';
 import uploadService from '../../services/uploadService';
 
@@ -27,6 +27,7 @@ const FileUpload = ({
   preview = true,
   autoUpload = true,
 }) => {
+  const inputId = useId();
   const [files, setFiles] = useState([]);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -47,19 +48,16 @@ const FileUpload = ({
     setFiles(updated);
     setUploadError('');
 
-    // Local-only callback
     if (onFiles) onFiles(updated.map(f => f.file));
 
     if (!autoUpload) return;
 
-    // Upload to backend
     setUploading(true);
     try {
       const rawFiles = updated.map(f => f.file);
       const results = await uploadService.uploadImages(rawFiles);
       const cloudUrls = results.map(r => r.url).filter(Boolean);
 
-      // Mark all files as uploaded
       setFiles(prev =>
         prev.map((f, i) => ({
           ...f,
@@ -71,7 +69,6 @@ const FileUpload = ({
       if (onUpload) onUpload(cloudUrls);
     } catch (err) {
       setUploadError(err.message || 'Upload thất bại. Vui lòng thử lại.');
-      // Still call onFiles so caller has the local File objects as fallback
       if (onFiles) onFiles(updated.map(f => f.file));
     } finally {
       setUploading(false);
@@ -88,25 +85,30 @@ const FileUpload = ({
 
   return (
     <div className="flex flex-col gap-2.5">
-      {label && <div className="text-[0.85rem] font-semibold text-gray-700">{label}</div>}
+      {label && (
+        <label htmlFor={inputId} className="text-[0.85rem] font-semibold text-gray-700">
+          {label}
+        </label>
+      )}
 
-      <div
-        className={`border-2 border-dashed rounded-xl py-7 px-5 text-center cursor-pointer transition-all
+      {/* Drop zone — acts as a label for the hidden input so click activates the picker */}
+      <label
+        htmlFor={inputId}
+        className={`border-2 border-dashed rounded-xl py-7 px-5 text-center cursor-pointer transition-[border-color,background-color]
           ${dragging ? 'border-primary bg-primary-light' : 'border-gray-300 bg-gray-50 hover:border-primary hover:bg-primary-light'}
           ${uploading ? 'opacity-70 pointer-events-none' : ''}`}
-        onClick={() => inputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
       >
         {uploading ? (
-          <FaSpinner className="text-[2rem] mb-2 mx-auto text-primary animate-spin" />
+          <FaSpinner aria-hidden="true" className="text-[2rem] mb-2 mx-auto text-primary animate-spin" />
         ) : (
-          <FaCloudUploadAlt className={`text-[2rem] mb-2 mx-auto transition-colors ${dragging ? 'text-primary' : 'text-gray-400'}`} />
+          <FaCloudUploadAlt aria-hidden="true" className={`text-[2rem] mb-2 mx-auto transition-colors ${dragging ? 'text-primary' : 'text-gray-400'}`} />
         )}
         <div className="text-[0.85rem] text-gray-500">
           {uploading
-            ? 'Đang tải lên...'
+            ? 'Đang tải lên…'
             : (<>Kéo thả hoặc <span className="text-primary font-semibold underline">chọn file</span></>)
           }
         </div>
@@ -116,17 +118,22 @@ const FileUpload = ({
         )}
         <input
           ref={inputRef}
+          id={inputId}
+          name="file-upload"
           type="file"
           accept={accept}
           multiple={multiple}
-          className="hidden"
+          className="sr-only"
           onChange={e => handleFiles(e.target.files)}
         />
-      </div>
+      </label>
 
       {uploadError && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.8rem]">
-          <FaExclamationCircle className="shrink-0" />
+        <div
+          role="alert"
+          className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.8rem]"
+        >
+          <FaExclamationCircle aria-hidden="true" className="shrink-0" />
           {uploadError}
         </div>
       )}
@@ -136,11 +143,11 @@ const FileUpload = ({
           {files.map(f => (
             <div key={f.id} className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
               {f.url
-                ? <img src={f.cloudUrl || f.url} alt={f.name} className="w-10 h-10 object-cover rounded-md" />
+                ? <img src={f.cloudUrl || f.url} alt={f.name} width={40} height={40} className="w-10 h-10 object-cover rounded-md" />
                 : (
                   f.uploaded
-                    ? <FaCheckCircle className="text-emerald-600 text-[1.2rem]" />
-                    : <FaCloudUploadAlt className="text-gray-400 text-[1.2rem]" />
+                    ? <FaCheckCircle aria-hidden="true" className="text-emerald-600 text-[1.2rem]" />
+                    : <FaCloudUploadAlt aria-hidden="true" className="text-gray-400 text-[1.2rem]" />
                 )
               }
               <span className="flex-1 text-[0.8rem] text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -152,10 +159,11 @@ const FileUpload = ({
               {!uploading && (
                 <button
                   type="button"
-                  className="text-gray-400 p-1 rounded flex items-center justify-center hover:text-red-600 hover:bg-red-100 transition-colors"
+                  aria-label={`Xóa file ${f.name}`}
+                  className="text-gray-400 p-1 rounded flex items-center justify-center hover:text-red-600 hover:bg-red-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                   onClick={() => remove(f.id)}
                 >
-                  <FaTimes />
+                  <FaTimes aria-hidden="true" />
                 </button>
               )}
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
@@ -16,7 +16,7 @@ import '../../Map/CarLocationMap.css';
 
 const SpecItem = ({ icon, label, value }) => (
   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-    <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center text-primary shrink-0">{icon}</div>
+    <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center text-primary shrink-0" aria-hidden="true">{icon}</div>
     <div>
       <div className="text-[0.72rem] text-gray-400 font-medium uppercase tracking-wide">{label}</div>
       <div className="text-[0.9rem] font-semibold text-gray-800">{value}</div>
@@ -29,18 +29,27 @@ const sectionTitle = "text-[0.9rem] font-bold text-gray-800 mb-3 pb-2 border-b b
 const StarRow = ({ rating, count }) => (
   <span className="flex items-center gap-1 text-[0.85rem]">
     {[1, 2, 3, 4, 5].map(i => (
-      <FaStar key={i} size={13} color={i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb'} />
+      <FaStar key={i} size={13} color={i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb'} aria-hidden="true" />
     ))}
-    <strong className="ml-1">{rating}</strong>
-    {count !== undefined && <span className="text-gray-400">({count} đánh giá)</span>}
+    <strong className="ml-1 tabular-nums">{rating}</strong>
+    {count !== undefined && <span className="text-gray-400 tabular-nums">({count} đánh giá)</span>}
   </span>
 );
 
 const isMongoId = (str) => /^[a-f\d]{24}$/i.test(str);
 
+/** Sau khi đăng nhập — khách thuê / admin: chuyến đi; chủ xe / showroom: khu vực quản lý tương ứng */
+const BOOK_NOW_DESTINATIONS = {
+  renter: '/renter/bookings',
+  admin: '/renter/bookings',
+  owner: '/owner/dashboard',
+  showroom: '/showroom/bookings',
+};
+
 const CarDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const [car, setCar] = useState(null);
@@ -203,6 +212,15 @@ const CarDetail = () => {
     }
   };
 
+  const handleBookNow = () => {
+    if (!user) {
+      navigate('/login', { state: { from: location, bookNow: true } });
+      return;
+    }
+    const dest = BOOK_NOW_DESTINATIONS[user.role] || '/renter/bookings';
+    navigate(dest);
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
@@ -223,8 +241,8 @@ const CarDetail = () => {
   if (loading) {
     return (
       <div className="max-w-[1280px] mx-auto px-5 py-20 text-center">
-        <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-gray-500">Đang tải thông tin xe...</p>
+        <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin motion-reduce:animate-none mb-4" />
+        <p className="text-gray-500">Đang tải thông tin xe…</p>
       </div>
     );
   }
@@ -235,6 +253,7 @@ const CarDetail = () => {
         <div className="text-[4rem] mb-4">🚗</div>
         <h2 className="text-xl font-bold text-gray-800 mb-5">Không tìm thấy xe</h2>
         <button
+          type="button"
           className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
           onClick={() => navigate('/')}
         >
@@ -253,10 +272,11 @@ const CarDetail = () => {
   return (
     <div className="max-w-[1280px] mx-auto px-5 py-6">
       <button
+        type="button"
         className="flex items-center gap-2 text-[0.82rem] text-gray-500 font-medium mb-5 hover:text-primary transition-colors"
         onClick={() => navigate(-1)}
       >
-        <FaChevronLeft size={12} /> Quay lại danh sách xe
+        <FaChevronLeft size={12} aria-hidden="true" /> Quay lại danh sách xe
       </button>
 
       <div className="grid grid-cols-[1fr_360px] gap-8 items-start max-[900px]:grid-cols-1">
@@ -268,6 +288,8 @@ const CarDetail = () => {
               <img
                 src={car.image}
                 alt={car.name}
+                width={600}
+                height={400}
                 className="w-full h-full object-cover"
                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
               />
@@ -279,22 +301,27 @@ const CarDetail = () => {
                 display: car.image ? 'none' : 'flex',
               }}
             >
-              <MdDirectionsCar style={{ fontSize: '8rem', color: car.color || `hsl(${hue},40%,50%)`, filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.15))', transform: 'scaleX(-1)' }} />
+              <MdDirectionsCar aria-hidden="true" style={{ fontSize: '8rem', color: car.color || `hsl(${hue},40%,50%)`, filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.15))', transform: 'scaleX(-1)' }} />
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 mt-3 mb-6">
-            <button className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-full text-[0.82rem] text-gray-600 cursor-pointer bg-white hover:border-primary hover:text-primary transition-colors">
-              <FaShareAlt size={13} /> Chia sẻ
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-full text-[0.82rem] text-gray-600 cursor-pointer bg-white hover:border-primary hover:text-primary transition-colors"
+              onClick={() => navigator.share?.({ title: document.title, url: window.location.href }) || navigator.clipboard?.writeText(window.location.href)}
+            >
+              <FaShareAlt size={13} aria-hidden="true" /> Chia sẻ
             </button>
             <button
+              type="button"
               onClick={handleToggleFavorite}
               disabled={likeLoading}
               className={`flex items-center gap-1.5 px-4 py-2 border rounded-full text-[0.82rem] cursor-pointer bg-white transition-colors
                 ${liked ? 'border-red-400 text-red-500 hover:border-red-500' : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
             >
-              {liked ? <FaHeart size={13} /> : <FaRegHeart size={13} />}
+              {liked ? <FaHeart size={13} aria-hidden="true" /> : <FaRegHeart size={13} aria-hidden="true" />}
               {liked ? 'Đã yêu thích' : 'Yêu thích'}
             </button>
           </div>
@@ -305,16 +332,16 @@ const CarDetail = () => {
 
             <div className="flex flex-wrap gap-3">
               <span className="flex items-center gap-1 text-[0.85rem] text-primary font-medium">
-                <FaMapMarkerAlt size={12} /> {car.address || car.location || 'Chưa có địa chỉ'}
+                <FaMapMarkerAlt size={12} aria-hidden="true" /> {car.address || car.location || 'Chưa có địa chỉ'}
               </span>
               {car.showroom && (
                 <span className="flex items-center gap-1 text-[0.82rem] text-gray-500">
-                  <FaStore size={12} className="text-gray-400" /> {car.showroom}
+                  <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.showroom}
                 </span>
               )}
               <StarRow rating={avgRating} count={tripCount} />
               <span className="flex items-center gap-1 text-primary font-semibold text-[0.85rem]">
-                <MdVerified size={15} /> {car.type || car.category}
+                <MdVerified size={15} aria-hidden="true" /> {car.type || car.category}
               </span>
             </div>
 
@@ -354,7 +381,7 @@ const CarDetail = () => {
                   <div className="map-page-map-container car-detail-map-wrap relative min-h-[280px]">
                     {coordsLoading && (
                       <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-white/90 rounded-xl">
-                        <div className="w-9 h-9 border-[3px] border-primary border-t-transparent rounded-full animate-spin mb-2" />
+                        <div className="w-9 h-9 border-[3px] border-primary border-t-transparent rounded-full animate-spin motion-reduce:animate-none mb-2" />
                         <p className="text-[0.82rem] text-gray-500">Đang tải bản đồ…</p>
                       </div>
                     )}
@@ -397,7 +424,7 @@ const CarDetail = () => {
 
             {/* Insurance */}
             <div className="flex items-start gap-2.5 bg-[#f0f9f4] p-3.5 rounded-xl border border-[#c8ecd8]">
-              <MdShield size={20} className="text-primary shrink-0 mt-0.5" />
+              <MdShield size={20} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <div className="font-bold text-[0.85rem] text-gray-800 mb-1">Bảo hiểm toàn diện</div>
                 <div className="text-[0.78rem] text-gray-500">Xe được bảo hiểm tai nạn toàn diện trong suốt chuyến đi. Mức bồi thường lên đến 1 tỷ đồng.</div>
@@ -408,10 +435,11 @@ const CarDetail = () => {
             <div>
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                 <span className="text-[0.9rem] font-bold text-gray-800">
-                  Đánh giá {reviewsMeta.total > 0 && `(${reviewsMeta.total})`}
+                  Đánh giá {reviewsMeta.total > 0 && <span className="tabular-nums">({reviewsMeta.total})</span>}
                 </span>
                 {user && isMongoId(id) && (
                   <button
+                    type="button"
                     onClick={() => setShowReviewForm(p => !p)}
                     className="text-[0.8rem] text-primary font-semibold hover:underline"
                   >
@@ -428,15 +456,16 @@ const CarDetail = () => {
                       <button
                         key={n}
                         type="button"
+                        aria-label={`${n} sao`}
                         onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
                       >
-                        <FaStar size={20} color={n <= reviewForm.rating ? '#f59e0b' : '#e5e7eb'} />
+                        <FaStar size={20} color={n <= reviewForm.rating ? '#f59e0b' : '#e5e7eb'} aria-hidden="true" />
                       </button>
                     ))}
                   </div>
                   <textarea
                     rows={3}
-                    placeholder="Nhận xét của bạn..."
+                    placeholder="Nhận xét của bạn…"
                     value={reviewForm.comment}
                     onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[0.85rem] outline-none focus:border-primary resize-none"
@@ -447,12 +476,12 @@ const CarDetail = () => {
                     disabled={reviewSubmitting}
                     className="self-end px-5 py-2 bg-primary text-white rounded-lg text-[0.85rem] font-semibold hover:bg-primary-dark transition-colors disabled:opacity-60"
                   >
-                    {reviewSubmitting ? 'Đang gửi...' : 'Gửi đánh giá'}
+                    {reviewSubmitting ? 'Đang gửi…' : 'Gửi đánh giá'}
                   </button>
                 </form>
               )}
 
-              {reviewsLoading && <p className="text-gray-400 text-[0.82rem] py-2">Đang tải đánh giá...</p>}
+              {reviewsLoading && <p className="text-gray-400 text-[0.82rem] py-2">Đang tải đánh giá…</p>}
 
               {!reviewsLoading && reviews.length === 0 && (
                 <p className="text-gray-400 text-[0.82rem] py-2">Chưa có đánh giá nào.</p>
@@ -493,7 +522,7 @@ const CarDetail = () => {
         <div className="sticky top-[76px]">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-[1.8rem] font-extrabold text-primary">
+              <span className="text-[1.8rem] font-extrabold text-primary tabular-nums">
                 {car.price ? car.price.toLocaleString() : '—'}
                 {car.currency === 'VND' ? 'đ' : car.currency || 'K'}
               </span>
@@ -501,10 +530,13 @@ const CarDetail = () => {
             </div>
             <div className="h-px bg-gray-100 my-4" />
 
-            {[{ label: 'Thời gian nhận xe', def: '2026-04-02T15:00' }, { label: 'Thời gian trả xe', def: '2026-04-04T19:00' }].map(({ label, def }) => (
-              <div key={label} className="mb-3">
-                <div className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">{label}</div>
-                <input type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
+            {[
+              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
+              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
+            ].map(({ label, id: inputId, def }) => (
+              <div key={inputId} className="mb-3">
+                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
+                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
               </div>
             ))}
 
@@ -518,20 +550,24 @@ const CarDetail = () => {
               ].map(([label, val]) => (
                 <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
                   <span>{label}</span>
-                  <span className="font-semibold text-gray-800">{val}</span>
+                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
                 </div>
               ))}
               <div className="h-px bg-gray-100 my-1" />
               <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
                 <span>Tổng cộng</span>
-                <span className="text-primary">
+                <span className="text-primary tabular-nums">
                   {car.price ? (car.price * 2 + Math.round(car.price * 2 * 0.05)).toLocaleString() : 0}
                   {car.currency === 'VND' ? 'đ' : 'K'}
                 </span>
               </div>
             </div>
 
-            <button className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-all hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]">
+            <button
+              type="button"
+              onClick={handleBookNow}
+              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
+            >
               Đặt xe ngay
             </button>
             <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
@@ -542,7 +578,7 @@ const CarDetail = () => {
               </div>
               <div>
                 <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
-                <div className="text-[0.75rem] text-gray-400">⭐ {avgRating} · Phản hồi trong 5 phút</div>
+                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
               </div>
             </div>
           </div>

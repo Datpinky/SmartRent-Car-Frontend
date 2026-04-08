@@ -49,22 +49,22 @@
 
   /* Dashboard shared button utilities */
   .btn-primary {
-    @apply bg-primary text-white border-none rounded-[9px] px-[18px] py-[9px] text-[0.85rem] font-semibold cursor-pointer inline-flex items-center gap-1.5 transition-colors hover:bg-primary-dark;
+    @apply bg-primary text-white border-none rounded-[9px] px-[18px] py-[9px] text-[0.85rem] font-semibold cursor-pointer inline-flex items-center gap-1.5 transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
   .btn-danger {
-    @apply bg-red-600 text-white border-none rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-semibold cursor-pointer transition-colors hover:bg-red-700;
+    @apply inline-flex items-center justify-center gap-2 bg-red-600 text-white border-none rounded-[9px] px-3.5 py-[9px] text-[0.8rem] font-semibold leading-none cursor-pointer transition-colors hover:bg-red-700 [&_svg]:shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2;
   }
   .btn-success {
-    @apply bg-emerald-600 text-white border-none rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-semibold cursor-pointer transition-colors hover:bg-emerald-700;
+    @apply inline-flex items-center justify-center gap-2 bg-emerald-600 text-white border-none rounded-[9px] px-3.5 py-[9px] text-[0.8rem] font-semibold leading-none cursor-pointer transition-colors hover:bg-emerald-700 [&_svg]:shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2;
   }
   .btn-outline {
-    @apply bg-white text-gray-700 border-[1.5px] border-gray-200 rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-medium cursor-pointer transition-all hover:border-primary hover:text-primary;
+    @apply inline-flex items-center justify-center gap-2 bg-white text-gray-700 border-[1.5px] border-gray-200 rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-medium cursor-pointer transition-[border-color,color] hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
   }
   .btn-warn {
-    @apply bg-amber-600 text-white border-none rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-semibold cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 bg-amber-600 text-white border-none rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400;
   }
   .btn-icon {
-    @apply bg-transparent border-[1.5px] border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer text-gray-500 text-[0.85rem] transition-all inline-flex items-center gap-1 hover:border-primary hover:text-primary;
+    @apply bg-transparent border-[1.5px] border-gray-200 rounded-lg px-2 py-1.5 cursor-pointer text-gray-500 text-[0.85rem] transition-[border-color,color] inline-flex items-center gap-1 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
   }
   .btn-icon.danger:hover {
     @apply border-red-600 text-red-600;
@@ -115,14 +115,6 @@
   .page-header { @apply flex items-start justify-between flex-wrap gap-3; }
   .page-header-date { @apply text-[0.82rem] text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg self-start; }
   .stats-grid { @apply grid gap-3.5; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-  .alert-section { @apply flex flex-col gap-2; }
-  .alert-list { @apply flex flex-col gap-2; }
-  .alert-item { @apply flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[0.82rem]; }
-  .alert-item.warning { @apply bg-amber-50 border border-amber-200 text-amber-900; }
-  .alert-item.info { @apply bg-blue-50 border border-blue-200 text-blue-900; }
-  .alert-icon { @apply text-[0.9rem] shrink-0; }
-  .alert-msg { @apply flex-1; }
-  .alert-action { @apply bg-white border border-current rounded-md px-2.5 py-0.5 cursor-pointer text-[0.75rem] font-semibold text-inherit whitespace-nowrap transition-opacity hover:opacity-80; }
   .charts-grid { @apply grid gap-4; grid-template-columns: 1fr 340px; }
   @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
   .chart-header { @apply flex items-center justify-between mb-4 flex-wrap gap-2; }

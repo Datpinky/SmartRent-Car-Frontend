@@ -31,7 +31,7 @@ const TransactionMonitor = () => {
     )},
     { key: 'status', label: 'Trạng thái', render: row => <StatusBadge status={row.status} /> },
     { key: 'date', label: 'Thời gian', accessor: 'date' },
-    { key: 'actions', label: '', render: row => <button className="btn-icon" onClick={() => setViewModal(row)} title="Xem chi tiết"><FaEye /></button> },
+    { key: 'actions', label: '', render: row => <button type="button" className="btn-icon" onClick={() => setViewModal(row)} title="Xem chi tiết" aria-label="Xem chi tiết"><FaEye /></button> },
   ];
 
   return (
@@ -41,7 +41,7 @@ const TransactionMonitor = () => {
           <h1 className="page-title">Giám sát giao dịch</h1>
           <p className="page-subtitle">Theo dõi tất cả giao dịch thanh toán trên nền tảng</p>
         </div>
-        <button className="btn-outline"><FaDownload /> Xuất báo cáo</button>
+        <button type="button" className="btn-outline"><FaDownload aria-hidden="true" /> Xuất báo cáo</button>
       </div>
 
       {/* Summary */}
@@ -55,16 +55,16 @@ const TransactionMonitor = () => {
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '10px 16px', border: '1px solid #f0f0f0', flex: 1, minWidth: 140 }}>
             <div style={{ fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
-            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color, marginTop: 2 }}>{s.val}</div>
+            <div className="tabular-nums" style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color, marginTop: 2 }}>{s.val}</div>
           </div>
         ))}
       </div>
 
       {/* Filter bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <FaFilter style={{ color: '#9ca3af', alignSelf: 'center' }} />
+        <FaFilter aria-hidden="true" style={{ color: '#9ca3af', alignSelf: 'center' }} />
         {['all', 'paid', 'processing', 'failed'].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} style={{
+          <button key={s} type="button" onClick={() => setStatusFilter(s)} style={{
             padding: '5px 14px', borderRadius: 50, border: '1.5px solid',
             borderColor: statusFilter === s ? '#00b14f' : '#e5e7eb',
             background: statusFilter === s ? '#00b14f' : '#fff',
@@ -76,13 +76,13 @@ const TransactionMonitor = () => {
         ))}
       </div>
 
-      <DataTable columns={columns} data={filtered} searchPlaceholder="Tìm theo khách thuê, showroom..." />
+      <DataTable columns={columns} data={filtered} searchPlaceholder="Tìm theo khách thuê, showroom…" />
 
       <Modal isOpen={!!viewModal} onClose={() => setViewModal(null)} title="Chi tiết giao dịch" width={460}>
         {viewModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: viewModal.status === 'paid' ? '#f0fdf4' : viewModal.status === 'failed' ? '#fef2f2' : '#eff6ff', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: viewModal.status === 'paid' ? '#059669' : viewModal.status === 'failed' ? '#dc2626' : '#2563eb' }}>{viewModal.amount.toLocaleString()}đ</div>
+              <div className="tabular-nums" style={{ fontSize: '1.5rem', fontWeight: 800, color: viewModal.status === 'paid' ? '#059669' : viewModal.status === 'failed' ? '#dc2626' : '#2563eb' }}>{viewModal.amount.toLocaleString()}đ</div>
               <StatusBadge status={viewModal.status} />
             </div>
             {[
