@@ -1,5 +1,4 @@
 import React from 'react';
-import { MdDirectionsCar } from 'react-icons/md';
 import { FaFacebook, FaInstagram, FaYoutube, FaTiktok } from 'react-icons/fa';
 
 const SOCIAL = [
@@ -14,11 +13,15 @@ const Footer = () => (
     <div className="max-w-[1280px] mx-auto grid grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-10 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
       {/* Brand */}
       <div className="flex flex-col gap-3.5">
-        <div className="text-[1.4rem] font-extrabold text-white flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white">
-            <MdDirectionsCar aria-hidden="true" size={18} />
-          </div>
-          SmartRent Car
+        <div>
+          <img
+            src="/logo_transparent.png"
+            alt="SmartRent Car Rental"
+            width={150}
+            height={40}
+            className="h-10 w-auto object-contain"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
         </div>
         <p className="text-[0.85rem] leading-[1.7] text-gray-500 max-w-[280px]">
           Nền tảng thuê xe tự lái hàng đầu Việt Nam. Kết nối chủ xe và khách thuê một cách nhanh chóng, an toàn và tiện lợi.

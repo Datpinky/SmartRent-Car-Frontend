@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaEye } from 'react-icons/fa';
+import { FaUsers, FaStore, FaCalendarCheck, FaMoneyBillWave, FaCar, FaExclamationTriangle, FaEye, FaSpinner } from 'react-icons/fa';
 import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { REVENUE_MONTHLY, USER_GROWTH, VEHICLE_STATUS_PIE, MOCK_BOOKINGS } from '../../../components/data/mockDashboard';
+import adminService from '../../../services/adminService';
 import { useNavigate } from 'react-router-dom';
 
 const currentMonthYear = new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(new Date());
@@ -21,11 +21,59 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+const fmt = (n) => {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + ' tỷ';
+  if (n >= 1_000_000) return Math.round(n / 1_000_000) + 'M';
+  return n.toLocaleString('vi-VN');
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('revenue');
+  const [stats, setStats] = useState(null);
+  const [charts, setCharts] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const recentBookings = MOCK_BOOKINGS.slice(0, 6);
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    Promise.all([adminService.getDashboardStats(), adminService.getChartData()])
+      .then(([s, c]) => {
+        if (!mounted) return;
+        setStats(s);
+        setCharts(c);
+      })
+      .catch(() => {
+        if (mounted) setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại.');
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320, gap: 10, color: '#6b7280' }}>
+        <FaSpinner aria-hidden="true" className="animate-spin" /> Đang tải dữ liệu…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div role="alert" style={{ padding: 32, textAlign: 'center', color: '#dc2626', background: '#fff', borderRadius: 14, margin: 20 }}>
+        {error}
+      </div>
+    );
+  }
+
+  const vehicleStatusPie = charts?.vehicleStatusPie || [];
+  const vehicleCategoryPie = charts?.vehicleCategoryPie || [];
+  const revenueMonthly = charts?.revenueMonthly || [];
+  const userGrowth = charts?.userGrowth || [];
+  const recentBookings = stats?.recentBookings || [];
 
   return (
     <div className="admin-dash">
@@ -39,12 +87,12 @@ const AdminDashboard = () => {
 
       {/* Stat Cards */}
       <div className="stats-grid">
-        <StatCard title="Tổng người dùng"     value="1,247"   icon={<FaUsers />}         color="#6d28d9" trend={12.4}  trendLabel="so tháng trước" />
-        <StatCard title="Tổng Showroom"        value="23"      icon={<FaStore />}         color="#0891b2" trend={4.5}   trendLabel="so tháng trước" />
-        <StatCard title="Tổng lượt đặt xe"    value="3,891"   icon={<FaCalendarCheck />} color="#00b14f" trend={18.2}  trendLabel="so tháng trước" />
-        <StatCard title="Doanh thu hệ thống"  value="2.4 tỷ"  icon={<FaMoneyBillWave />} color="#d97706" trend={21.5}  trendLabel="so tháng trước" />
-        <StatCard title="Xe đang hoạt động"   value="48"      icon={<FaCar />}           color="#dc2626" trend={6.7}   trendLabel="so tháng trước" />
-        <StatCard title="Chờ duyệt"           value="5"       icon={<FaExclamationTriangle />} color="#f59e0b" subtext="showroom + xe" />
+        <StatCard title="Tổng người dùng"    value={stats?.totalUsers?.toLocaleString() ?? '—'}   icon={<FaUsers />}         color="#6d28d9" />
+        <StatCard title="Tổng Showroom"       value={stats?.totalShowrooms?.toLocaleString() ?? '—'} icon={<FaStore />}        color="#0891b2" />
+        <StatCard title="Tổng lượt đặt xe"   value={stats?.totalBookings?.toLocaleString() ?? '—'}  icon={<FaCalendarCheck />} color="#00b14f" />
+        <StatCard title="Doanh thu hệ thống"  value={fmt(stats?.totalRevenue ?? 0)}                  icon={<FaMoneyBillWave />} color="#d97706" />
+        <StatCard title="Xe đang hoạt động"  value={stats?.activeVehicles?.toLocaleString() ?? '—'} icon={<FaCar />}           color="#dc2626" />
+        <StatCard title="Chờ duyệt"          value={stats?.pendingCount?.toLocaleString() ?? '—'}   icon={<FaExclamationTriangle />} color="#f59e0b" subtext="showroom chờ duyệt" />
       </div>
 
       {/* Charts row */}
@@ -62,7 +110,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={REVENUE_MONTHLY} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={revenueMonthly} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#00b14f" stopOpacity={0.3} />
@@ -84,23 +132,29 @@ const AdminDashboard = () => {
         {/* Vehicle Status Pie */}
         <div className="chart-card">
           <div className="chart-header"><div className="chart-title">Trạng thái xe</div></div>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={VEHICLE_STATUS_PIE} dataKey="value" cx="50%" cy="50%" outerRadius={80} paddingAngle={3}>
-                {VEHICLE_STATUS_PIE.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip formatter={(value, name) => [value + ' xe', name]} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="pie-legend">
-            {VEHICLE_STATUS_PIE.map(d => (
-              <div key={d.name} className="pie-legend-item">
-                <span className="pie-dot" style={{ background: d.color }} />
-                <span>{d.name}</span>
-                <span className="pie-val">{d.value}</span>
+          {vehicleStatusPie.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={vehicleStatusPie} dataKey="value" cx="50%" cy="50%" outerRadius={80} paddingAngle={3}>
+                    {vehicleStatusPie.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [value + ' xe', name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pie-legend">
+                {vehicleStatusPie.map(d => (
+                  <div key={d.name} className="pie-legend-item">
+                    <span className="pie-dot" style={{ background: d.color }} />
+                    <span>{d.name}</span>
+                    <span className="pie-val">{d.value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af', fontSize: '0.85rem' }}>Chưa có dữ liệu</div>
+          )}
         </div>
       </div>
 
@@ -108,15 +162,15 @@ const AdminDashboard = () => {
       <div className="chart-card" style={{ marginTop: 20 }}>
         <div className="chart-header"><div className="chart-title">Tăng trưởng người dùng (6 tháng gần nhất)</div></div>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={USER_GROWTH} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+          <BarChart data={userGrowth} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltip />} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
-            <Bar dataKey="renters" name="Khách thuê" fill="#00b14f" radius={[4,4,0,0]} />
-            <Bar dataKey="owners"  name="Chủ xe"     fill="#0891b2" radius={[4,4,0,0]} />
-            <Bar dataKey="showrooms" name="Showroom" fill="#6d28d9" radius={[4,4,0,0]} />
+            <Bar dataKey="renters"   name="Khách thuê" fill="#00b14f" radius={[4,4,0,0]} />
+            <Bar dataKey="owners"    name="Chủ xe"     fill="#0891b2" radius={[4,4,0,0]} />
+            <Bar dataKey="showrooms" name="Showroom"   fill="#6d28d9" radius={[4,4,0,0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -128,22 +182,26 @@ const AdminDashboard = () => {
           <button type="button" className="btn-link" onClick={() => navigate('/admin/transactions')}>Xem tất cả <FaEye aria-hidden="true" /></button>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table className="simple-table">
-            <thead><tr><th>Mã</th><th>Khách thuê</th><th>Xe</th><th>Từ</th><th>Đến</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
-            <tbody>
-              {recentBookings.map(b => (
-                <tr key={b.id}>
-                  <td><span className="code-badge">{b.id}</span></td>
-                  <td>{b.renter}</td>
-                  <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.vehicle}</td>
-                  <td>{b.from}</td>
-                  <td>{b.to}</td>
-                  <td className="tabular-nums" style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
-                  <td><StatusBadge status={b.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {recentBookings.length > 0 ? (
+            <table className="simple-table">
+              <thead><tr><th>Mã</th><th>Khách thuê</th><th>Xe</th><th>Từ</th><th>Đến</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                {recentBookings.map(b => (
+                  <tr key={String(b.id)}>
+                    <td><span className="code-badge">{b.code}</span></td>
+                    <td>{b.renter}</td>
+                    <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.vehicle}</td>
+                    <td>{b.from}</td>
+                    <td>{b.to}</td>
+                    <td className="tabular-nums" style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
+                    <td><StatusBadge status={b.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ textAlign: 'center', padding: 32, color: '#9ca3af', fontSize: '0.85rem' }}>Chưa có đơn đặt xe nào</div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaTimes, FaBars, FaUser, FaSignOutAlt } from 'react-icons/fa';
-import { MdDirectionsCar } from 'react-icons/md';
 import { useAuth } from '../../contexts/AuthContext';
 
 const ROLE_DASHBOARD_PATHS = {
@@ -33,11 +32,17 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-[1000] bg-white border-b border-gray-200 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
       <div className="flex items-center justify-between h-16 max-w-[1280px] mx-auto px-5">
-        <Link to="/" className="flex items-center gap-2 text-2xl font-extrabold text-gray-800 no-underline">
-          <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center text-white font-black">
-            <MdDirectionsCar aria-hidden="true" size={20} />
-          </div>
-          <span>Smart<span className="text-primary">Rent</span> Car</span>
+        <Link to="/" className="flex items-center no-underline" aria-label="SmartRent Car Rental — Trang chủ">
+          <img
+            src="/logo_transparent.png"
+            alt="SmartRent Car Rental"
+            width={160}
+            height={44}
+            className="h-11 w-auto object-contain"
+            style={{
+              filter: 'brightness(0) saturate(100%) invert(27%) sepia(96%) saturate(1057%) hue-rotate(174deg) brightness(90%)',
+            }}
+          />
         </Link>
 
         {/* Desktop nav */}

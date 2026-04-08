@@ -17,4 +17,13 @@ router.get("/showrooms", adminValidation.listShowrooms, validate, adminControlle
 router.patch("/showrooms/:id/approve", adminValidation.approveShowroom, validate, adminController.approveShowroom);
 router.patch("/showrooms/:id/reject", adminValidation.rejectShowroom, validate, adminController.rejectShowroom);
 
+router.get("/dashboard/stats", adminController.getDashboardStats);
+router.get("/dashboard/charts", adminController.getChartData);
+
+router.get("/transactions", adminController.listTransactions);
+
+router.get("/reviews", adminController.listReviews);
+router.patch("/reviews/:id/approve", adminController.approveReview);
+router.patch("/reviews/:id/reject", adminController.rejectReview);
+
 module.exports = router;

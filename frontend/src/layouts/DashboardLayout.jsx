@@ -126,17 +126,28 @@ const DashboardLayout = ({ children }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-3.5 py-[18px] border-b border-white/[0.08] min-h-[64px] shrink-0">
           {!collapsed && (
-            <Link to="/" className="flex items-center gap-2.5 flex-1 no-underline">
-              <div className="w-[34px] h-[34px] bg-primary rounded-[9px] flex items-center justify-center font-black text-base text-white shrink-0">S</div>
-              <div className="flex flex-col leading-none">
-                <span className="text-[0.95rem] font-extrabold text-white">SmartRent</span>
-                <span className="text-[0.65rem] text-white/[0.45]">Car Rental</span>
-              </div>
+            <Link to="/" className="flex-1 no-underline min-w-0" aria-label="SmartRent Car Rental — Trang chủ">
+              <img
+                src="/logo_transparent.png"
+                alt="SmartRent Car Rental"
+                width={140}
+                height={36}
+                className="h-9 w-auto object-contain"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
             </Link>
           )}
           {collapsed && (
-            <Link to="/" aria-label="SmartRent Car — Trang chủ" className="w-[34px] h-[34px] bg-primary rounded-[9px] flex items-center justify-center font-black text-base text-white shrink-0 mx-auto no-underline">
-              S
+            <Link to="/" aria-label="SmartRent Car — Trang chủ" className="flex items-center justify-center w-full mx-auto no-underline overflow-hidden">
+              <img
+                src="/logo_transparent.png"
+                alt=""
+                aria-hidden="true"
+                width={52}
+                height={52}
+                className="h-[52px] w-auto object-contain object-top"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
             </Link>
           )}
           <button

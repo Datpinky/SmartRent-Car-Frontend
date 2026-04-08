@@ -37,6 +37,52 @@ const adminService = {
     const res = await apiClient.patch(`/api/admin/showrooms/${id}/reject`, { reason });
     return res.data.data;
   },
+
+  // ─── Dashboard ──────────────────────────────────────────────────────────────
+
+  async getDashboardStats() {
+    const res = await apiClient.get('/api/admin/dashboard/stats');
+    return res.data.data;
+  },
+
+  async getChartData() {
+    const res = await apiClient.get('/api/admin/dashboard/charts');
+    return res.data.data;
+  },
+
+  // ─── Transactions ────────────────────────────────────────────────────────────
+
+  /**
+   * @param {'all'|'paid'|'processing'|'failed'} [status]
+   */
+  async listTransactions(status = 'all') {
+    const res = await apiClient.get('/api/admin/transactions', {
+      params: status !== 'all' ? { status } : {},
+    });
+    return res.data.data;
+  },
+
+  // ─── Reviews / Content Moderation ────────────────────────────────────────────
+
+  /**
+   * @param {'all'|'pending'|'reported'|'approved'|'rejected'} [status]
+   */
+  async listReviews(status = 'all') {
+    const res = await apiClient.get('/api/admin/reviews', {
+      params: status !== 'all' ? { status } : {},
+    });
+    return res.data.data;
+  },
+
+  async approveReview(id) {
+    const res = await apiClient.patch(`/api/admin/reviews/${id}/approve`);
+    return res.data.data;
+  },
+
+  async rejectReview(id) {
+    const res = await apiClient.patch(`/api/admin/reviews/${id}/reject`);
+    return res.data.data;
+  },
 };
 
 export default adminService;

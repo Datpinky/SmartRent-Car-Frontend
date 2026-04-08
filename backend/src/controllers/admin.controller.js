@@ -45,6 +45,60 @@ class AdminController {
             next(error);
         }
     }
+
+    async getDashboardStats(req, res, next) {
+        try {
+            const data = await adminService.getDashboardStats();
+            return res.status(200).json({ message: "OK", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getChartData(req, res, next) {
+        try {
+            const data = await adminService.getChartData();
+            return res.status(200).json({ message: "OK", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async listTransactions(req, res, next) {
+        try {
+            const data = await adminService.listTransactions(req.query);
+            return res.status(200).json({ message: "OK", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async listReviews(req, res, next) {
+        try {
+            const data = await adminService.listReviews(req.query);
+            return res.status(200).json({ message: "OK", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async approveReview(req, res, next) {
+        try {
+            const data = await adminService.approveReview(req.params.id);
+            return res.status(200).json({ message: "Đã duyệt đánh giá", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async rejectReview(req, res, next) {
+        try {
+            const data = await adminService.rejectReview(req.params.id);
+            return res.status(200).json({ message: "Đã từ chối đánh giá", data });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new AdminController();

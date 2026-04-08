@@ -9,6 +9,7 @@ const vehicleLocationRoutes = require('./routes/vehicleLocation.routes');
 const reviewRoutes = require('./routes/review.route');
 const favoriteRoutes = require('./routes/favorite.route');
 const adminRoutes = require('./routes/admin.route');
+const notificationRoutes = require('./routes/notification.route');
 // middleware for hand
 const errorHandler = require('./middlewares/errorHandler');
 
@@ -48,6 +49,7 @@ app.use('/api/vehicle_location', vehicleLocationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use(errorHandler);
 
 
