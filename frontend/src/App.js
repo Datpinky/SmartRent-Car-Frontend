@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import Home from './components/pages/Home/Home';
@@ -17,7 +17,6 @@ import AdminDashboard from './pages/admin/AdminDashboard/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement/UserManagement';
 import ShowroomVerification from './pages/admin/ShowroomVerification/ShowroomVerification';
 import TransactionMonitor from './pages/admin/TransactionMonitor/TransactionMonitor';
-import SystemReports from './pages/admin/SystemReports/SystemReports';
 import ContentModeration from './pages/admin/ContentModeration/ContentModeration';
 
 // Showroom pages
@@ -81,9 +80,9 @@ const App = () => {
           <Route path="/admin/users"       element={<DashboardPage roles={['admin']}><UserManagement /></DashboardPage>} />
           <Route path="/admin/showrooms"   element={<DashboardPage roles={['admin']}><ShowroomVerification /></DashboardPage>} />
           <Route path="/admin/transactions"element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
-          <Route path="/admin/reports"     element={<DashboardPage roles={['admin']}><SystemReports /></DashboardPage>} />
           <Route path="/admin/moderation"  element={<DashboardPage roles={['admin']}><ContentModeration /></DashboardPage>} />
           <Route path="/admin/profile"    element={<DashboardPage roles={['admin']}><AdminProfile /></DashboardPage>} />
+          <Route path="/admin/reports"    element={<Navigate to="/admin/dashboard" replace />} />
 
           {/* Showroom Dashboard */}
           <Route path="/showroom/dashboard"     element={<DashboardPage roles={['showroom', 'admin']}><ShowroomDashboard /></DashboardPage>} />

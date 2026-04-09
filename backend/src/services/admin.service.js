@@ -350,9 +350,7 @@ class AdminService {
             Sedan: "#2563eb",
             MPV: "#7c3aed",
             Hatchback: "#d97706",
-            Truck: "#0891b2",
-            Bike: "#dc2626",
-            Bicycle: "#6d28d9",
+            Pickup: "#0891b2",
             Wagon: "#059669",
             others: "#9ca3af",
         };

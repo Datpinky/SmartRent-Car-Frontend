@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import NotificationBell from '../components/common/NotificationBell';
 import {
-  FaTachometerAlt, FaUsers, FaStore, FaCar, FaChartBar, FaShieldAlt,
+  FaTachometerAlt, FaUsers, FaStore, FaCar, FaShieldAlt,
   FaCalendarAlt, FaFileContract, FaChartLine, FaRobot,
   FaBuilding, FaMapMarkerAlt, FaMoneyBillWave, FaBars, FaTimes,
   FaSignOutAlt, FaAngleDown, FaAngleRight, FaExchangeAlt, FaComments,
@@ -17,7 +17,6 @@ const MENUS = {
     { key: 'users',       label: 'Quản lý người dùng',  icon: <FaUsers aria-hidden="true" />,         path: '/admin/users' },
     { key: 'showrooms',   label: 'Xác minh Showroom',   icon: <FaStore aria-hidden="true" />,         path: '/admin/showrooms' },
     { key: 'transactions',label: 'Giao dịch',            icon: <FaExchangeAlt aria-hidden="true" />,   path: '/admin/transactions' },
-    { key: 'reports',     label: 'Báo cáo hệ thống',    icon: <FaChartBar aria-hidden="true" />,      path: '/admin/reports' },
     { key: 'moderation',  label: 'Kiểm duyệt nội dung', icon: <FaShieldAlt aria-hidden="true" />,     path: '/admin/moderation' },
     { key: 'profile',     label: 'Hồ sơ',               icon: <FaUser aria-hidden="true" />,          path: '/admin/profile' },
   ],

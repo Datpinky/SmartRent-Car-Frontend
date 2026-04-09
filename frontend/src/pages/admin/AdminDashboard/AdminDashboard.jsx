@@ -175,6 +175,34 @@ const AdminDashboard = () => {
         </ResponsiveContainer>
       </div>
 
+      {/* Phân loại xe (trước đây ở trang Báo cáo — gộp vào Tổng quan) */}
+      <div className="chart-card" style={{ marginTop: 20 }}>
+        <div className="chart-header"><div className="chart-title">Phân loại xe (theo loại)</div></div>
+        {vehicleCategoryPie.length > 0 ? (
+          <>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie data={vehicleCategoryPie} dataKey="value" cx="50%" cy="50%" outerRadius={88} paddingAngle={3}>
+                  {vehicleCategoryPie.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip formatter={(value, name) => [value + ' xe', name]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pie-legend">
+              {vehicleCategoryPie.map(d => (
+                <div key={d.name} className="pie-legend-item">
+                  <span className="pie-dot" style={{ background: d.color }} />
+                  <span>{d.name}</span>
+                  <span className="pie-val">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40, color: '#9ca3af', fontSize: '0.85rem' }}>Chưa có dữ liệu</div>
+        )}
+      </div>
+
       {/* Recent bookings */}
       <div className="section-card" style={{ marginTop: 20 }}>
         <div className="section-header">
