@@ -1,57 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FaCreditCard, FaMobileAlt, FaUniversity, FaCheckCircle, FaTag, FaArrowRight, FaCalendarAlt, FaStar, FaChevronLeft, FaCarSide, FaUserFriends } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import {
+  FaCheckCircle, FaTag, FaArrowRight, FaCalendarAlt,
+  FaStar, FaChevronLeft, FaCarSide, FaLock, FaSpinner
+} from 'react-icons/fa';
 import { MdLocationOn } from 'react-icons/md';
-import { cars } from '../../../components/data/cars';
+import vehicleService from '../../../services/vehicleService';
+import bookingService from '../../../services/bookingService';
+import paymentService from '../../../services/paymentService';
+import { useAuth } from '../../../contexts/AuthContext';
 
-const PAYMENT_METHODS = [
-  { id: 'wallet', label: 'Ví điện tử', sub: 'MoMo, ZaloPay, VNPay', icon: <FaMobileAlt size={20} aria-hidden="true" /> },
-  { id: 'card', label: 'Thẻ tín dụng / Ghi nợ', sub: 'Visa, Mastercard, JCB', icon: <FaCreditCard size={20} aria-hidden="true" /> },
-  { id: 'transfer', label: 'Chuyển khoản ngân hàng', sub: 'ATM nội địa, quét QR', icon: <FaUniversity size={20} aria-hidden="true" /> },
-];
+const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY;
+const stripePromise = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : null;
 
-const VOUCHERS = [
-  { code: 'SMART10', discount: 10, label: 'Giảm 10% cho đơn đầu tiên' },
-  { code: 'MEMBER50', discount: 0, label: 'Giảm 50K cho thành viên', fixed: 50 },
-];
+// ---- Inner payment form (must be inside <Elements>) ----
+const StripePaymentForm = ({ total, onBack, onProcessing }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState('');
 
+  const handlePay = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setPaying(true);
+    setPayError('');
+    onProcessing(true);
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/renter/payment-result`,
+      },
+    });
+
+    // Only reached if there is an immediate error (redirect does not happen)
+    if (error) {
+      setPayError(error.message || 'Thanh toán thất bại. Vui lòng thử lại.');
+      setPaying(false);
+      onProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePay} className="animate-fade-in">
+      <h2 className="text-xl font-extrabold text-slate-800 mb-6 flex items-center gap-2">
+        <FaLock className="text-primary" size={18} aria-hidden="true" /> Thanh toán qua Stripe
+      </h2>
+
+      <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+        <PaymentElement options={{ layout: 'accordion' }} />
+      </div>
+
+      {payError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[0.85rem] font-bold" role="alert">
+          {payError}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-stretch gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={paying}
+          className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[1rem] rounded-xl transition-colors flex-[0.7] whitespace-nowrap disabled:opacity-50"
+        >
+          Quay lại
+        </button>
+        <button
+          type="submit"
+          disabled={!stripe || paying}
+          className="flex-1 flex items-center justify-center gap-2 py-4 bg-primary hover:bg-primary-dark text-white font-bold text-[1rem] rounded-xl shadow-[0_4px_14px_rgba(135,206,235,0.4)] transition-colors hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {paying ? <FaSpinner className="animate-spin" aria-hidden="true" /> : null}
+          Thanh toán <span className="tabular-nums">{Number(total).toLocaleString('vi-VN')}đ</span>
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// ---- Main Checkout component ----
 const Checkout = () => {
   const { carId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const car = cars.find(c => c.id === Number(carId)) || cars[0];
+  const { user } = useAuth();
+
+  // Entry mode: new booking from vehicleId, or resume existing bookingId
+  const resumeBookingId = searchParams.get('bookingId');
+  const vehicleId = carId; // from URL param
 
   const [step, setStep] = useState(1);
-  const [payMethod, setPayMethod] = useState('wallet');
-  const [voucherCode, setVoucherCode] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
-  const [voucherError, setVoucherError] = useState('');
-  const [pickupDate, setPickupDate] = useState('2026-03-15T10:00');
-  const [returnDate, setReturnDate] = useState('2026-03-17T10:00');
-  const [deliveryType, setDeliveryType] = useState('pickup');
+  const [vehicle, setVehicle] = useState(null);
+  const [vehicleLoading, setVehicleLoading] = useState(true);
+  const [vehicleError, setVehicleError] = useState('');
+
+  const [pickupDate, setPickupDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(10, 0, 0, 0);
+    return d.toISOString().slice(0, 16);
+  });
+  const [returnDate, setReturnDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    d.setHours(10, 0, 0, 0);
+    return d.toISOString().slice(0, 16);
+  });
+
+  // Booking + payment state
+  const [bookingId, setBookingId] = useState(resumeBookingId || null);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [initError, setInitError] = useState('');
+  const [initLoading, setInitLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step]);
 
+  // Load vehicle details
+  useEffect(() => {
+    if (resumeBookingId) {
+      // Resume mode: load booking to get vehicle info
+      setVehicleLoading(true);
+      bookingService.getBookingById(resumeBookingId)
+        .then(async (booking) => {
+          if (booking?.vehicle_id) {
+            try {
+              const v = await vehicleService.getById(booking.vehicle_id);
+              setVehicle(v);
+            } catch {
+              setVehicleError('Không thể tải thông tin xe.');
+            }
+          }
+        })
+        .catch(() => setVehicleError('Không thể tải thông tin booking.'))
+        .finally(() => setVehicleLoading(false));
+    } else if (vehicleId) {
+      setVehicleLoading(true);
+      vehicleService.getById(vehicleId)
+        .then((v) => setVehicle(v))
+        .catch(() => setVehicleError('Không tìm thấy thông tin xe.'))
+        .finally(() => setVehicleLoading(false));
+    }
+  }, [vehicleId, resumeBookingId]);
+
   const days = Math.max(1, Math.round((new Date(returnDate) - new Date(pickupDate)) / 86400000));
-  const subtotal = car.price * days;
+  const pricePerDay = vehicle?.price || 0;
+  const subtotal = pricePerDay * days;
   const serviceFee = Math.round(subtotal * 0.05);
-  const voucherDiscount = appliedVoucher ? (appliedVoucher.fixed ? appliedVoucher.fixed : Math.round(subtotal * appliedVoucher.discount / 100)) : 0;
-  const total = subtotal + serviceFee - voucherDiscount;
+  const total = subtotal + serviceFee;
 
-  const applyVoucher = () => {
-    const found = VOUCHERS.find(v => v.code === voucherCode.toUpperCase());
-    if (found) { setAppliedVoucher(found); setVoucherError(''); }
-    else { setVoucherError('Mã giảm giá không hợp lệ'); setAppliedVoucher(null); }
-  };
+  // Called when user clicks "Tiếp tục thanh toán" on step 1
+  const handleGoToPayment = useCallback(async () => {
+    if (!vehicle) return;
+    setInitLoading(true);
+    setInitError('');
+    try {
+      let currentBookingId = bookingId;
 
-  const handleOrder = () => {
-    setStep(3);
-    setTimeout(() => navigate('/renter/payment-result?status=success'), 2000);
-  };
+      if (!resumeBookingId) {
+        // Create a new booking (showroom_id = vehicle owner/addedBy)
+        const newBooking = await bookingService.createBooking({
+          vehicle_id: vehicle._id,
+          showroom_id: vehicle.addedBy,
+          start_date: new Date(pickupDate).toISOString(),
+          end_date: new Date(returnDate).toISOString(),
+          total_price: total,
+        });
+        currentBookingId = newBooking._id;
+        setBookingId(currentBookingId);
+      }
 
-  const hue = Math.abs((car.name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 360;
-  // deliveryType is kept in state for future use but displayed as read-only
+      // Check existing payment state first (avoid double-creating)
+      const state = await paymentService.getPaymentState(currentBookingId);
+      if (state.bookingStatus === 'paid' && state.paymentStatus === 'successful') {
+        setInitError('Booking này đã được thanh toán trước đó.');
+        setInitLoading(false);
+        return;
+      }
+
+      // Create (or reuse) Stripe PaymentIntent
+      const paymentData = await paymentService.createPayment(currentBookingId);
+      setClientSecret(paymentData.client_secret);
+      setStep(2);
+    } catch (err) {
+      setInitError(err.message || 'Không thể khởi tạo thanh toán. Vui lòng thử lại.');
+    } finally {
+      setInitLoading(false);
+    }
+  }, [vehicle, bookingId, resumeBookingId, pickupDate, returnDate, total]);
+
+  const stripeOptions = clientSecret ? { clientSecret, locale: 'vi' } : null;
+
+  // --- Vehicle display helpers ---
+  const displayName = vehicle
+    ? `${vehicle.brand || ''} ${vehicle.vehicle_model || vehicle.model || ''}`.trim()
+    : 'Đang tải...';
+  const displayAddress = vehicle?.location || vehicle?.address || '';
+  const displayPrice = pricePerDay;
+  const displayImage = vehicle?.images?.[0] || vehicle?.image || null;
+  const displayRating = vehicle?.rating || 0;
+  const displayTrips = vehicle?.trip_count || vehicle?.trips || 0;
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-5 font-[inherit]">
@@ -86,206 +240,138 @@ const Checkout = () => {
           })}
         </div>
 
+        {/* Vehicle loading error */}
+        {vehicleError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[0.875rem] font-bold" role="alert">
+            {vehicleError}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
           {/* Main Content */}
           <div className="bg-white rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-slate-100 p-6 sm:p-8">
+
+            {/* Step 1: Trip Info */}
             {step === 1 && (
               <div className="animate-fade-in">
                 <h2 className="text-xl font-extrabold text-slate-800 mb-6 flex items-center gap-2">Thông tin chuyến đi</h2>
-                
-                {/* Vehicle Mini-card */}
+
+                {/* Vehicle card */}
                 <div className="bg-slate-50 rounded-2xl border border-slate-100 mb-6 overflow-hidden">
-                  {/* Car Image */}
                   <div className="w-full h-48 relative overflow-hidden bg-slate-100">
-                    {car.image ? (
+                    {vehicleLoading ? (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FaSpinner className="animate-spin text-slate-300 text-3xl" aria-hidden="true" />
+                      </div>
+                    ) : displayImage ? (
                       <img
-                        src={car.image}
-                        alt={car.name}
-                        width={600}
-                        height={400}
+                        src={displayImage}
+                        alt={displayName}
                         className="w-full h-full object-cover"
-                        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                        onError={e => { e.target.style.display = 'none'; }}
                       />
-                    ) : null}
-                    <div
-                      className="w-full h-full items-center justify-center"
-                      style={{ display: car.image ? 'none' : 'flex', background: `linear-gradient(135deg, hsl(${hue},30%,90%), hsl(${hue},30%,95%))` }}
-                    >
-                      <FaCarSide className="text-[4rem]" style={{ color: car.color || '#87ceeb' }} aria-hidden="true" />
-                    </div>
-                    {/* Overlay badge */}
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[0.75rem] font-bold text-slate-600 shadow-sm">
-                      {car.category}
-                    </div>
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-400 px-2.5 py-1 rounded-lg text-[0.75rem] font-bold text-white shadow-sm">
-                      <FaStar size={10} aria-hidden="true" /> <span className="tabular-nums">{car.rating}</span>
-                    </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                        <FaCarSide className="text-[4rem] text-slate-300" aria-hidden="true" />
+                      </div>
+                    )}
+                    {displayRating > 0 && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1 bg-amber-400 px-2.5 py-1 rounded-lg text-[0.75rem] font-bold text-white shadow-sm">
+                        <FaStar size={10} aria-hidden="true" /> <span className="tabular-nums">{displayRating}</span>
+                      </div>
+                    )}
                   </div>
-                  {/* Car Info */}
                   <div className="flex items-center gap-4 p-4">
                     <div className="flex-1">
-                      <h3 className="font-bold text-[1.05rem] text-slate-800">{car.name}</h3>
-                      <div className="flex items-center gap-1.5 text-[0.8rem] text-slate-500 mt-1">
-                        <MdLocationOn size={14} className="text-slate-400" aria-hidden="true" /> {car.address}
-                      </div>
-                      <div className="flex items-center gap-1 text-[0.8rem] font-medium text-slate-500 mt-1">
-                        <span className="text-slate-400 tabular-nums">{car.trips} chuyến</span>
-                        <span className="mx-1 text-slate-300">•</span>
-                        <span className="font-bold text-primary tabular-nums">{car.price.toLocaleString()}K<span className="text-slate-400 font-normal">/ngày</span></span>
-                      </div>
+                      <h3 className="font-bold text-[1.05rem] text-slate-800">{displayName || '—'}</h3>
+                      {displayAddress && (
+                        <div className="flex items-center gap-1.5 text-[0.8rem] text-slate-500 mt-1">
+                          <MdLocationOn size={14} className="text-slate-400" aria-hidden="true" /> {displayAddress}
+                        </div>
+                      )}
+                      {displayPrice > 0 && (
+                        <div className="flex items-center gap-1 text-[0.8rem] font-medium text-slate-500 mt-1">
+                          {displayTrips > 0 && <><span className="text-slate-400 tabular-nums">{displayTrips} chuyến</span><span className="mx-1 text-slate-300">•</span></>}
+                          <span className="font-bold text-primary tabular-nums">{Number(displayPrice).toLocaleString('vi-VN')}đ<span className="text-slate-400 font-normal">/ngày</span></span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label htmlFor="pickup-date" className="block text-[0.8rem] font-bold text-slate-600 mb-2 uppercase tracking-wide">Nhận xe</label>
-                    <div className="relative">
-                      <FaCalendarAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                      <input
-                        id="pickup-date"
-                        type="datetime-local"
-                        value={pickupDate}
-                        onChange={e => setPickupDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-200 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl text-[0.9rem] font-medium text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-                      />
+                {/* Date pickers — hidden in resume mode */}
+                {!resumeBookingId && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label htmlFor="pickup-date" className="block text-[0.8rem] font-bold text-slate-600 mb-2 uppercase tracking-wide">Nhận xe</label>
+                      <div className="relative">
+                        <FaCalendarAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                        <input
+                          id="pickup-date"
+                          type="datetime-local"
+                          value={pickupDate}
+                          onChange={e => setPickupDate(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-200 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl text-[0.9rem] font-medium text-slate-700 focus:outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="return-date" className="block text-[0.8rem] font-bold text-slate-600 mb-2 uppercase tracking-wide">Trả xe</label>
+                      <div className="relative">
+                        <FaCalendarAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                        <input
+                          id="return-date"
+                          type="datetime-local"
+                          value={returnDate}
+                          onChange={e => setReturnDate(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-200 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl text-[0.9rem] font-medium text-slate-700 focus:outline-none transition-colors"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label htmlFor="return-date" className="block text-[0.8rem] font-bold text-slate-600 mb-2 uppercase tracking-wide">Trả xe</label>
-                    <div className="relative">
-                      <FaCalendarAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                      <input
-                        id="return-date"
-                        type="datetime-local"
-                        value={returnDate}
-                        onChange={e => setReturnDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-200 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl text-[0.9rem] font-medium text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-                      />
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                <div className="mb-8">
-                  <label className="block text-[0.8rem] font-bold text-slate-600 mb-3 uppercase tracking-wide">Hình thức nhận xe</label>
-                  {car.type === 'Gặp chủ xe' ? (
-                    <div className="flex items-center gap-3 p-4 bg-violet-50 border-2 border-violet-400 rounded-xl">
-                      <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600 shrink-0">
-                        <FaUserFriends size={16} aria-hidden="true" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-[0.95rem] text-violet-700">Gặp chủ xe</div>
-                        <div className="text-[0.75rem] text-slate-500 mt-0.5">Khách hàng gặp trực tiếp chủ xe để nhận xe</div>
-                      </div>
-                      <div className="ml-auto">
-                        <FaCheckCircle size={18} className="text-violet-500" aria-hidden="true" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 p-4 bg-primary/5 border-2 border-primary rounded-xl">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                        <FaCarSide size={16} aria-hidden="true" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-[0.95rem] text-primary">Tự nhận xe</div>
-                        <div className="text-[0.75rem] text-slate-500 mt-0.5">Khách hàng tự đến địa điểm nhận xe</div>
-                      </div>
-                      <div className="ml-auto">
-                        <FaCheckCircle size={18} className="text-primary" aria-hidden="true" />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {initError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[0.85rem] font-bold" role="alert">
+                    {initError}
+                  </div>
+                )}
 
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
-                  className="w-full flex items-center justify-center gap-2 py-4 bg-primary hover:bg-primary-dark text-white font-bold text-[1rem] rounded-xl shadow-[0_4px_14px_rgba(135,206,235,0.4)] hover:shadow-[0_6px_20px_rgba(135,206,235,0.5)] transition-colors hover:-translate-y-px"
+                  onClick={handleGoToPayment}
+                  disabled={initLoading || vehicleLoading || !!vehicleError}
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-primary hover:bg-primary-dark text-white font-bold text-[1rem] rounded-xl shadow-[0_4px_14px_rgba(135,206,235,0.4)] hover:shadow-[0_6px_20px_rgba(135,206,235,0.5)] transition-colors hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Tiếp tục thanh toán <FaArrowRight size={14} aria-hidden="true" />
+                  {initLoading ? <FaSpinner className="animate-spin" aria-hidden="true" /> : <FaArrowRight size={14} aria-hidden="true" />}
+                  {initLoading ? 'Đang xử lý…' : 'Tiếp tục thanh toán'}
                 </button>
               </div>
             )}
 
-            {step === 2 && (
-              <div className="animate-fade-in">
-                <h2 className="text-xl font-extrabold text-slate-800 mb-6">Phương thức thanh toán</h2>
-                
-                <div role="radiogroup" aria-label="Phương thức thanh toán" className="flex flex-col gap-3 mb-8">
-                  {PAYMENT_METHODS.map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={payMethod === m.id}
-                      onClick={() => setPayMethod(m.id)}
-                      className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-colors text-left ${payMethod === m.id ? 'border-primary bg-primary/5' : 'border-slate-200 bg-white hover:border-slate-300'}`}
-                    >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${payMethod === m.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>{m.icon}</div>
-                      <div className="ml-4 flex-1">
-                        <div className="font-bold text-[0.95rem] text-slate-800">{m.label}</div>
-                        <div className="text-[0.8rem] text-slate-500 mt-0.5">{m.sub}</div>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 ${payMethod === m.id ? 'border-primary' : 'border-slate-300'}`}>
-                        {payMethod === m.id && <div className="w-2.5 h-2.5 bg-primary rounded-full transition-colors" />}
-                      </div>
-                    </button>
-                  ))}
+            {/* Step 2: Stripe Payment */}
+            {step === 2 && stripeOptions && (
+              stripePromise ? (
+                <Elements stripe={stripePromise} options={stripeOptions}>
+                  <StripePaymentForm
+                    total={total}
+                    onBack={() => setStep(1)}
+                    onProcessing={setIsProcessing}
+                  />
+                </Elements>
+              ) : (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[0.9rem] font-semibold">
+                  Thiếu cấu hình Stripe publishable key. Vui lòng thêm `REACT_APP_STRIPE_PUBLIC_KEY` vào `frontend/.env` và khởi động lại frontend.
                 </div>
-
-                {/* Voucher */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-8">
-                  <label htmlFor="voucher-code" className="flex items-center gap-1.5 text-[0.85rem] font-bold text-slate-700 mb-3">
-                    <FaTag className="text-primary" aria-hidden="true" /> Nhập mã khuyến mãi
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      id="voucher-code"
-                      name="voucher"
-                      autoComplete="off"
-                      value={voucherCode}
-                      onChange={e => setVoucherCode(e.target.value)}
-                      placeholder="Ví dụ: SMART10"
-                      className="flex-1 px-4 py-3 bg-white border border-slate-300 rounded-xl text-[0.9rem] uppercase focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus:ring-2 focus:ring-primary/20 transition-colors font-bold"
-                    />
-                    <button
-                      type="button"
-                      onClick={applyVoucher}
-                      className="px-5 py-3 bg-primary hover:bg-primary-dark text-white font-bold text-[0.9rem] rounded-xl transition-colors whitespace-nowrap shadow-md"
-                    >
-                      Áp dụng
-                    </button>
-                  </div>
-                  <div aria-live="polite">
-                    {voucherError && <div className="text-[0.8rem] text-red-500 mt-2 font-bold" role="alert">⚠ {voucherError}</div>}
-                    {appliedVoucher && <div className="text-[0.8rem] text-emerald-600 mt-2 font-bold flex items-center gap-1.5"><FaCheckCircle aria-hidden="true" /> Đã áp dụng: {appliedVoucher.label}</div>}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[1rem] rounded-xl transition-colors flex-[0.7] whitespace-nowrap"
-                  >
-                    Quay lại
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleOrder}
-                    className="flex-1 py-4 bg-primary hover:bg-primary-dark text-white font-bold text-[1rem] rounded-xl shadow-[0_4px_14px_rgba(135,206,235,0.4)] hover:shadow-[0_6px_20px_rgba(135,206,235,0.5)] transition-colors hover:-translate-y-px"
-                  >
-                    Thanh toán <span className="tabular-nums">{total.toLocaleString()}K</span>
-                  </button>
-                </div>
-              </div>
+              )
             )}
 
-            {step === 3 && (
+            {/* Step 3: Processing spinner (shown briefly before Stripe redirect) */}
+            {(step === 3 || isProcessing) && (
               <div className="text-center py-10 animate-fade-in">
-                <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary text-[3rem] mb-6 relative motion-reduce:animate-none">
-                  <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                  <FaCheckCircle className="animate-pulse motion-reduce:animate-none" aria-hidden="true" />
+                <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary text-[3rem] mb-6 relative">
+                  <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin" aria-hidden="true" />
+                  <FaCheckCircle className="animate-pulse" aria-hidden="true" />
                 </div>
                 <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Đang xử lý giao dịch</h2>
                 <p className="text-slate-500 font-medium">Vui lòng không đóng trình duyệt trong quá trình này…</p>
@@ -293,31 +379,33 @@ const Checkout = () => {
             )}
           </div>
 
-          {/* Right Summary */}
+          {/* Right: Order Summary */}
           <div className="bg-white rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-slate-100 p-6 sm:p-8 lg:sticky lg:top-24">
             <h3 className="font-extrabold text-[1.1rem] text-slate-800 mb-5 pb-4 border-b border-slate-100">Chi tiết thanh toán</h3>
-            
+
             <div className="flex flex-col gap-4 mb-6">
               <div className="flex justify-between items-center text-[0.9rem]">
-                <span className="text-slate-500 font-bold">Đơn giá thuê (<span className="tabular-nums">{days}</span> ngày)</span>
-                <span className="font-bold text-slate-800 tabular-nums">{subtotal.toLocaleString()}K</span>
+                <span className="text-slate-500 font-bold">
+                  Đơn giá thuê <span className="tabular-nums">({days} ngày)</span>
+                </span>
+                <span className="font-bold text-slate-800 tabular-nums">
+                  {subtotal > 0 ? Number(subtotal).toLocaleString('vi-VN') + 'đ' : '—'}
+                </span>
               </div>
               <div className="flex justify-between items-center text-[0.9rem]">
                 <span className="text-slate-500 font-bold">Phí dịch vụ <span className="text-[0.7rem] bg-slate-100 px-1.5 py-0.5 rounded ml-1 text-slate-600">5%</span></span>
-                <span className="font-bold text-slate-800 tabular-nums">{serviceFee.toLocaleString()}K</span>
+                <span className="font-bold text-slate-800 tabular-nums">
+                  {serviceFee > 0 ? Number(serviceFee).toLocaleString('vi-VN') + 'đ' : '—'}
+                </span>
               </div>
-              {appliedVoucher && (
-                <div className="flex justify-between items-center text-[0.9rem] text-emerald-600">
-                  <span className="font-bold">Khuyến mãi</span>
-                  <span className="font-bold tabular-nums">-{voucherDiscount.toLocaleString()}K</span>
-                </div>
-              )}
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-between items-end mb-6">
               <span className="font-extrabold text-[1.05rem] text-slate-800">Tổng thanh toán</span>
               <div className="text-right">
-                <span className="block text-[1.6rem] font-black text-primary leading-none tabular-nums">{total.toLocaleString()}K</span>
+                <span className="block text-[1.6rem] font-black text-primary leading-none tabular-nums">
+                  {total > 0 ? Number(total).toLocaleString('vi-VN') + 'đ' : '—'}
+                </span>
                 <span className="text-[0.75rem] text-slate-400 font-bold mt-1.5 block">Đã bao gồm VAT</span>
               </div>
             </div>
@@ -325,7 +413,11 @@ const Checkout = () => {
             <div className="bg-emerald-50 text-emerald-700 rounded-xl p-4 text-[0.8rem] font-bold border border-emerald-100 space-y-2">
               <div className="flex items-center gap-2"><FaCheckCircle size={14} className="text-emerald-500" aria-hidden="true" /> Hủy miễn phí trước 1h nhận xe</div>
               <div className="flex items-center gap-2"><FaCheckCircle size={14} className="text-emerald-500" aria-hidden="true" /> Bảo hiểm chuyến đi toàn diện</div>
-              <div className="flex items-center gap-2"><FaCheckCircle size={14} className="text-emerald-500" aria-hidden="true" /> Thanh toán an toàn 100%</div>
+              <div className="flex items-center gap-2"><FaCheckCircle size={14} className="text-emerald-500" aria-hidden="true" /> Thanh toán an toàn qua Stripe</div>
+              <div className="flex items-center gap-2">
+                <FaTag size={14} className="text-emerald-500" aria-hidden="true" />
+                <span>Bảo mật SSL 256-bit</span>
+              </div>
             </div>
           </div>
         </div>

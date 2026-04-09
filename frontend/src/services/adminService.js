@@ -50,6 +50,33 @@ const adminService = {
     return res.data.data;
   },
 
+  // ─── Admin profile ───────────────────────────────────────────────────────────
+
+  async getProfileOverview() {
+    const res = await apiClient.get('/api/admin/profile/overview');
+    return res.data.data;
+  },
+
+  async updateProfile(payload) {
+    const res = await apiClient.patch('/api/admin/profile', payload);
+    return res.data.data;
+  },
+
+  async changePassword(payload) {
+    const res = await apiClient.patch('/api/admin/profile/password', payload);
+    return res.data.data;
+  },
+
+  async getProfileActivity() {
+    const res = await apiClient.get('/api/admin/profile/activity');
+    return res.data.data;
+  },
+
+  async getProfileSessions() {
+    const res = await apiClient.get('/api/admin/profile/sessions');
+    return res.data.data;
+  },
+
   // ─── Transactions ────────────────────────────────────────────────────────────
 
   /**

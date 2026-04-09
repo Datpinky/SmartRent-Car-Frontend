@@ -25,6 +25,23 @@ class AdminValidation {
         param("id").isMongoId().withMessage("id không hợp lệ"),
         body("reason").optional().trim().isLength({ max: 2000 }).withMessage("Lý do tối đa 2000 ký tự"),
     ];
+
+    updateProfile = [
+        body("name").optional().trim().isLength({ min: 2, max: 120 }).withMessage("Tên phải từ 2 đến 120 ký tự"),
+        body("phone")
+            .optional()
+            .trim()
+            .matches(/^[0-9]{10}$/)
+            .withMessage("Số điện thoại phải có đúng 10 chữ số"),
+    ];
+
+    changePassword = [
+        body("current_password").notEmpty().withMessage("Vui lòng nhập mật khẩu hiện tại"),
+        body("new_password").notEmpty().withMessage("Vui lòng nhập mật khẩu mới"),
+        body("confirm_password")
+            .custom((value, { req }) => value === req.body.new_password)
+            .withMessage("Mật khẩu xác nhận không khớp"),
+    ];
 }
 
 module.exports = new AdminValidation();

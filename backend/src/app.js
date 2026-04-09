@@ -10,6 +10,8 @@ const reviewRoutes = require('./routes/review.route');
 const favoriteRoutes = require('./routes/favorite.route');
 const adminRoutes = require('./routes/admin.route');
 const notificationRoutes = require('./routes/notification.route');
+const bookingRoutes = require('./routes/booking.route');
+const paymentRoutes = require('./routes/payment.route');
 // middleware for hand
 const errorHandler = require('./middlewares/errorHandler');
 
@@ -36,6 +38,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 app.get('/api/health', (req, res) => {
@@ -50,6 +53,8 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use('/api/payment', paymentRoutes);
 app.use(errorHandler);
 
 

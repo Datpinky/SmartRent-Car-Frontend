@@ -19,6 +19,11 @@ router.patch("/showrooms/:id/reject", adminValidation.rejectShowroom, validate, 
 
 router.get("/dashboard/stats", adminController.getDashboardStats);
 router.get("/dashboard/charts", adminController.getChartData);
+router.get("/profile/overview", adminController.getProfileOverview);
+router.patch("/profile", adminValidation.updateProfile, validate, adminController.updateProfile);
+router.patch("/profile/password", adminValidation.changePassword, validate, adminController.changePassword);
+router.get("/profile/activity", adminController.getProfileActivity);
+router.get("/profile/sessions", adminController.getProfileSessions);
 
 router.get("/transactions", adminController.listTransactions);
 

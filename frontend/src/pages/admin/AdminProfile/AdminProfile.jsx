@@ -1,15 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { FaSave, FaUser, FaShieldAlt, FaKey, FaCheckCircle, FaHistory } from 'react-icons/fa';
+import { FaSave, FaUser, FaShieldAlt, FaKey, FaCheckCircle } from 'react-icons/fa';
 import { MdVerifiedUser, MdAdminPanelSettings } from 'react-icons/md';
-
-const ACTIVITY_LOG = [
-  { id: 1, action: 'Phê duyệt Showroom "Xe Tốt Thủ Đức"',      time: '11/03/2026 09:42', dateTime: '2026-03-11T09:42' },
-  { id: 2, action: 'Khóa tài khoản user ID #5 (Hoàng Văn Em)', time: '10/03/2026 15:20', dateTime: '2026-03-10T15:20' },
-  { id: 3, action: 'Từ chối xe Ford Ranger BKS 51Q-89012',      time: '09/03/2026 11:05', dateTime: '2026-03-09T11:05' },
-  { id: 4, action: 'Duyệt hồ sơ showroom "Auto Center Q1"',    time: '08/03/2026 14:33', dateTime: '2026-03-08T14:33' },
-  { id: 5, action: 'Cập nhật cài đặt hệ thống – Phí DV: 5%',   time: '07/03/2026 10:00', dateTime: '2026-03-07T10:00' },
-];
+import adminService from '../../../services/adminService';
+import { PasswordStrengthInput, passwordMeetsPolicy } from '../../../components/common/PasswordInput';
 
 const AdminProfile = () => {
   const { user, updateUser } = useAuth();
@@ -26,8 +20,53 @@ const AdminProfile = () => {
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSaved, setPwSaved] = useState(false);
+  const [stats, setStats] = useState({ totalUsers: 0, totalShowrooms: 0, totalBookings: 0 });
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState('');
 
   const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'AD';
+  const formattedStats = useMemo(
+    () => ({
+      totalUsers: Number(stats.totalUsers || 0).toLocaleString('vi-VN'),
+      totalShowrooms: Number(stats.totalShowrooms || 0).toLocaleString('vi-VN'),
+      totalBookings: Number(stats.totalBookings || 0).toLocaleString('vi-VN'),
+    }),
+    [stats]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    const loadProfileData = async () => {
+      setLoading(true);
+      setPageError('');
+      try {
+        const [overview, currentSessions] = await Promise.all([
+          adminService.getProfileOverview(),
+          adminService.getProfileSessions(),
+        ]);
+        if (!mounted) return;
+
+        setForm({
+          name: overview?.profile?.name || user?.name || '',
+          email: overview?.profile?.email || user?.email || '',
+          phone: overview?.profile?.phone || user?.phone || '',
+          address: overview?.profile?.address || '100 Lê Lợi, Q.1, TP.HCM',
+          dept: overview?.profile?.dept || 'Ban Quản trị Hệ thống',
+        });
+        setStats(overview?.stats || { totalUsers: 0, totalShowrooms: 0, totalBookings: 0 });
+        setSessions(Array.isArray(currentSessions) ? currentSessions : []);
+      } catch (err) {
+        if (!mounted) return;
+        setPageError(err.message || 'Không thể tải dữ liệu hồ sơ admin.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadProfileData();
+    return () => { mounted = false; };
+  }, [user?.email, user?.name, user?.phone]);
 
   const handleFieldChange = (key, value) => {
     if (key === 'phone') {
@@ -39,32 +78,49 @@ const AdminProfile = () => {
     setForm(f => ({ ...f, [key]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const phoneDigits = (form.phone || '').replace(/\D/g, '');
     if (phoneDigits.length !== 10) {
       setPhoneError('Số điện thoại phải có đúng 10 chữ số.');
       return;
     }
     setPhoneError('');
-    updateUser({ name: form.name, phone: form.phone });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      const updated = await adminService.updateProfile({
+        name: form.name,
+        phone: form.phone,
+      });
+      updateUser({ name: updated.name, phone: updated.phone });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setPhoneError(err.message || 'Không thể cập nhật thông tin.');
+    }
   };
 
-  const handlePwSave = () => {
+  const handlePwSave = async () => {
     if (!pwForm.current) { setPwError('Vui lòng nhập mật khẩu hiện tại'); return; }
-    if (pwForm.next.length < 6) { setPwError('Mật khẩu mới phải có ít nhất 6 ký tự'); return; }
+    if (!passwordMeetsPolicy(pwForm.next)) { setPwError('Mật khẩu chưa đủ độ mạnh. Vui lòng đáp ứng đủ các yêu cầu bên dưới ô mật khẩu.'); return; }
     if (pwForm.next !== pwForm.confirm) { setPwError('Mật khẩu xác nhận không khớp'); return; }
-    setPwError('');
-    setPwSaved(true);
-    setPwForm({ current: '', next: '', confirm: '' });
-    setTimeout(() => setPwSaved(false), 2500);
+    try {
+      await adminService.changePassword({
+        current_password: pwForm.current,
+        new_password: pwForm.next,
+        confirm_password: pwForm.confirm,
+      });
+      setPwError('');
+      setPwSaved(true);
+      setPwForm({ current: '', next: '', confirm: '' });
+      setTimeout(() => setPwSaved(false), 2500);
+    } catch (err) {
+      setPwSaved(false);
+      setPwError(err.message || 'Không thể đổi mật khẩu.');
+    }
   };
 
   const TABS = [
     ['info',     <FaUser aria-hidden="true" />,             'Thông tin'],
     ['security', <FaShieldAlt aria-hidden="true" />,        'Bảo mật'],
-    ['activity', <FaHistory aria-hidden="true" />,          'Lịch sử hoạt động'],
   ];
 
   return (
@@ -92,19 +148,30 @@ const AdminProfile = () => {
         </div>
         <div className="ap-hero-stats">
           <div className="ap-stat">
-            <div className="ap-stat-val tabular-nums">1,247</div>
+            <div className="ap-stat-val tabular-nums">{formattedStats.totalUsers}</div>
             <div className="ap-stat-label">Người dùng</div>
           </div>
           <div className="ap-stat">
-            <div className="ap-stat-val tabular-nums">23</div>
+            <div className="ap-stat-val tabular-nums">{formattedStats.totalShowrooms}</div>
             <div className="ap-stat-label">Showroom</div>
           </div>
           <div className="ap-stat">
-            <div className="ap-stat-val tabular-nums">3,891</div>
+            <div className="ap-stat-val tabular-nums">{formattedStats.totalBookings}</div>
             <div className="ap-stat-label">Tổng booking</div>
           </div>
         </div>
       </div>
+
+      {loading && (
+        <div className="ap-card" style={{ marginTop: 14, fontSize: '0.88rem', color: '#6b7280' }}>
+          Đang tải dữ liệu hồ sơ...
+        </div>
+      )}
+      {pageError && (
+        <div className="ap-card" style={{ marginTop: 14, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '0.84rem' }}>
+          {pageError}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="ap-tabs">
@@ -168,28 +235,51 @@ const AdminProfile = () => {
         <div className="ap-card">
           <h3 className="ap-section-title">Đổi mật khẩu</h3>
           <div style={{ maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[
-              ['Mật khẩu hiện tại',     'current', 'current-password'],
-              ['Mật khẩu mới',          'next',    'new-password'],
-              ['Xác nhận mật khẩu mới', 'confirm', 'new-password'],
-            ].map(([label, key, autoComplete]) => (
-              <div key={key}>
-                <label htmlFor={`ap-pw-${key}`} className="ap-label">{label}</label>
-                <div style={{ position: 'relative' }}>
-                  <FaKey aria-hidden="true" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.8rem' }} />
-                  <input
-                    id={`ap-pw-${key}`}
-                    type="password"
-                    autoComplete={autoComplete}
-                    value={pwForm[key]}
-                    onChange={e => setPwForm(f => ({ ...f, [key]: e.target.value }))}
-                    placeholder="••••••••"
-                    className="ap-input"
-                    style={{ paddingLeft: 34 }}
-                  />
-                </div>
+            <div>
+              <label htmlFor="ap-pw-current" className="ap-label">Mật khẩu hiện tại</label>
+              <div style={{ position: 'relative' }}>
+                <FaKey aria-hidden="true" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.8rem' }} />
+                <input
+                  id="ap-pw-current"
+                  type="password"
+                  autoComplete="current-password"
+                  value={pwForm.current}
+                  onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                  placeholder="••••••••"
+                  className="ap-input"
+                  style={{ paddingLeft: 34 }}
+                />
               </div>
-            ))}
+            </div>
+
+            <div>
+              <label htmlFor="ap-pw-next" className="ap-label">Mật khẩu mới</label>
+              <PasswordStrengthInput
+                id="ap-pw-next"
+                name="next"
+                value={pwForm.next}
+                onChange={(e) => setPwForm((f) => ({ ...f, next: e.target.value }))}
+                error={!!pwError && (pwError.includes('độ mạnh') || pwError.includes('ít nhất'))}
+                placeholder="Nhập mật khẩu mới"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="ap-pw-confirm" className="ap-label">Xác nhận mật khẩu mới</label>
+              <div style={{ position: 'relative' }}>
+                <FaKey aria-hidden="true" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.8rem' }} />
+                <input
+                  id="ap-pw-confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  value={pwForm.confirm}
+                  onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                  placeholder="••••••••"
+                  className="ap-input"
+                  style={{ paddingLeft: 34 }}
+                />
+              </div>
+            </div>
             {pwError && (
               <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.82rem' }}>
                 {pwError}
@@ -205,49 +295,30 @@ const AdminProfile = () => {
             </button>
           </div>
 
-          <div style={{ marginTop: 32 }}>
+            <div style={{ marginTop: 32 }}>
             <h3 className="ap-section-title">Phiên đăng nhập</h3>
             <div style={{ background: '#f9fafb', borderRadius: 10, padding: 16, border: '1px solid #f0f0f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827' }}>Thiết bị hiện tại</div>
-                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>Windows 10 – Chrome – TP.HCM · 14/03/2026</div>
+              {sessions.length === 0 ? (
+                <div style={{ fontSize: '0.78rem', color: '#9ca3af' }}>Chưa có dữ liệu phiên đăng nhập.</div>
+              ) : sessions.map((session) => (
+                <div key={session.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827' }}>Thiết bị hiện tại</div>
+                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>
+                      {session.device} · {session.location} · {session.lastSeen} · IP: {session.ipAddress}
+                    </div>
+                  </div>
+                  <span style={{ background: '#d1fae5', color: '#059669', fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 50 }}>
+                    {session.isActive ? 'Hoạt động' : 'Đã ngắt'}
+                  </span>
                 </div>
-                <span style={{ background: '#d1fae5', color: '#059669', fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 50 }}>Hoạt động</span>
-              </div>
+              ))
+              }
             </div>
           </div>
         </div>
       )}
 
-      {/* Activity Tab */}
-      {tab === 'activity' && (
-        <div className="ap-card">
-          <h3 className="ap-section-title">Lịch sử thao tác gần đây</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {ACTIVITY_LOG.map((item, i) => (
-              <div
-                key={item.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 14,
-                  padding: '14px 0',
-                  borderBottom: i < ACTIVITY_LOG.length - 1 ? '1px solid #f3f4f6' : 'none',
-                }}
-              >
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6d28d9', flexShrink: 0, fontSize: '0.85rem' }}>
-                  <MdAdminPanelSettings aria-hidden="true" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.85rem', color: '#374151', fontWeight: 500 }}>{item.action}</div>
-                  <time dateTime={item.dateTime} style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 3, display: 'block' }}>{item.time}</time>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

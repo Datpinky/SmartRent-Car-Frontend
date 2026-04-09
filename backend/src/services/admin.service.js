@@ -5,6 +5,7 @@ const bookingModel = require("../models/booking.model");
 const paymentModel = require("../models/payment.model");
 const reviewModel = require("../models/review.model");
 const throwError = require("../utils/throwError");
+const { validateStrongPassword } = require("../utils/passwordPolicy");
 
 const SHOWROOM_FIELDS = [
     "_id", "name", "email", "phone", "business_name", "tax_code",
@@ -16,6 +17,15 @@ function formatDateVi(d) {
     try {
         const x = new Date(d);
         return x.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    } catch {
+        return "";
+    }
+}
+
+function formatDateTimeVi(d) {
+    if (!d) return "";
+    try {
+        return new Date(d).toLocaleString("vi-VN");
     } catch {
         return "";
     }
@@ -361,6 +371,152 @@ class AdminService {
         }));
 
         return { revenueMonthly, userGrowth, vehicleStatusPie, vehicleCategoryPie };
+    }
+
+    // ─── Admin Profile ────────────────────────────────────────────────────────
+
+    async getProfileOverview(adminUserId) {
+        const [admin, stats] = await Promise.all([
+            userModel.findById(adminUserId).select("name email phone role updatedAt createdAt").lean(),
+            this.getDashboardStats(),
+        ]);
+        if (!admin) throwError("Không tìm thấy tài khoản admin", 404);
+
+        return {
+            profile: {
+                name: admin.name || "",
+                email: admin.email || "",
+                phone: admin.phone || "",
+                dept: "Ban Quản trị Hệ thống",
+                address: "100 Lê Lợi, Q.1, TP.HCM",
+            },
+            stats: {
+                totalUsers: stats.totalUsers || 0,
+                totalShowrooms: stats.totalShowrooms || 0,
+                totalBookings: stats.totalBookings || 0,
+            },
+        };
+    }
+
+    async updateProfile(adminUserId, payload = {}) {
+        const admin = await userModel.findById(adminUserId);
+        if (!admin) throwError("Không tìm thấy tài khoản admin", 404);
+
+        const nextName = payload.name != null ? String(payload.name).trim() : admin.name;
+        const nextPhone = payload.phone != null ? String(payload.phone).trim() : admin.phone;
+
+        if (!nextName) throwError("Tên không được để trống", 400);
+        if (nextPhone && !/^[0-9]{10}$/.test(nextPhone)) {
+            throwError("Số điện thoại phải có đúng 10 chữ số", 400);
+        }
+
+        admin.name = nextName;
+        admin.phone = nextPhone || "";
+        await admin.save();
+
+        return {
+            name: admin.name,
+            email: admin.email,
+            phone: admin.phone || "",
+        };
+    }
+
+    async changePassword(adminUserId, payload = {}) {
+        const admin = await userModel.findById(adminUserId).select("+password");
+        if (!admin) throwError("Không tìm thấy tài khoản admin", 404);
+
+        const currentPassword = String(payload.current_password || "");
+        const newPassword = String(payload.new_password || "");
+        const confirmPassword = String(payload.confirm_password || "");
+
+        const isCurrentMatch = await admin.comparePassword(currentPassword);
+        if (!isCurrentMatch) throwError("Mật khẩu hiện tại không đúng", 400);
+        if (newPassword !== confirmPassword) throwError("Mật khẩu xác nhận không khớp", 400);
+        if (newPassword === currentPassword) throwError("Mật khẩu mới phải khác mật khẩu hiện tại", 400);
+
+        const pwdValidation = validateStrongPassword(newPassword);
+        if (!pwdValidation.ok) throwError(pwdValidation.message, 400);
+
+        admin.password = newPassword;
+        await admin.save();
+        return { success: true };
+    }
+
+    async getProfileActivity() {
+        const [pendingShowrooms, recentBookings, recentPayments, recentReviews] = await Promise.all([
+            userModel
+                .find({ role: "showroom", showroom_status: "pending" })
+                .sort({ createdAt: -1 })
+                .limit(4)
+                .select("business_name name createdAt")
+                .lean(),
+            bookingModel
+                .find({})
+                .sort({ createdAt: -1 })
+                .limit(4)
+                .select("_id createdAt")
+                .lean(),
+            paymentModel
+                .find({})
+                .sort({ createdAt: -1 })
+                .limit(4)
+                .select("amount payment_status createdAt")
+                .lean(),
+            reviewModel
+                .find({ status: "pending" })
+                .sort({ createdAt: -1 })
+                .limit(4)
+                .select("createdAt")
+                .lean(),
+        ]);
+
+        const activity = [
+            ...pendingShowrooms.map((x) => ({
+                id: `sr-${x._id}`,
+                dateTime: x.createdAt,
+                action: `Showroom mới chờ duyệt: "${x.business_name || x.name || "Chưa đặt tên"}"`,
+            })),
+            ...recentBookings.map((x) => ({
+                id: `bk-${x._id}`,
+                dateTime: x.createdAt,
+                action: `Phát sinh booking mới #${String(x._id).slice(-6).toUpperCase()}`,
+            })),
+            ...recentPayments.map((x) => ({
+                id: `pm-${x._id}`,
+                dateTime: x.createdAt,
+                action: `Thanh toán ${x.payment_status}: ${Number(x.amount || 0).toLocaleString("vi-VN")} VND`,
+            })),
+            ...recentReviews.map((x) => ({
+                id: `rv-${x._id}`,
+                dateTime: x.createdAt,
+                action: "Có đánh giá mới cần kiểm duyệt",
+            })),
+        ]
+            .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime))
+            .slice(0, 10)
+            .map((x) => ({
+                ...x,
+                time: formatDateTimeVi(x.dateTime),
+            }));
+
+        return activity;
+    }
+
+    async getProfileSessions(req) {
+        const userAgent = req.headers["user-agent"] || "Unknown";
+        const ipAddress = req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "Unknown";
+        const now = new Date();
+
+        return [
+            {
+                id: "current-session",
+                device: userAgent,
+                ipAddress: String(ipAddress).split(",")[0].trim(),
+                location: "Việt Nam",
+                lastSeen: formatDateTimeVi(now),
+                isActive: true,
+            },
+        ];
     }
 
     // ─── Transactions ─────────────────────────────────────────────────────────
