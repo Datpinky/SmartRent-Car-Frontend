@@ -19,7 +19,6 @@ import ShowroomVerification from './pages/admin/ShowroomVerification/ShowroomVer
 import TransactionMonitor from './pages/admin/TransactionMonitor/TransactionMonitor';
 import SystemReports from './pages/admin/SystemReports/SystemReports';
 import ContentModeration from './pages/admin/ContentModeration/ContentModeration';
-import SystemSettings from './pages/admin/SystemSettings/SystemSettings';
 
 // Showroom pages
 import ShowroomDashboard from './pages/showroom/ShowroomDashboard/ShowroomDashboard';
@@ -35,7 +34,6 @@ import ShowroomProfile from './pages/showroom/ShowroomProfile/ShowroomProfile';
 import Profile from './pages/renter/Profile/Profile';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
 import Checkout from './pages/renter/Checkout/Checkout';
-import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
 import MapPage from './pages/renter/Map/MapPage';
 
@@ -85,7 +83,6 @@ const App = () => {
           <Route path="/admin/transactions"element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
           <Route path="/admin/reports"     element={<DashboardPage roles={['admin']}><SystemReports /></DashboardPage>} />
           <Route path="/admin/moderation"  element={<DashboardPage roles={['admin']}><ContentModeration /></DashboardPage>} />
-          <Route path="/admin/settings"    element={<DashboardPage roles={['admin']}><SystemSettings /></DashboardPage>} />
           <Route path="/admin/profile"    element={<DashboardPage roles={['admin']}><AdminProfile /></DashboardPage>} />
 
           {/* Showroom Dashboard */}
@@ -110,7 +107,6 @@ const App = () => {
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
-          <Route path="/renter/payment-result"  element={<RenterPage><PaymentResult /></RenterPage>} />
           <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
 
           {/* Public pages with Navbar/Footer */}
