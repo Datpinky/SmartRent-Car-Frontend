@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DataTable from '../../../components/common/DataTable';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import FileUpload from '../../../components/common/FileUpload';
-import { FaPlus, FaEdit, FaTrash, FaStar, FaRoute } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaStar, FaRoute, FaSpinner } from 'react-icons/fa';
 import { MdDirectionsCar, MdLocalGasStation, MdEventSeat } from 'react-icons/md';
-import { MOCK_SHOWROOM_VEHICLES } from '../../../components/data/mockDashboard';
+import vehicleService from '../../../services/vehicleService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const STATUS_OPTS = ['available', 'active', 'maintenance'];
 const FUEL_OPTS = ['Xăng', 'Dầu', 'Điện', 'Hybrid'];
@@ -14,40 +15,103 @@ const CAT_OPTS = ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Bán tải'];
 const initForm = { name: '', plate: '', brand: '', category: 'SUV', price: '', seats: 5, fuel: 'Xăng', transmission: 'Số tự động', source: 'showroom', status: 'available', consignOwner: '' };
 
 const VehicleManagement = () => {
-  const [vehicles, setVehicles] = useState(MOCK_SHOWROOM_VEHICLES);
-  const [modal, setModal] = useState(null);
-  const [form, setForm] = useState(initForm);
-  const [editId, setEditId] = useState(null);
+  const { user } = useAuth();
+  const [vehicles, setVehicles]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [loadError, setLoadError]     = useState('');
+  const [modal, setModal]             = useState(null);
+  const [form, setForm]               = useState(initForm);
+  const [editId, setEditId]           = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
 
+  const fetchVehicles = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const filters = user?._id ? { added_by: user._id } : {};
+      const { data } = await vehicleService.getList(filters);
+      setVehicles(data);
+    } catch (err) {
+      setLoadError(err?.response?.data?.message || err?.message || 'Không thể tải danh sách xe.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
+
   const openAdd  = () => { setForm(initForm); setEditId(null); setModal('form'); };
-  const openEdit = (v) => { setForm({ ...v }); setEditId(v.id); setModal('form'); };
+  const openEdit = (v) => {
+    setForm({
+      name: v.name || '', plate: v.plateNumber || '', brand: v.brand || '',
+      category: v.type || 'SUV', price: v.price || '', seats: v.seats || 5,
+      fuel: v.fuel || 'Xăng', transmission: v.transmission || 'Số tự động',
+      source: v.companyOwned ? 'showroom' : 'consigned', status: v.status || 'available', consignOwner: '',
+    });
+    setEditId(v._id || v.id);
+    setModal('form');
+  };
   const closeModal = () => { setModal(null); setForm(initForm); setEditId(null); };
 
-  const handleSave = () => {
-    if (editId) setVehicles(prev => prev.map(v => v.id === editId ? { ...v, ...form } : v));
-    else setVehicles(prev => [...prev, { ...form, id: Date.now(), trips: 0, rating: 0 }]);
-    closeModal();
+  const handleSave = async () => {
+    try {
+      const payload = {
+        vehicle_name: form.name,
+        vehicle_plate_number: form.plate,
+        vehicle_brand: form.brand,
+        vehicle_model: form.name,
+        vehicle_type: form.category,
+        vehicle_hire_rate_in_figures: Number(form.price) * 1000,
+        number_of_seats: Number(form.seats),
+        fuel_type: ({ 'Xăng': 'petrol', 'Dầu': 'diesel', 'Điện': 'electric', 'Hybrid': 'hybrid' })[form.fuel] || 'petrol',
+        transmission: form.transmission === 'Số sàn' ? 'manual' : 'automatic',
+        status: form.status,
+        company_owned: form.source === 'showroom',
+      };
+      if (editId) {
+        const updated = await vehicleService.update(editId, payload);
+        setVehicles(prev => prev.map(v => (v._id || v.id) === editId ? updated : v));
+      } else {
+        const created = await vehicleService.create(payload);
+        setVehicles(prev => [...prev, created]);
+      }
+      closeModal();
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Lưu thất bại');
+    }
   };
 
-  const handleDelete = (id) => { if (window.confirm('Xác nhận xóa xe này?')) setVehicles(prev => prev.filter(v => v.id !== id)); };
+  const handleDelete = async (id) => {
+    if (!window.confirm('Xác nhận xóa xe này?')) return;
+    try {
+      await vehicleService.deleteById(id);
+      setVehicles(prev => prev.filter(v => (v._id || v.id) !== id));
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Xóa thất bại');
+    }
+  };
 
   const filtered = vehicles.filter(v => {
     const matchStatus = filterStatus === 'all' || v.status === filterStatus;
-    const matchSource = filterSource === 'all' || v.source === filterSource;
+    const matchSource = filterSource === 'all' ||
+      (filterSource === 'showroom' ? v.companyOwned : !v.companyOwned);
     return matchStatus && matchSource;
   });
 
   const columns = [
     { key: 'name', label: 'Thông tin xe', render: row => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <MdDirectionsCar size={22} color="#00b14f" />
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+          {row.image ? (
+            <img src={row.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} aria-hidden="true" />
+          ) : (
+            <MdDirectionsCar size={22} color="#00b14f" aria-hidden="true" />
+          )}
         </div>
         <div>
           <div style={{ fontWeight: 600, fontSize: '0.83rem', color: '#111827' }}>{row.name}</div>
-          <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>BKS: {row.plate}</div>
+          <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>BKS: {row.plateNumber || '—'}</div>
         </div>
       </div>
     )},
@@ -60,7 +124,7 @@ const VehicleManagement = () => {
         </div>
       </div>
     )},
-    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 700, color: '#00b14f', fontSize: '0.9rem' }}>{row.price}K</span>, sortable: true, accessor: 'price' },
+    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 700, color: '#00b14f', fontSize: '0.9rem' }}>{Number(row.price).toLocaleString('vi-VN')}đ</span>, sortable: true, accessor: 'price' },
     { key: 'trips', label: 'Chuyến', render: row => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <FaRoute size={12} color="#9ca3af" /><span style={{ fontWeight: 600 }}>{row.trips}</span>
@@ -73,16 +137,16 @@ const VehicleManagement = () => {
     ) : <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>—</span> },
     { key: 'source', label: 'Nguồn', render: row => (
       <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 50,
-        background: row.source === 'showroom' ? '#dbeafe' : '#e0e7ff',
-        color: row.source === 'showroom' ? '#2563eb' : '#4338ca' }}>
-        {row.source === 'showroom' ? 'Showroom' : 'Ký gửi'}
+        background: row.companyOwned ? '#dbeafe' : '#e0e7ff',
+        color: row.companyOwned ? '#2563eb' : '#4338ca' }}>
+        {row.companyOwned ? 'Showroom' : 'Ký gửi'}
       </span>
     )},
     { key: 'status', label: 'Trạng thái', render: row => <StatusBadge status={row.status} /> },
     { key: 'actions', label: '', render: row => (
       <div style={{ display: 'flex', gap: 5 }}>
-        <button className="btn-icon" onClick={() => openEdit(row)} title="Chỉnh sửa"><FaEdit /></button>
-        <button className="btn-icon danger" onClick={() => handleDelete(row.id)} title="Xóa xe"><FaTrash /></button>
+        <button type="button" className="btn-icon" onClick={() => openEdit(row)} title="Chỉnh sửa" aria-label="Chỉnh sửa xe"><FaEdit aria-hidden="true" /></button>
+        <button type="button" className="btn-icon danger" onClick={() => handleDelete(row._id || row.id)} title="Xóa xe" aria-label="Xóa xe"><FaTrash aria-hidden="true" /></button>
       </div>
     )},
   ];
@@ -92,7 +156,7 @@ const VehicleManagement = () => {
       <div className="page-header" style={{ marginBottom: 16 }}>
         <div>
           <h1 className="page-title">Quản lý xe</h1>
-          <p className="page-subtitle">Quản lý toàn bộ xe trong showroom ({vehicles.length} xe)</p>
+          <p className="page-subtitle">Quản lý toàn bộ xe trong showroom{vehicles.length > 0 ? ` (${vehicles.length} xe)` : ''}</p>
         </div>
         <button className="btn-primary" onClick={openAdd}><FaPlus /> Thêm xe mới</button>
       </div>
@@ -117,7 +181,16 @@ const VehicleManagement = () => {
         </div>
       </div>
 
-      <DataTable columns={columns} data={filtered} searchPlaceholder="Tìm theo tên xe, biển số..." />
+      {loading ? (
+        <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+          <FaSpinner aria-hidden="true" className="animate-spin text-primary text-xl" />
+          <span>Đang tải dữ liệu…</span>
+        </div>
+      ) : loadError ? (
+        <div role="alert" className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm mb-4">{loadError}</div>
+      ) : (
+        <DataTable columns={columns} data={filtered} searchPlaceholder="Tìm theo tên xe, biển số..." />
+      )}
 
       {/* Add/Edit Modal */}
       <Modal isOpen={modal === 'form'} onClose={closeModal} title={editId ? 'Chỉnh sửa xe' : 'Thêm xe mới'} width={580}

@@ -667,7 +667,7 @@ const ShowroomDashboard = () => {
           </div>
 
           {/* Export */}
-          <button type="button" className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 border border-gray-200 bg-white rounded-full px-4 py-1.5 hover:border-primary hover:text-primary transition-colors">
+          <button type="button" disabled title="Tính năng sắp ra mắt" className="flex items-center gap-1.5 text-sm font-semibold text-gray-400 border border-gray-200 bg-white rounded-full px-4 py-1.5 cursor-not-allowed opacity-50">
             <Download size={14} aria-hidden="true" /> Xuất báo cáo
           </button>
 

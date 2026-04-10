@@ -19,8 +19,12 @@ const RevenueReports = () => {
           <p className="page-subtitle">Thống kê doanh thu chi tiết của showroom</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-outline"><FaDownload /> Excel</button>
-          <button className="btn-primary"><FaDownload /> PDF</button>
+          <button type="button" className="btn-outline" disabled title="Tính năng sắp ra mắt" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+            <FaDownload aria-hidden="true" /> Excel
+          </button>
+          <button type="button" className="btn-primary" disabled title="Tính năng sắp ra mắt" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+            <FaDownload aria-hidden="true" /> PDF
+          </button>
         </div>
       </div>
 

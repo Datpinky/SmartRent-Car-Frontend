@@ -5,20 +5,20 @@
 @tailwind utilities;
 
 @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
   html {
     scroll-behavior: smooth;
   }
 
-  body {
-    font-family: 'Inter', sans-serif;
+body {
+  font-family: 'Inter', sans-serif;
     @apply bg-gray-50 text-gray-800;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
 
   a {
     text-decoration: none;
@@ -43,7 +43,7 @@
 }
 
 @layer components {
-  .container {
+.container {
     @apply max-w-[1280px] mx-auto px-5;
   }
 

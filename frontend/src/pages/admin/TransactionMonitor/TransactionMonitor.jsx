@@ -65,7 +65,9 @@ const TransactionMonitor = () => {
           <h1 className="page-title">Giám sát giao dịch</h1>
           <p className="page-subtitle">Theo dõi tất cả giao dịch thanh toán trên nền tảng</p>
         </div>
-        <button type="button" className="btn-outline"><FaDownload aria-hidden="true" /> Xuất báo cáo</button>
+        <button type="button" className="btn-outline" disabled title="Tính năng sắp ra mắt" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+          <FaDownload aria-hidden="true" /> Xuất báo cáo
+        </button>
       </div>
 
       {/* Summary */}

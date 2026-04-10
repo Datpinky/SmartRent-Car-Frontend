@@ -69,6 +69,24 @@ class AuthValidation {
             .isURL()
             .withMessage("URL tài liệu không hợp lệ"),
     ];
+
+    updateProfile = [
+        body("name").optional().trim().notEmpty().withMessage("Tên không được để trống").isLength({ max: 120 }).withMessage("Tên tối đa 120 ký tự"),
+        body("phone")
+            .optional({ checkFalsy: true })
+            .trim()
+            .matches(/^\d{10}$/)
+            .withMessage("Số điện thoại phải có đúng 10 chữ số"),
+    ];
+
+    changePassword = [
+        body("currentPassword").notEmpty().withMessage("Vui lòng nhập mật khẩu hiện tại"),
+        body("newPassword").custom((value) => {
+            const result = validateStrongPassword(value);
+            if (!result.ok) throw new Error(result.message);
+            return true;
+        }),
+    ];
 }
 
 module.exports = new AuthValidation();

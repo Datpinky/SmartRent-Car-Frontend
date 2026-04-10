@@ -357,7 +357,7 @@ const Revenue = () => {
       <div className="section-card">
         <div className="section-header">
           <div className="section-title">Lịch sử chi trả</div>
-          <button type="button" className="btn-outline" style={{ fontSize: '0.78rem', padding: '5px 12px' }}>
+          <button type="button" className="btn-outline" disabled title="Tính năng sắp ra mắt" style={{ fontSize: '0.78rem', padding: '5px 12px', opacity: 0.5, cursor: 'not-allowed' }}>
             <FaDownload aria-hidden="true" /> Xuất CSV
           </button>
         </div>

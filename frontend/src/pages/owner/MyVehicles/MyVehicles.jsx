@@ -9,7 +9,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VEHICLE_TYPES = ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Pickup', 'others'];
+const VEHICLE_TYPES = ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Truck', 'Bike', 'Bicycle', 'others'];
 const FUEL_OPTIONS  = [
   { value: 'petrol',   label: 'Xăng' },
   { value: 'diesel',   label: 'Dầu'  },

@@ -58,7 +58,7 @@ const ContractManagement = () => {
                 <td>
                   <div style={{ display: 'flex', gap: 5 }}>
                     <button className="btn-icon" onClick={() => setViewModal(c)} title="Xem hợp đồng"><FaEye /></button>
-                    <button className="btn-icon" title="Tải PDF"><FaDownload /></button>
+                    <button type="button" className="btn-icon" title="Tính năng sắp ra mắt" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} aria-label="Tải PDF (sắp ra mắt)"><FaDownload aria-hidden="true" /></button>
                   </div>
                 </td>
               </tr>
@@ -97,7 +97,9 @@ const ContractManagement = () => {
             <div style={{ background: '#f3f4f6', borderRadius: 10, padding: 20, textAlign: 'center', border: '1px dashed #d1d5db' }}>
               <FaFileContract style={{ fontSize: '2rem', color: '#9ca3af', marginBottom: 8 }} />
               <div style={{ fontSize: '0.82rem', color: '#9ca3af' }}>Xem trước hợp đồng PDF</div>
-              <button className="btn-primary" style={{ marginTop: 10, fontSize: '0.8rem', padding: '7px 16px' }}><FaDownload /> Tải xuống PDF</button>
+              <button type="button" className="btn-primary" disabled title="Tính năng sắp ra mắt" style={{ marginTop: 10, fontSize: '0.8rem', padding: '7px 16px', opacity: 0.5, cursor: 'not-allowed' }}>
+                <FaDownload aria-hidden="true" /> Tải xuống PDF
+              </button>
             </div>
           </div>
         )}

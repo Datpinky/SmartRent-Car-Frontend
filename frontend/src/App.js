@@ -79,8 +79,9 @@ const App = () => {
           <Route path="/admin/dashboard"   element={<DashboardPage roles={['admin']}><AdminDashboard /></DashboardPage>} />
           <Route path="/admin/users"       element={<DashboardPage roles={['admin']}><UserManagement /></DashboardPage>} />
           <Route path="/admin/showrooms"   element={<DashboardPage roles={['admin']}><ShowroomVerification /></DashboardPage>} />
-          <Route path="/admin/transactions"element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
+          <Route path="/admin/transactions" element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
           <Route path="/admin/profile"    element={<DashboardPage roles={['admin']}><AdminProfile /></DashboardPage>} />
+          <Route path="/admin/moderation" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/reports"    element={<Navigate to="/admin/dashboard" replace />} />
 
           {/* Showroom Dashboard */}
@@ -103,10 +104,10 @@ const App = () => {
           {/* Renter portal */}
           <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
-          <Route path="/renter/checkout/:carId"   element={<RenterPage><Checkout /></RenterPage>} />
-          <Route path="/renter/checkout"         element={<RenterPage><Checkout /></RenterPage>} />
-          <Route path="/renter/payment-result"   element={<RenterPage><PaymentResult /></RenterPage>} />
-          <Route path="/renter/sos"              element={<RenterPage><SOSReport /></RenterPage>} />
+          <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/payment-result"  element={<PaymentResult />} />
+          <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
 
           {/* Public pages with Navbar/Footer */}
           <Route path="/*" element={

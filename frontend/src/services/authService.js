@@ -62,6 +62,42 @@ export const authService = {
     localStorage.removeItem('smartrent_token');
     localStorage.removeItem('smartrent_user');
   },
+
+  mapUser(u) {
+    if (!u) return null;
+    return {
+      id: u._id,
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      role: mapBackendRole(u.role),
+      backendRole: u.role,
+      phone: u.phone || '',
+      showroom_status: u.showroom_status,
+      business_name: u.business_name,
+    };
+  },
+
+  async updateProfile({ name, phone }) {
+    const res = await apiClient.patch('/api/auth/me', { name, phone });
+    const u = res.data?.data;
+    return this.mapUser(u);
+  },
+
+  async changePassword({ currentPassword, newPassword }) {
+    const res = await apiClient.post('/api/auth/change-password', { currentPassword, newPassword });
+    const token = res.data?.data?.token;
+    if (token) {
+      localStorage.setItem('smartrent_token', token);
+    }
+    return res.data?.data;
+  },
+
+  /** Danh sách phiên đăng nhập đã lưu (theo JWT phiên bản mới). */
+  async listSessions() {
+    const res = await apiClient.get('/api/auth/sessions');
+    return res.data?.data;
+  },
 };
 
 export default authService;

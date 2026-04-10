@@ -16,6 +16,7 @@ const paymentRoutes = require('./routes/payment.route');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
+app.set('trust proxy', 1);
 
 /** Dev + production: thêm origin frontend vào CORS_ORIGINS trong .env (phân tách bằng dấu phẩy) */
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:3001')
@@ -38,7 +39,6 @@ app.use(
 );
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 app.get('/api/health', (req, res) => {

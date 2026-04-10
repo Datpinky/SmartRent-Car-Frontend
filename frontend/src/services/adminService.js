@@ -50,33 +50,6 @@ const adminService = {
     return res.data.data;
   },
 
-  // ─── Admin profile ───────────────────────────────────────────────────────────
-
-  async getProfileOverview() {
-    const res = await apiClient.get('/api/admin/profile/overview');
-    return res.data.data;
-  },
-
-  async updateProfile(payload) {
-    const res = await apiClient.patch('/api/admin/profile', payload);
-    return res.data.data;
-  },
-
-  async changePassword(payload) {
-    const res = await apiClient.patch('/api/admin/profile/password', payload);
-    return res.data.data;
-  },
-
-  async getProfileActivity() {
-    const res = await apiClient.get('/api/admin/profile/activity');
-    return res.data.data;
-  },
-
-  async getProfileSessions() {
-    const res = await apiClient.get('/api/admin/profile/sessions');
-    return res.data.data;
-  },
-
   // ─── Transactions ────────────────────────────────────────────────────────────
 
   /**
@@ -86,28 +59,6 @@ const adminService = {
     const res = await apiClient.get('/api/admin/transactions', {
       params: status !== 'all' ? { status } : {},
     });
-    return res.data.data;
-  },
-
-  // ─── Reviews / Content Moderation ────────────────────────────────────────────
-
-  /**
-   * @param {'all'|'pending'|'reported'|'approved'|'rejected'} [status]
-   */
-  async listReviews(status = 'all') {
-    const res = await apiClient.get('/api/admin/reviews', {
-      params: status !== 'all' ? { status } : {},
-    });
-    return res.data.data;
-  },
-
-  async approveReview(id) {
-    const res = await apiClient.patch(`/api/admin/reviews/${id}/approve`);
-    return res.data.data;
-  },
-
-  async rejectReview(id) {
-    const res = await apiClient.patch(`/api/admin/reviews/${id}/reject`);
     return res.data.data;
   },
 };

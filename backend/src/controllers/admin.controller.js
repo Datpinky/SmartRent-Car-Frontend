@@ -64,82 +64,10 @@ class AdminController {
         }
     }
 
-    async getProfileOverview(req, res, next) {
-        try {
-            const data = await adminService.getProfileOverview(req.user.userId);
-            return res.status(200).json({ message: "OK", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async updateProfile(req, res, next) {
-        try {
-            const data = await adminService.updateProfile(req.user.userId, req.body);
-            return res.status(200).json({ message: "Đã cập nhật hồ sơ", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async changePassword(req, res, next) {
-        try {
-            const data = await adminService.changePassword(req.user.userId, req.body);
-            return res.status(200).json({ message: "Đổi mật khẩu thành công", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async getProfileActivity(req, res, next) {
-        try {
-            const data = await adminService.getProfileActivity();
-            return res.status(200).json({ message: "OK", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async getProfileSessions(req, res, next) {
-        try {
-            const data = await adminService.getProfileSessions(req);
-            return res.status(200).json({ message: "OK", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
     async listTransactions(req, res, next) {
         try {
             const data = await adminService.listTransactions(req.query);
             return res.status(200).json({ message: "OK", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async listReviews(req, res, next) {
-        try {
-            const data = await adminService.listReviews(req.query);
-            return res.status(200).json({ message: "OK", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async approveReview(req, res, next) {
-        try {
-            const data = await adminService.approveReview(req.params.id);
-            return res.status(200).json({ message: "Đã duyệt đánh giá", data });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async rejectReview(req, res, next) {
-        try {
-            const data = await adminService.rejectReview(req.params.id);
-            return res.status(200).json({ message: "Đã từ chối đánh giá", data });
         } catch (error) {
             next(error);
         }

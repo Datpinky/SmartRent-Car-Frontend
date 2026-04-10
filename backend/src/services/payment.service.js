@@ -1,6 +1,16 @@
 const Stripe = require('stripe');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const PaymentModel = require('../models/payment.model');
+
+// Lazy-init: chỉ tạo Stripe instance khi cần, đảm bảo dotenv đã chạy
+let _stripe = null;
+const getStripe = () => {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error('STRIPE_SECRET_KEY chưa được cấu hình trong .env');
+    _stripe = Stripe(key);
+  }
+  return _stripe;
+};
 const throwError = require('../utils/throwError');
 const BookingService = require('./booking.service');
 const BaseService = require('./base.service');
@@ -115,7 +125,7 @@ class PaymentService {
       throwError('Payment không tồn tại', 404);
     }
 
-    const intent = await stripe.paymentIntents.create({
+    const intent = await getStripe().paymentIntents.create({
       amount: payment.amount,
       currency: payment.currency,
       metadata: {
@@ -137,7 +147,7 @@ class PaymentService {
   }
 
   async getPaymentIntentById(intentId) {
-    return await stripe.paymentIntents.retrieve(intentId);
+    return await getStripe().paymentIntents.retrieve(intentId);
   }
 
   async getPaymentDBById(paymentId) {
@@ -173,7 +183,7 @@ class PaymentService {
   }
 
   async syncPaymentIntentWithDB(paymentIntentId) {
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const intent = await getStripe().paymentIntents.retrieve(paymentIntentId);
 
     const updatePaymentAndBooking = async (intent, paymentStatus, bookingStatus) => {
       const paymentId = intent.metadata.payment_id;

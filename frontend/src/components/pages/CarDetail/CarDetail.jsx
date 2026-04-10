@@ -38,7 +38,7 @@ const StarRow = ({ rating, count }) => (
 
 const isMongoId = (str) => /^[a-f\d]{24}$/i.test(str);
 
-/** Sau khi đăng nhập — chủ xe / showroom: khu vực quản lý tương ứng (renter đi thẳng vào checkout) */
+/** Sau khi đăng nhập — khách thuê / admin: chuyến đi; chủ xe / showroom: khu vực quản lý tương ứng */
 const BOOK_NOW_DESTINATIONS = {
   owner: '/owner/dashboard',
   showroom: '/showroom/bookings',
@@ -215,12 +215,8 @@ const CarDetail = () => {
       navigate('/login', { state: { from: location, bookNow: true } });
       return;
     }
-    // Renter and admin go directly to checkout with vehicle id
-    if (user.role === 'renter' || user.role === 'admin') {
-      navigate(`/renter/checkout/${id}`);
-      return;
-    }
-    const dest = BOOK_NOW_DESTINATIONS[user.role] || '/renter/bookings';
+    // Renter và admin đặt xe qua checkout flow; các role khác về dashboard
+    const dest = BOOK_NOW_DESTINATIONS[user.role] || `/renter/checkout/${id}`;
     navigate(dest);
   };
 

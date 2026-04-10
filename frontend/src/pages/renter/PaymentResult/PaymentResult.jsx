@@ -1,134 +1,187 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { FaCheckCircle, FaTimesCircle, FaHome, FaList, FaSpinner, FaInfoCircle } from 'react-icons/fa';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import {
+  FaCheckCircle, FaTimesCircle, FaSpinner,
+  FaCalendarAlt, FaCar, FaReceipt,
+} from 'react-icons/fa';
+import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
+
+const fmt = (d) =>
+  d ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(d)) : '—';
 
 const PaymentResult = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const paymentIntentId = searchParams.get('payment_intent');
+  const bookingId       = searchParams.get('booking_id');
+  const demoMode        = searchParams.get('demo') === '1';
+  const redirectStatus  = searchParams.get('redirect_status'); // 'succeeded' | 'requires_payment_method'
 
-  const [loading, setLoading] = useState(!!paymentIntentId);
-  const [result, setResult] = useState(null);
-  const [syncError, setSyncError] = useState('');
+  const [status, setStatus]   = useState('loading'); // 'loading' | 'success' | 'failed'
+  const [booking, setBooking] = useState(null);
+  const [error, setError]     = useState('');
 
   useEffect(() => {
-    if (!paymentIntentId) {
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    paymentService.syncIntent(paymentIntentId)
-      .then((data) => setResult(data))
-      .catch((err) => setSyncError(err.message || 'Không thể xác nhận kết quả thanh toán.'))
-      .finally(() => setLoading(false));
-  }, [paymentIntentId]);
+    const run = async () => {
+      try {
+        // Demo mode: không có Stripe key thật
+        if (demoMode) {
+          if (bookingId) {
+            try {
+              const b = await bookingService.getBookingById(bookingId);
+              if (!cancelled) setBooking(b);
+            } catch { /* optional */ }
+          }
+          if (!cancelled) setStatus('success');
+          return;
+        }
 
-  const intentStatus = result?.intentStatus;
-  const isSuccess = intentStatus === 'succeeded';
-  const isProcessing = intentStatus === 'processing';
-  const isFailed = !isSuccess && !isProcessing;
+        // Nếu Stripe gửi redirect_status = failed
+        if (redirectStatus && redirectStatus !== 'succeeded') {
+          if (!cancelled) { setStatus('failed'); setError('Thanh toán không thành công. Vui lòng thử lại.'); }
+          return;
+        }
 
-  if (loading) {
+        // Sync intent với backend để cập nhật trạng thái booking
+        if (paymentIntentId) {
+          await paymentService.syncIntent(paymentIntentId);
+        }
+
+        // Fetch thông tin booking để hiển thị
+        if (bookingId) {
+          const b = await bookingService.getBookingById(bookingId);
+          if (!cancelled) setBooking(b);
+        }
+
+        if (!cancelled) setStatus('success');
+      } catch (err) {
+        if (!cancelled) {
+          setError(err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.');
+          setStatus('failed');
+        }
+      }
+    };
+
+    run();
+    return () => { cancelled = true; };
+  }, [paymentIntentId, bookingId, demoMode, redirectStatus]);
+
+  const bookingCode = booking?._id
+    ? `BK${booking._id.toString().slice(-6).toUpperCase()}`
+    : bookingId
+    ? `BK${bookingId.slice(-6).toUpperCase()}`
+    : '—';
+
+  const totalPrice = booking?.total_price
+    ? booking.total_price.toLocaleString('vi-VN') + 'đ'
+    : '—';
+
+  // ─── Loading ───────────────────────────────────────────────────────────────
+  if (status === 'loading') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16 }}>
-        <FaSpinner style={{ fontSize: '2.5rem', color: '#87ceeb', animation: 'spin 1s linear infinite' }} aria-hidden="true" />
-        <p style={{ color: '#6b7280', fontSize: '0.9rem', fontWeight: 600 }}>Đang xác nhận kết quả thanh toán…</p>
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+        <FaSpinner aria-hidden="true" className="text-primary text-4xl animate-spin" />
+        <p className="text-gray-600 text-sm">Đang xác nhận thanh toán…</p>
       </div>
     );
   }
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: 24 }}>
-      <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', border: '1px solid #f0f0f0' }}>
-
-        {syncError ? (
-          <>
-            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} aria-hidden="true" />
-            </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Không thể xác nhận</h2>
-            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>{syncError}</p>
-          </>
-        ) : isSuccess ? (
-          <>
-            <div
-              style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', animation: 'popIn 0.4s ease' }}
-            >
-              <FaCheckCircle style={{ fontSize: '3rem', color: '#059669' }} aria-hidden="true" />
-            </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thành công!</h2>
-            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Đặt xe của bạn đã được xác nhận. Chúng tôi sẽ gửi thông tin chi tiết qua email và SMS.
-            </p>
-            {result && (
-              <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'left' }}>
-                {[
-                  ['Mã giao dịch', result.intentId ? result.intentId.slice(-12).toUpperCase() : '—'],
-                  ['Trạng thái Stripe', result.intentStatus || '—'],
-                  ['Trạng thái thanh toán', result.paymentStatus || '—'],
-                  ['Trạng thái đặt xe', result.bookingStatus || '—'],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.82rem' }}>
-                    <span style={{ color: '#9ca3af' }}>{k}</span>
-                    <span style={{ fontWeight: 600, color: '#111827' }} className="tabular-nums">{v}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        ) : isProcessing ? (
-          <>
-            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <FaInfoCircle style={{ fontSize: '3rem', color: '#0284c7' }} aria-hidden="true" />
-            </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Đang xử lý</h2>
-            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Giao dịch đang được xử lý. Chúng tôi sẽ thông báo kết quả sớm nhất.
-            </p>
-          </>
-        ) : (
-          <>
-            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} aria-hidden="true" />
-            </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thất bại</h2>
-            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Giao dịch không thể thực hiện. Vui lòng thử lại hoặc liên hệ hỗ trợ.
-            </p>
-          </>
-        )}
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
-          >
-            <FaHome aria-hidden="true" /> Trang chủ
-          </button>
-          {(isSuccess || isProcessing) ? (
+  // ─── Failed ────────────────────────────────────────────────────────────────
+  if (status === 'failed') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-5">
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md w-full text-center">
+          <FaTimesCircle aria-hidden="true" className="text-red-500 text-5xl mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Thanh toán thất bại</h1>
+          <p className="text-gray-500 text-sm mb-6">{error || 'Giao dịch không được hoàn tất. Vui lòng thử lại.'}</p>
+          <div className="flex flex-col gap-3">
             <button
               type="button"
-              onClick={() => navigate('/renter/bookings')}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              <FaList aria-hidden="true" /> Xem chuyến đi
-            </button>
-          ) : (
-            <button
-              type="button"
+              className="btn-primary w-full justify-center"
               onClick={() => navigate(-1)}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
             >
               Thử lại
             </button>
-          )}
+            <Link to="/" className="btn-outline w-full text-center">Về trang chủ</Link>
+          </div>
         </div>
       </div>
-      <style>{`@keyframes popIn { from { transform: scale(0.5); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>
+    );
+  }
+
+  // ─── Success ───────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-5 py-10">
+      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md w-full text-center">
+        {/* Icon + Title */}
+        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+          <FaCheckCircle aria-hidden="true" className="text-green-500 text-3xl" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Đặt xe thành công!</h1>
+        <p className="text-gray-500 text-sm mb-6">Cảm ơn bạn đã đặt xe tại SmartRent Car.</p>
+
+        {/* Booking info */}
+        <div className="bg-slate-50 rounded-xl p-4 mb-6 text-left flex flex-col gap-3">
+          <div className="flex items-center gap-3 text-sm">
+            <FaReceipt aria-hidden="true" className="text-primary shrink-0" />
+            <div>
+              <div className="text-xs text-gray-400">Mã đơn đặt xe</div>
+              <div className="font-bold text-gray-900 tabular-nums">{bookingCode}</div>
+            </div>
+          </div>
+          {booking?.start_date && (
+            <div className="flex items-center gap-3 text-sm">
+              <FaCalendarAlt aria-hidden="true" className="text-primary shrink-0" />
+              <div>
+                <div className="text-xs text-gray-400">Nhận xe</div>
+                <div className="font-medium text-gray-800">{fmt(booking.start_date)}</div>
+              </div>
+            </div>
+          )}
+          {booking?.end_date && (
+            <div className="flex items-center gap-3 text-sm">
+              <FaCalendarAlt aria-hidden="true" className="text-primary shrink-0" />
+              <div>
+                <div className="text-xs text-gray-400">Trả xe</div>
+                <div className="font-medium text-gray-800">{fmt(booking.end_date)}</div>
+              </div>
+            </div>
+          )}
+          {booking?.vehicle_id && (
+            <div className="flex items-center gap-3 text-sm">
+              <FaCar aria-hidden="true" className="text-primary shrink-0" />
+              <div>
+                <div className="text-xs text-gray-400">Xe</div>
+                <div className="font-medium text-gray-800">
+                  {booking.vehicle_id?.vehicle_name ||
+                   [booking.vehicle_id?.vehicle_brand, booking.vehicle_id?.vehicle_model].filter(Boolean).join(' ') ||
+                   'Xe đặt thuê'}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="border-t border-dashed border-gray-200 pt-3 flex justify-between font-bold text-gray-900 text-sm">
+            <span>Tổng thanh toán</span>
+            <span className="text-primary tabular-nums">{totalPrice}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <Link
+            to="/renter/bookings"
+            className="btn-primary w-full text-center justify-center"
+          >
+            Xem lịch sử đặt xe
+          </Link>
+          <Link to="/" className="btn-outline w-full text-center justify-center">
+            Về trang chủ
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
