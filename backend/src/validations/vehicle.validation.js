@@ -1,6 +1,7 @@
 const { body, param } = require("express-validator");
 
-const VEHICLE_TYPES = ["Sedan", "Bike", "Bicyle", "SUV", "Wagon", "Truck", "others"];
+/** Đồng bộ `vehicle.model` — chỉ loại xe ô tô 4 bánh. */
+const VEHICLE_TYPES = ["Sedan", "SUV", "MPV", "Hatchback", "Wagon", "Truck", "others"];
 const CURRENCIES = ["VND", "USD"];
 const CHARGES = ["minutes", "seconds", "hourly", "day", "negotiable"];
 const STATUS = ['available', 'waiting_handover', 'rented', 'maintenance', 'reserved'];

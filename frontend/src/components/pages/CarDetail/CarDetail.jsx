@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
+import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaChevronRight, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { cars as MOCK_CARS } from '../../data/cars';
@@ -69,6 +69,9 @@ const CarDetail = () => {
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [coordsLoading, setCoordsLoading] = useState(false);
   const [coordsError, setCoordsError] = useState(null);
+
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const thumbStripRef = useRef(null);
 
   const loadCar = useCallback(async () => {
     setLoading(true);
@@ -176,6 +179,7 @@ const CarDetail = () => {
 
   const mapCarsForView = useMemo(() => {
     if (!car || !pickupCoords) return [];
+    const thumb = (Array.isArray(car.images) && car.images[0]) || car.image;
     return [
       {
         id: car.id || car._id,
@@ -186,10 +190,26 @@ const CarDetail = () => {
         seats: car.seats,
         fuel: car.fuel,
         category: car.category || car.type,
-        image: car.image,
+        image: thumb,
       },
     ];
   }, [car, pickupCoords]);
+
+  /** Tất cả URL ảnh hợp lệ — ưu tiên `images` từ API, fallback một ảnh đại diện */
+  const galleryImages = useMemo(() => {
+    if (!car) return [];
+    const raw =
+      Array.isArray(car.images) && car.images.length > 0
+        ? car.images
+        : car.image
+          ? [car.image]
+          : [];
+    return raw.filter(Boolean);
+  }, [car]);
+
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [id]);
 
   const googleMapsHref = pickupCoords
     ? `https://www.google.com/maps?q=${pickupCoords.lat},${pickupCoords.lng}`
@@ -268,6 +288,15 @@ const CarDetail = () => {
     : (car.rating || 0);
   const tripCount = reviewsMeta.total || car.trips || 0;
 
+  const nImg = galleryImages.length;
+  const activeIdx = nImg ? ((galleryIndex % nImg) + nImg) % nImg : 0;
+  const mainSrc = nImg ? galleryImages[activeIdx] : '';
+  const goGalleryPrev = () => nImg && setGalleryIndex((i) => (i - 1 + nImg) % nImg);
+  const goGalleryNext = () => nImg && setGalleryIndex((i) => (i + 1) % nImg);
+  const scrollThumbStrip = (dir) => {
+    thumbStripRef.current?.scrollBy({ left: dir * 160, behavior: 'smooth' });
+  };
+
   return (
     <div className="max-w-[1280px] mx-auto px-5 py-6">
       <button
@@ -281,27 +310,117 @@ const CarDetail = () => {
       <div className="grid grid-cols-[1fr_360px] gap-8 items-start max-[900px]:grid-cols-1">
         {/* Left */}
         <div>
-          {/* Gallery */}
-          <div className="w-full rounded-2xl overflow-hidden bg-gray-100 relative" style={{ aspectRatio: '16/9' }}>
-            {car.image ? (
-              <img
-                src={car.image}
-                alt={car.name}
-                width={600}
-                height={400}
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-              />
-            ) : null}
+          {/* Gallery — nhiều ảnh: ảnh lớn + mũi tên + thumbnail (kiểu Shopee) */}
+          <div className="w-full space-y-2">
             <div
-              className="w-full h-full flex items-center justify-center"
-              style={{
-                background: `linear-gradient(135deg, hsl(${hue},30%,88%) 0%, hsl(${hue},20%,95%) 100%)`,
-                display: car.image ? 'none' : 'flex',
-              }}
+              className="w-full rounded-2xl overflow-hidden bg-gray-100 relative group"
+              style={{ aspectRatio: '16/9' }}
             >
-              <MdDirectionsCar aria-hidden="true" style={{ fontSize: '8rem', color: car.color || `hsl(${hue},40%,50%)`, filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.15))', transform: 'scaleX(-1)' }} />
+              {mainSrc ? (
+                <img
+                  key={mainSrc}
+                  src={mainSrc}
+                  alt={`${car.name} — ảnh ${activeIdx + 1}/${nImg}`}
+                  width={600}
+                  height={400}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const el = e.target.nextElementSibling;
+                    if (el) el.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div
+                className="w-full h-full flex items-center justify-center absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${hue},30%,88%) 0%, hsl(${hue},20%,95%) 100%)`,
+                  display: mainSrc ? 'none' : 'flex',
+                }}
+              >
+                <MdDirectionsCar
+                  aria-hidden="true"
+                  style={{
+                    fontSize: '8rem',
+                    color: car.color || `hsl(${hue},40%,50%)`,
+                    filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.15))',
+                    transform: 'scaleX(-1)',
+                  }}
+                />
+              </div>
+              {nImg > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Ảnh trước"
+                    onClick={goGalleryPrev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white opacity-90 hover:opacity-100 transition-opacity z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <FaChevronLeft size={18} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Ảnh sau"
+                    onClick={goGalleryNext}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white opacity-90 hover:opacity-100 transition-opacity z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <FaChevronRight size={18} aria-hidden />
+                  </button>
+                  <div
+                    className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1 rounded-full bg-black/35"
+                    aria-hidden
+                  >
+                    {galleryImages.map((_, i) => (
+                      <span
+                        key={i}
+                        className={`w-1.5 h-1.5 rounded-full transition-colors ${i === activeIdx ? 'bg-white' : 'bg-white/45'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
+
+            {nImg > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="Cuộn ảnh nhỏ sang trái"
+                  onClick={() => scrollThumbStrip(-1)}
+                  className="shrink-0 w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <FaChevronLeft size={14} aria-hidden />
+                </button>
+                <div
+                  ref={thumbStripRef}
+                  className="flex-1 flex gap-2 overflow-x-auto py-0.5 px-0.5 min-w-0 [scrollbar-width:thin]"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  {galleryImages.map((src, i) => (
+                    <button
+                      key={`${src}-${i}`}
+                      type="button"
+                      aria-label={`Xem ảnh ${i + 1}`}
+                      aria-current={i === activeIdx ? 'true' : undefined}
+                      onClick={() => setGalleryIndex(i)}
+                      className={`shrink-0 w-[72px] h-[72px] rounded-lg overflow-hidden border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        i === activeIdx ? 'border-primary ring-2 ring-primary/25' : 'border-transparent hover:border-gray-300'
+                      }`}
+                    >
+                      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cuộn ảnh nhỏ sang phải"
+                  onClick={() => scrollThumbStrip(1)}
+                  className="shrink-0 w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <FaChevronRight size={14} aria-hidden />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Actions */}

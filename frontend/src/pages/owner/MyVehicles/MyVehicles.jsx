@@ -1,15 +1,34 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import FileUpload from '../../../components/common/FileUpload';
-import { FaPlus, FaEdit, FaSpinner, FaExclamationCircle } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaSpinner, FaExclamationCircle, FaChevronDown } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import { useAuth } from '../../../contexts/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VEHICLE_TYPES = ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Truck', 'Bike', 'Bicycle', 'others'];
+/** SmartRent: chỉ ô tô 4 bánh — không xe máy / xe đạp (đồng bộ backend `vehicle_type`). */
+const VEHICLE_TYPES = ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Truck', 'others'];
+
+/** Mô tả ngắn khi người dùng xem / di chuột qua từng loại (đồng bộ giá trị gửi API). */
+const VEHICLE_TYPE_INFO = {
+  Sedan:
+    'Xe 3 khoang tách bạch (động cơ – cabin – cốp), thường 4 cửa, cốp chờm xuống. Đi phố và công việc rất phổ biến.',
+  SUV:
+    'Gầm cao hơn sedan, thân to, thường 5 chỗ hoặc 5+2; đi đường xấu tốt hơn, tầm nhìn thoáng (City SUV / SUV cỡ trung…).',
+  MPV:
+    'Xe đa dụng nhiều chỗ (thường 7 chỗ), ưu tiên không gian hành khách và cửa mở rộng; phù hợp gia đình đông người.',
+  Hatchback:
+    'Thân ngắn, cốp mở chung với khoang hành khách (cửa sau lớn); linh hoạt trong phố, dễ quay đầu.',
+  Wagon:
+    'Thân kéo dài kiểu “estate”: giống sedan nhưng cốp nối liền cabin, chở đồ dài / cồng kềnh hơn sedan thường.',
+  Truck:
+    'Bán tải / xe tải nhẹ 4 bánh (pickup): cabin kép hoặc thùng sau — chở người và hàng; không gồm xe máy hay xe đạp.',
+  others:
+    'Ô tô 4 bánh không thuộc các nhóm trên (ví dụ lai kiểu), hoặc xe đặc thù — SmartRent không cho thuê xe 2 bánh.',
+};
 const FUEL_OPTIONS  = [
   { value: 'petrol',   label: 'Xăng' },
   { value: 'diesel',   label: 'Dầu'  },
@@ -73,6 +92,134 @@ const inputStyle = {
 const inputCls = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary';
 const selectStyle = { ...inputStyle, background: '#fff' };
 
+function VehicleTypeSelect({ id, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(value);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (open) setHovered(value);
+  }, [open, value]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const hint = VEHICLE_TYPE_INFO[hovered] || VEHICLE_TYPE_INFO.others;
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        id={id}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? `${id}-listbox` : undefined}
+        onClick={() => setOpen((o) => !o)}
+        className={inputCls}
+        style={{
+          ...selectStyle,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <span>{value}</span>
+        <FaChevronDown
+          aria-hidden
+          style={{
+            opacity: 0.55,
+            fontSize: '0.75rem',
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.15s ease',
+          }}
+        />
+      </button>
+      {open && (
+        <div
+          id={`${id}-listbox`}
+          role="listbox"
+          aria-label="Chọn loại xe"
+          style={{
+            position: 'absolute',
+            zIndex: 80,
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 9,
+            boxShadow: '0 12px 28px rgba(0,0,0,0.12)',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+            {VEHICLE_TYPES.map((t, i) => (
+              <button
+                key={t}
+                type="button"
+                role="option"
+                aria-selected={t === value}
+                onMouseEnter={() => setHovered(t)}
+                onFocus={() => setHovered(t)}
+                onClick={() => {
+                  onChange(t);
+                  setOpen(false);
+                }}
+                className={inputCls}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '9px 12px',
+                  fontSize: '0.85rem',
+                  border: 'none',
+                  borderBottom: i < VEHICLE_TYPES.length - 1 ? '1px solid #f3f4f6' : 'none',
+                  background:
+                    t === value ? '#f0fdf4' : t === hovered ? '#f9fafb' : '#fff',
+                  cursor: 'pointer',
+                  color: '#111827',
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <div
+            role="note"
+            style={{
+              borderTop: '1px solid #e5e7eb',
+              padding: '10px 12px',
+              background: '#fafafa',
+              fontSize: '0.78rem',
+              color: '#4b5563',
+              lineHeight: 1.5,
+            }}
+          >
+            <span style={{ color: '#111827', fontWeight: 600 }}>{hovered}</span>
+            <span style={{ color: '#9ca3af' }}> — </span>
+            {hint}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Vehicle Form (shared by Add & Edit) ──────────────────────────────────────
 
 const VehicleForm = ({ form, onChange }) => {
@@ -123,16 +270,23 @@ const VehicleForm = ({ form, onChange }) => {
           />
         </FieldRow>
         <FieldRow label="Loại xe" id="vehicle-type">
-          <select
+          <VehicleTypeSelect
             id="vehicle-type"
-            name="vehicle_type"
-            className={inputCls}
-            style={selectStyle}
             value={form.vehicle_type}
-            onChange={e => set('vehicle_type', e.target.value)}
+            onChange={(t) => set('vehicle_type', t)}
+          />
+          <p
+            style={{
+              margin: '6px 0 0',
+              fontSize: '0.72rem',
+              color: '#6b7280',
+              lineHeight: 1.45,
+            }}
           >
-            {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+            {' '}
+            <strong style={{ color: '#374151' }}>{form.vehicle_type}</strong> —{' '}
+            {VEHICLE_TYPE_INFO[form.vehicle_type] || VEHICLE_TYPE_INFO.others}
+          </p>
         </FieldRow>
       </div>
 

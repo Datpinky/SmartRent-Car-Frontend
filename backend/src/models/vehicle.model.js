@@ -3,10 +3,11 @@ const mongoose = require('mongoose');
 const vehicleSchema = new mongoose.Schema(
     {
         vehicle_name: { type: String, trim: true },
+        /** Chỉ xe ô tô 4 bánh (không xe máy / xe đạp). */
         vehicle_type: {
             type: String,
             required: true,
-            enum: ['Sedan', 'Bike', 'Bicycle', 'SUV', 'Wagon', 'Truck', 'others'],
+            enum: ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Truck', 'others'],
             default: 'Sedan'
         },
         brand: { type: String },
