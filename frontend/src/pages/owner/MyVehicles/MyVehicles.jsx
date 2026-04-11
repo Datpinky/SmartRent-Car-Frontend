@@ -4,7 +4,7 @@ import Modal from '../../../components/common/Modal';
 import FileUpload from '../../../components/common/FileUpload';
 import { FaPlus, FaEdit, FaSpinner, FaExclamationCircle, FaChevronDown } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
-import vehicleService from '../../../services/vehicleService';
+import vehicleService, { AMENITY_OPTIONS } from '../../../services/vehicleService';
 import { useAuth } from '../../../contexts/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -54,6 +54,7 @@ const EMPTY_FORM = {
   vehicle_hire_rate_in_figures: '',
   vehicle_images_paths: [],
   description: '',
+  amenities: [],
 };
 
 /** Parse số chỗ gửi API: rỗng → mặc định 5; chỉ chữ số 1–20 */
@@ -372,6 +373,45 @@ const VehicleForm = ({ form, onChange }) => {
         </div>
       </FieldRow>
 
+      <FieldRow label="Tiện nghi" id="vehicle-amenities">
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '10px 14px',
+            alignItems: 'flex-start',
+          }}
+        >
+          {AMENITY_OPTIONS.map((label) => (
+            <label
+              key={label}
+              htmlFor={`amenity-${label}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.82rem',
+                color: '#374151',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                id={`amenity-${label}`}
+                type="checkbox"
+                checked={(form.amenities || []).includes(label)}
+                onChange={() => {
+                  const cur = new Set(form.amenities || []);
+                  if (cur.has(label)) cur.delete(label);
+                  else cur.add(label);
+                  set('amenities', [...cur]);
+                }}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </FieldRow>
+
       {/* Images */}
       <FieldRow label="Danh sách URL ảnh xe" id="vehicle-images">
         <ImageUrlsEditor
@@ -511,6 +551,9 @@ const MyVehicles = () => {
         v.price != null && v.price !== '' && Number(v.price) > 0 ? String(v.price) : '',
       vehicle_images_paths: v.images || [],
       description: v.description || '',
+      amenities: Array.isArray(v.amenities)
+        ? v.amenities.filter((a) => AMENITY_OPTIONS.includes(a))
+        : [],
     });
     setEditError('');
     setEditModal(true);

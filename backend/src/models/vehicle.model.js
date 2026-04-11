@@ -39,6 +39,8 @@ const vehicleSchema = new mongoose.Schema(
             default: 'day'
         },
         maximum_allowable_distance: String,
+        /** Tiện nghi đã chọn (nhãn tiếng Việt, đồng bộ validation). */
+        amenities: { type: [String], default: [] },
         status: {
             type: String,
             required: true,

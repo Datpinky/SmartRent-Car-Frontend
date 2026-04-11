@@ -125,7 +125,7 @@ const CarDetail = () => {
       if (directLat != null && directLng != null) {
         if (!cancelled) {
           setPickupCoords({ lat: Number(directLat), lng: Number(directLng) });
-          setResolvedAddress(car.address || car.location || '');
+          setResolvedAddress(car.pickupAddress || car.address || car.location || '');
           setCoordsLoading(false);
         }
         return;
@@ -136,7 +136,7 @@ const CarDetail = () => {
           const loc = await vehicleLocationService.getByVehicleId(id);
           if (!cancelled && loc?.latitude != null && loc?.longitude != null) {
             setPickupCoords({ lat: Number(loc.latitude), lng: Number(loc.longitude) });
-            setResolvedAddress(loc.address || car.address || car.location || '');
+            setResolvedAddress(loc.address || car.pickupAddress || car.address || car.location || '');
             setCoordsLoading(false);
             return;
           }
@@ -145,7 +145,7 @@ const CarDetail = () => {
         }
       }
 
-      const text = car.address || car.location;
+      const text = car.pickupAddress || car.address || car.location;
       if (!text) {
         if (!cancelled) setCoordsLoading(false);
         return;
@@ -213,7 +213,7 @@ const CarDetail = () => {
 
   const googleMapsHref = pickupCoords
     ? `https://www.google.com/maps?q=${pickupCoords.lat},${pickupCoords.lng}`
-    : `https://www.google.com/maps/search/${encodeURIComponent(car?.address || car?.location || '')}`;
+    : `https://www.google.com/maps/search/${encodeURIComponent(car?.pickupAddress || car?.address || car?.location || '')}`;
 
   const handleToggleFavorite = async (e) => {
     e.stopPropagation();
@@ -287,6 +287,13 @@ const CarDetail = () => {
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : (car.rating || 0);
   const tripCount = reviewsMeta.total || car.trips || 0;
+
+  const locationLine =
+    car.pickupAddress ||
+    resolvedAddress ||
+    car.address ||
+    car.location ||
+    'Chưa có địa chỉ nhận xe';
 
   const nImg = galleryImages.length;
   const activeIdx = nImg ? ((galleryIndex % nImg) + nImg) % nImg : 0;
@@ -450,11 +457,11 @@ const CarDetail = () => {
 
             <div className="flex flex-wrap gap-3">
               <span className="flex items-center gap-1 text-[0.85rem] text-primary font-medium">
-                <FaMapMarkerAlt size={12} aria-hidden="true" /> {car.address || car.location || 'Chưa có địa chỉ'}
+                <FaMapMarkerAlt size={12} aria-hidden="true" /> {locationLine}
               </span>
-              {car.showroom && (
-                <span className="flex items-center gap-1 text-[0.82rem] text-gray-500">
-                  <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.showroom}
+              {car.listerProfile?.listingSubtitle && (
+                <span className="flex items-center gap-1 text-[0.82rem] text-gray-600">
+                  <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.listerProfile.listingSubtitle}
                 </span>
               )}
               <StarRow rating={avgRating} count={tripCount} />
@@ -479,7 +486,7 @@ const CarDetail = () => {
             </div>
 
             {/* Map — MapView embed + style MapPage.css (cùng /map) */}
-            {(car.address || car.location || isMongoId(id)) && (
+            {(car.pickupAddress || car.address || car.location || isMongoId(id)) && (
               <div>
                 <div className={sectionTitle}>Vị trí nhận xe</div>
                 <div className="clm-root">
@@ -489,8 +496,8 @@ const CarDetail = () => {
                       {coordsLoading
                         ? 'Đang tải vị trí…'
                         : coordsError
-                          ? car.address || car.location || '—'
-                          : resolvedAddress || car.address || car.location || '—'}
+                          ? car.pickupAddress || car.address || car.location || '—'
+                          : resolvedAddress || car.pickupAddress || car.address || car.location || '—'}
                     </span>
                     <a href={googleMapsHref} target="_blank" rel="noreferrer" className="clm-open-maps-btn">
                       Mở trong Maps ↗
@@ -512,7 +519,7 @@ const CarDetail = () => {
                     {!coordsLoading && !coordsError && pickupCoords && mapCarsForView.length > 0 && (
                       <MapView embed height="340px" cars={mapCarsForView} />
                     )}
-                    {!coordsLoading && !coordsError && !pickupCoords && (car.address || car.location) && (
+                    {!coordsLoading && !coordsError && !pickupCoords && (car.pickupAddress || car.address || car.location) && (
                       <div className="flex items-center justify-center min-h-[120px] bg-gray-50 rounded-xl text-[0.82rem] text-gray-500">
                         Không xác định được tọa độ từ địa chỉ.
                       </div>
@@ -530,22 +537,28 @@ const CarDetail = () => {
               </div>
             )}
 
-            {/* Features */}
-            <div>
-              <div className={sectionTitle}>Tiện nghi</div>
-              <div className="flex flex-wrap gap-2">
-                {['Điều hòa', 'Camera lùi', 'Cảm biến', 'GPS', 'Bluetooth', 'USB', 'Bản đồ', 'Túi khí'].map(f => (
-                  <span key={f} className="px-3 py-1 bg-primary-light text-primary rounded-full text-[0.78rem] font-medium">✓ {f}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* Insurance */}
-            <div className="flex items-start gap-2.5 bg-[#f0f9f4] p-3.5 rounded-xl border border-[#c8ecd8]">
-              <MdShield size={20} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+            {/* Tiện nghi — chỉ hiển thị khi chủ xe đã chọn trên hệ thống */}
+            {Array.isArray(car.amenities) && car.amenities.length > 0 && (
               <div>
-                <div className="font-bold text-[0.85rem] text-gray-800 mb-1">Bảo hiểm toàn diện</div>
-                <div className="text-[0.78rem] text-gray-500">Xe được bảo hiểm tai nạn toàn diện trong suốt chuyến đi. Mức bồi thường lên đến 1 tỷ đồng.</div>
+                <div className={sectionTitle}>Tiện nghi</div>
+                <div className="flex flex-wrap gap-2">
+                  {car.amenities.map((f) => (
+                    <span key={f} className="px-3 py-1 bg-primary-light text-primary rounded-full text-[0.78rem] font-medium">
+                      ✓ {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Disclaimer bảo hiểm — không tuyên bố mức BH cụ thể */}
+            <div className="flex items-start gap-2.5 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+              <MdShield size={20} className="text-gray-500 shrink-0 mt-0.5" aria-hidden="true" />
+              <div>
+                <div className="font-bold text-[0.85rem] text-gray-800 mb-1">Bảo hiểm & trách nhiệm</div>
+                <div className="text-[0.78rem] text-gray-500 leading-relaxed">
+                  Điều kiện bảo hiểm và mức khấu trừ theo hợp đồng thuê tại thời điểm đặt xe. SmartRent không xác nhận chủ xe đã mua gói bảo hiểm vật lý cụ thể — vui lòng đọc kỹ hợp đồng và trao đổi với chủ xe khi cần.
+                </div>
               </div>
             </div>
 
@@ -555,7 +568,7 @@ const CarDetail = () => {
                 <span className="text-[0.9rem] font-bold text-gray-800">
                   Đánh giá {reviewsMeta.total > 0 && <span className="tabular-nums">({reviewsMeta.total})</span>}
                 </span>
-                {user && isMongoId(id) && (
+                {user && user.role === 'renter' && isMongoId(id) && (
                   <button
                     type="button"
                     onClick={() => setShowReviewForm(p => !p)}
@@ -566,7 +579,13 @@ const CarDetail = () => {
                 )}
               </div>
 
-              {showReviewForm && (
+              {user && user.role !== 'renter' && isMongoId(id) && (
+                <p className="text-[0.78rem] text-gray-500 mb-2">
+                  Chỉ tài khoản <strong>khách thuê</strong> mới có thể gửi đánh giá. Đăng nhập bằng tài khoản khách thuê để viết nhận xét.
+                </p>
+              )}
+
+              {showReviewForm && user?.role === 'renter' && (
                 <form onSubmit={handleReviewSubmit} className="bg-gray-50 rounded-xl p-4 mb-4 flex flex-col gap-3 border border-gray-100">
                   <div className="flex items-center gap-2">
                     <span className="text-[0.82rem] text-gray-600 font-medium">Điểm:</span>
@@ -664,7 +683,6 @@ const CarDetail = () => {
               {[
                 [`${car.price ? car.price.toLocaleString() : 0} × 2 ngày`, `${car.price ? (car.price * 2).toLocaleString() : 0}`],
                 ['Phí dịch vụ (5%)', `${car.price ? Math.round(car.price * 2 * 0.05).toLocaleString() : 0}`],
-                ['Bảo hiểm', 'Miễn phí'],
               ].map(([label, val]) => (
                 <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
                   <span>{label}</span>

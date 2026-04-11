@@ -5,6 +5,12 @@ const VEHICLE_TYPES = ["Sedan", "SUV", "MPV", "Hatchback", "Wagon", "Truck", "ot
 const CURRENCIES = ["VND", "USD"];
 const CHARGES = ["minutes", "seconds", "hourly", "day", "negotiable"];
 const STATUS = ['available', 'waiting_handover', 'rented', 'maintenance', 'reserved'];
+
+/** Đồng bộ frontend owner form + CarDetail */
+const ALLOWED_AMENITIES = [
+    "Điều hòa", "Camera lùi", "Cảm biến", "GPS", "Bluetooth", "USB", "Bản đồ", "Túi khí",
+];
+
 class VehicleValidation {
     createVehicle = [
         body("vehicle_type").notEmpty().isIn(VEHICLE_TYPES),
@@ -27,6 +33,8 @@ class VehicleValidation {
 
         body("company_owned").optional().isBoolean(),
         body("active").optional().isBoolean(),
+        body("amenities").optional().isArray().withMessage("amenities phải là mảng"),
+        body("amenities.*").optional().isIn(ALLOWED_AMENITIES).withMessage("Tiện nghi không hợp lệ"),
     ];
 
     updateVehicle = [
@@ -48,6 +56,8 @@ class VehicleValidation {
         body("vehicle_images_paths.*").optional().isURL(),
         body("description").optional().trim().isLength({ max: 500 }),
         body("maximum_allowable_distance").optional().trim(),
+        body("amenities").optional().isArray(),
+        body("amenities.*").optional().isIn(ALLOWED_AMENITIES).withMessage("Tiện nghi không hợp lệ"),
     ];
 
     getListVehicles = [

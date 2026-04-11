@@ -46,7 +46,19 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('smartrent_user');
       }
     } else if (status === 403) {
-      normalizedMessage = serverMessage || 'Bạn không có quyền thực hiện thao tác này.';
+      const isReview =
+        reqUrl.includes('/api/reviews/create') ||
+        reqUrl.includes('/api/reviews/update');
+      if (
+        isReview &&
+        serverMessage &&
+        String(serverMessage).toLowerCase().includes('insufficient permissions')
+      ) {
+        normalizedMessage =
+          'Chỉ tài khoản khách thuê mới có thể gửi hoặc sửa đánh giá. Vui lòng đăng nhập bằng tài khoản khách thuê.';
+      } else {
+        normalizedMessage = serverMessage || 'Bạn không có quyền thực hiện thao tác này.';
+      }
     } else if (status === 404) {
       normalizedMessage = serverMessage || 'Không tìm thấy dữ liệu yêu cầu.';
     } else if (status === 422 && validationErrors) {

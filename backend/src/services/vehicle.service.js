@@ -1,4 +1,5 @@
 const vehicleModel = require("../models/vehicle.model");
+const vehicleLocationModel = require("../models/vehicleLocation.model");
 const BaseService = require("./base.service");
 
 /** Trường dùng để search theo tên (regex) */
@@ -39,7 +40,27 @@ class VehicleService {
     }
 
     async getVehicleById(vehicleId) {
-        return vehicleModel.findById(vehicleId);
+        const vehicle = await vehicleModel
+            .findById(vehicleId)
+            .populate("added_by", "name role business_name phone showroom_status email");
+        if (!vehicle) return null;
+
+        const loc = await vehicleLocationModel.findOne({ vehicle: vehicleId }).lean();
+        const o = vehicle.toObject();
+
+        o.pickup_address = loc?.address || "";
+        const latRaw = loc?.latitude;
+        const lngRaw = loc?.longitude;
+        o.pickup_latitude =
+            latRaw !== undefined && latRaw !== null && latRaw !== ""
+                ? Number(latRaw)
+                : null;
+        o.pickup_longitude =
+            lngRaw !== undefined && lngRaw !== null && lngRaw !== ""
+                ? Number(lngRaw)
+                : null;
+
+        return o;
     }
 
     async updateVehicle(vehicleId, userId, updates) {
@@ -56,7 +77,7 @@ class VehicleService {
             "number_of_seats", "transmission", "fuel_type",
             "vehicle_hire_rate_in_figures", "vehicle_hire_rate_currency",
             "vehicle_hire_charge_per_timing", "vehicle_images_paths", "images",
-            "description", "maximum_allowable_distance", "vehicle_name",
+            "description", "maximum_allowable_distance", "vehicle_name", "amenities",
         ];
         UPDATABLE.forEach(k => { if (updates[k] !== undefined) vehicle[k] = updates[k]; });
         return vehicle.save();

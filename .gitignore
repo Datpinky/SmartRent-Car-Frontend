@@ -17,3 +17,11 @@ Thumbs.db
 
 # ── Agents ─────────────────────────────────
 .agents/skills/web-design-guidelines/SKILL.md
+
+# ── SmartRent ─────────────────────────────────
+smartrent-scoreboard.md
+PROJECT_PHASES_SMARTRENT.md
+
+# ── Other ─────────────────────────────────
+.cursor/rules/smartrent-scope.mdc
+.cursor/rules/smartrent-scope.mdc

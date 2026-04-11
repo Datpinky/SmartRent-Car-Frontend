@@ -24,6 +24,47 @@ const STATUS_MAP = {
   reserved: 'Đã đặt',
 };
 
+/** Đồng bộ backend `vehicle.validation.js` ALLOWED_AMENITIES */
+export const AMENITY_OPTIONS = [
+  'Điều hòa',
+  'Camera lùi',
+  'Cảm biến',
+  'GPS',
+  'Bluetooth',
+  'USB',
+  'Bản đồ',
+  'Túi khí',
+];
+
+function mapListerProfile(added) {
+  if (!added || typeof added !== 'object') {
+    return {
+      displayName: '',
+      role: null,
+      isShowroom: false,
+      listingSubtitle: '',
+    };
+  }
+  const role = added.role;
+  const isShowroom = role === 'showroom';
+  const displayName = isShowroom ? added.business_name || added.name || '' : added.name || '';
+  const listingSubtitle = isShowroom
+    ? displayName
+      ? `Showroom: ${displayName}`
+      : ''
+    : displayName
+      ? `Chủ xe: ${displayName}`
+      : '';
+  return {
+    displayName,
+    role,
+    isShowroom,
+    listingSubtitle,
+    businessName: added.business_name || '',
+    name: added.name || '',
+  };
+}
+
 /** Bỏ URL ảnh demo/seed không tồn tại (vd. cdn.example.com) — tránh lỗi net::ERR_NAME_NOT_RESOLVED */
 export function sanitizeVehicleImageUrl(url) {
   if (url == null || typeof url !== 'string') return '';
@@ -55,6 +96,25 @@ export function mapVehicle(v) {
   const rawImages = [...(v.vehicle_images_paths || []), ...(v.images || [])].filter(Boolean);
   const images = rawImages.map(sanitizeVehicleImageUrl).filter(Boolean);
 
+  const pickup =
+    v.pickup_address != null && String(v.pickup_address).trim() !== ''
+      ? String(v.pickup_address).trim()
+      : '';
+  const latRaw = v.pickup_latitude != null ? v.pickup_latitude : v.latitude;
+  const lngRaw = v.pickup_longitude != null ? v.pickup_longitude : v.longitude;
+  const lat = latRaw !== undefined && latRaw !== null && latRaw !== '' ? Number(latRaw) : null;
+  const lng = lngRaw !== undefined && lngRaw !== null && lngRaw !== '' ? Number(lngRaw) : null;
+
+  const lister = mapListerProfile(
+    v.added_by && typeof v.added_by === 'object' ? v.added_by : null
+  );
+  const showroomDisplay = v.showroom || lister.displayName || '';
+
+  const amenitiesRaw = v.amenities;
+  const amenities = Array.isArray(amenitiesRaw)
+    ? amenitiesRaw.filter((a) => typeof a === 'string' && AMENITY_OPTIONS.includes(a))
+    : [];
+
   return {
     // Identifiers (use MongoDB _id as primary)
     _id: v._id,
@@ -79,11 +139,16 @@ export function mapVehicle(v) {
     image: images[0] || '',
     images,
 
-    // Location (backend stores separately in vehicle_location collection)
-    address: v.address || '',
-    location: v.location || v.address || '',
-    latitude: v.latitude || null,
-    longitude: v.longitude || null,
+    pickupAddress: pickup,
+    address: pickup || v.address || '',
+    location: pickup || v.location || v.address || '',
+    latitude: Number.isFinite(lat) ? lat : null,
+    longitude: Number.isFinite(lng) ? lng : null,
+    lat: Number.isFinite(lat) ? lat : null,
+    lng: Number.isFinite(lng) ? lng : null,
+
+    listerProfile: lister,
+    listingSubtitle: lister.listingSubtitle,
 
     // Meta
     status: v.status || 'available',
@@ -96,10 +161,12 @@ export function mapVehicle(v) {
     active: v.active !== false,
     companyOwned: v.company_owned || false,
 
+    amenities,
+
     // UI defaults (enriched when reviews/location data is merged)
     rating: v.rating || 0,
     trips: v.trips || 0,
-    showroom: v.showroom || '',
+    showroom: showroomDisplay,
     description: v.description || '',
   };
 }
