@@ -4,6 +4,7 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaEye, FaDownload, FaFilter, FaSpinner } from 'react-icons/fa';
 import adminService from '../../../services/adminService';
+import { formatVnd } from '../../../utils/currencyFormat';
 
 const PAYMENT_METHOD_COLORS = {
   'stripe': '#6d28d9',
@@ -36,12 +37,30 @@ const TransactionMonitor = () => {
 
   const totalRevenue = transactions.filter(t => t.status === 'paid').reduce((s, t) => s + (t.amount || 0), 0);
 
+  const exportCsv = () => {
+    const rows = [
+      ['code', 'bookingId', 'renter', 'showroom', 'amount', 'method', 'status', 'date'].join(','),
+      ...filtered.map((t) =>
+        [t.code, t.bookingId, t.renter, t.showroom, t.amount, t.method, t.status, t.date]
+          .map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`)
+          .join(',')
+      ),
+    ];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transactions-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const columns = [
     { key: 'code', label: 'Mã GD', render: row => <span className="code-badge">{row.code}</span> },
     { key: 'bookingId', label: 'Mã đặt xe', render: row => <span className="code-badge">{row.bookingId}</span> },
     { key: 'renter', label: 'Khách thuê', accessor: 'renter', sortable: true },
     { key: 'showroom', label: 'Showroom', accessor: 'showroom', sortable: true },
-    { key: 'amount', label: 'Số tiền', render: row => <span className="tabular-nums" style={{ fontWeight: 700, color: '#00b14f' }}>{(row.amount || 0).toLocaleString('vi-VN')}đ</span>, sortable: true, accessor: 'amount' },
+    { key: 'amount', label: 'Số tiền', render: row => <span className="tabular-nums" style={{ fontWeight: 700, color: '#00b14f' }}>{formatVnd(row.amount || 0)}</span>, sortable: true, accessor: 'amount' },
     { key: 'method', label: 'Phương thức', render: row => (
       <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 50,
         background: (PAYMENT_METHOD_COLORS[row.method] || '#6b7280') + '18',
@@ -65,7 +84,7 @@ const TransactionMonitor = () => {
           <h1 className="page-title">Giám sát giao dịch</h1>
           <p className="page-subtitle">Theo dõi tất cả giao dịch thanh toán trên nền tảng</p>
         </div>
-        <button type="button" className="btn-outline" disabled title="Tính năng sắp ra mắt" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+        <button type="button" className="btn-outline" onClick={exportCsv} title="Xuất CSV theo bộ lọc hiện tại">
           <FaDownload aria-hidden="true" /> Xuất báo cáo
         </button>
       </div>
@@ -77,7 +96,7 @@ const TransactionMonitor = () => {
           { label: 'Thành công',     val: transactions.filter(t => t.status === 'paid').length, color: '#059669' },
           { label: 'Đang xử lý',    val: transactions.filter(t => t.status === 'processing').length, color: '#2563eb' },
           { label: 'Thất bại',      val: transactions.filter(t => t.status === 'failed').length, color: '#dc2626' },
-          { label: 'Tổng doanh thu', val: totalRevenue.toLocaleString('vi-VN') + 'đ', color: '#00b14f' },
+          { label: 'Tổng doanh thu', val: formatVnd(totalRevenue), color: '#00b14f' },
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', borderRadius: 10, padding: '10px 16px', border: '1px solid #f0f0f0', flex: 1, minWidth: 140 }}>
             <div style={{ fontSize: '0.72rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
@@ -128,7 +147,7 @@ const TransactionMonitor = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: viewModal.status === 'paid' ? '#f0fdf4' : viewModal.status === 'failed' ? '#fef2f2' : '#eff6ff', borderRadius: 12, padding: 16, textAlign: 'center' }}>
               <div className="tabular-nums" style={{ fontSize: '1.5rem', fontWeight: 800, color: viewModal.status === 'paid' ? '#059669' : viewModal.status === 'failed' ? '#dc2626' : '#2563eb' }}>
-                {(viewModal.amount || 0).toLocaleString('vi-VN')}đ
+                {formatVnd(viewModal.amount || 0)}
               </div>
               <StatusBadge status={viewModal.status} />
             </div>

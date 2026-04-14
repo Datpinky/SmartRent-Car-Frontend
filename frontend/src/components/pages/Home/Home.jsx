@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import SearchBar from '../../SearchBar/SearchBar';
 import FilterBar from '../../FilterBar/FilterBar';
 import CarGrid from '../../CarGrid/CarGrid';
-import { cars as MOCK_CARS } from '../../data/cars';
 import vehicleService from '../../../services/vehicleService';
 
 const Home = () => {
@@ -24,22 +23,15 @@ const Home = () => {
             try {
                 const { data } = await vehicleService.getList({ limit: 100 });
                 if (cancelled) return;
-                if (data.length > 0) {
-                    setAllCars(data);
-                    setFilteredCars(data);
-                    setApiError(null);
-                } else {
-                    // API available but no vehicles seeded → show mock
-                    setAllCars(MOCK_CARS);
-                    setFilteredCars(MOCK_CARS);
-                    setApiError(null);
-                }
+                setAllCars(data);
+                setFilteredCars(data);
+                setApiError(null);
             } catch (err) {
                 if (cancelled) return;
-                console.warn('[Home] API unavailable, falling back to mock data:', err.message);
-                setAllCars(MOCK_CARS);
-                setFilteredCars(MOCK_CARS);
-                setApiError(err.message);
+                console.warn('[Home] API vehicles:', err.message);
+                setAllCars([]);
+                setFilteredCars([]);
+                setApiError(err?.response?.data?.message || err.message || 'Không tải được danh sách xe.');
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -77,7 +69,7 @@ const Home = () => {
             currentFilters.current = reset;
             setFilteredCars(applyFilters(allCars, reset, currentSearch.current));
         } else if (payload === 'premium') {
-            setFilteredCars(allCars.filter(c => c.price >= 900));
+            setFilteredCars(allCars.filter(c => c.price >= 900_000));
         }
     };
 
@@ -100,8 +92,8 @@ const Home = () => {
             {apiError && (
                 <div className="max-w-[1280px] mx-auto px-5 pt-3">
                     <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-amber-700 text-[0.82rem] flex items-center gap-2">
-                        <span className="font-semibold">⚠ Chế độ offline:</span>
-                        {apiError} — đang hiển thị dữ liệu mẫu.
+                        <span className="font-semibold">Thông báo:</span>
+                        {apiError}
                     </div>
                 </div>
             )}

@@ -5,6 +5,7 @@ import { MdPeople, MdSettings, MdDirectionsCar } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import favoriteService from '../../services/favoriteService';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatVndPerDay } from '../../utils/currencyFormat';
 
 const CarColorBg = ({ color, name }) => {
   const hue = Math.abs(
@@ -142,11 +143,9 @@ const CarCard = ({ car }) => {
           <span className="text-[0.75rem] text-gray-500">({car.trips} chuyến)</span>
         </div>
 
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-[1.2rem] font-extrabold text-primary">{car.price.toLocaleString()}K</span>
-          <span className="text-[0.8rem] font-medium text-gray-500">/ngày</span>
+        <div className="mt-1">
+          <span className="text-[1.05rem] font-extrabold text-primary tabular-nums">{formatVndPerDay(car.price)}</span>
         </div>
-        <div className="text-[0.75rem] text-gray-500 -mt-0.5">2 ngày 4 giờ</div>
         <div className="text-[0.68rem] text-primary italic -mt-0.5">Giá tạm tính chưa bao gồm VAT</div>
 
         {/* Specs */}

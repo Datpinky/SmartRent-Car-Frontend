@@ -7,6 +7,7 @@ import CarDetail from './components/pages/CarDetail/CarDetail';
 import Login from './components/pages/Login/Login';
 import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import RoleRoute from './components/common/RoleRoute';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -45,6 +46,7 @@ import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
 
 // Admin profile
 import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
+import NotFound from './pages/NotFound';
 
 
 
@@ -78,6 +80,7 @@ const RenterOrAdminCheckout = ({ children }) => (
 const App = () => {
   return (
     <AuthProvider>
+      <ChatWidgetProvider>
       <Router>
         <Routes>
           {/* Login & public register */}
@@ -127,14 +130,16 @@ const App = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/xe/:id" element={<CarDetail />} />
                   <Route path="/map" element={<MapPage />} />
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
               <Footer />
-              <ChatWidget />
             </div>
           } />
         </Routes>
+        <ChatWidget />
       </Router>
+      </ChatWidgetProvider>
     </AuthProvider>
   );
 };

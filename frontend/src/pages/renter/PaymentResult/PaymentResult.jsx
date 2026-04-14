@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa';
 import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
+import { formatVnd } from '../../../utils/currencyFormat';
 
 const fmt = (d) =>
   d ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(d)) : '—';
@@ -76,9 +77,7 @@ const PaymentResult = () => {
     ? `BK${bookingId.slice(-6).toUpperCase()}`
     : '—';
 
-  const totalPrice = booking?.total_price
-    ? booking.total_price.toLocaleString('vi-VN') + 'đ'
-    : '—';
+  const totalPrice = booking?.total_price != null ? formatVnd(booking.total_price) : '—';
 
   // ─── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading') {

@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaChevronRight, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
-import { cars as MOCK_CARS } from '../../data/cars';
 import MapView from '../../Map/MapView';
 import vehicleService from '../../../services/vehicleService';
 import vehicleLocationService from '../../../services/vehicleLocationService';
@@ -11,6 +10,7 @@ import reviewService from '../../../services/reviewService';
 import favoriteService from '../../../services/favoriteService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LOCATIONIQ_API_KEY } from '../../Map/mapConfig';
+import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import '../../../pages/renter/Map/MapPage.css';
 import '../../Map/CarLocationMap.css';
 
@@ -80,13 +80,10 @@ const CarDetail = () => {
         const apiCar = await vehicleService.getById(id);
         setCar(apiCar || null);
       } else {
-        // Numeric id from mock data
-        const mockCar = MOCK_CARS.find(c => c.id === Number(id));
-        setCar(mockCar || null);
+        setCar(null);
       }
     } catch {
-      const mockCar = MOCK_CARS.find(c => c.id === Number(id));
-      setCar(mockCar || null);
+      setCar(null);
     } finally {
       setLoading(false);
     }
@@ -314,9 +311,14 @@ const CarDetail = () => {
         <FaChevronLeft size={12} aria-hidden="true" /> Quay lại danh sách xe
       </button>
 
-      <div className="grid grid-cols-[1fr_360px] gap-8 items-start max-[900px]:grid-cols-1">
-        {/* Left */}
-        <div>
+      {/*
+        Hai tầng: (1) gallery + thẻ đặt xe cùng hàng — không dùng sticky để tránh thẻ bám viewport và chồng footer.
+        (2) Khối thông tin xe full width bên dưới.
+      */}
+      <div className="flex flex-col gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start lg:items-start max-[900px]:gap-6">
+          {/* Cột trái: chỉ gallery + nút chia sẻ */}
+          <div className="min-w-0">
           {/* Gallery — nhiều ảnh: ảnh lớn + mũi tên + thumbnail (kiểu Shopee) */}
           <div className="w-full space-y-2">
             <div
@@ -431,7 +433,7 @@ const CarDetail = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 mt-3 mb-6">
+          <div className="flex gap-3 mt-3">
             <button
               type="button"
               className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-full text-[0.82rem] text-gray-600 cursor-pointer bg-white hover:border-primary hover:text-primary transition-colors"
@@ -450,8 +452,72 @@ const CarDetail = () => {
               {liked ? 'Đã yêu thích' : 'Yêu thích'}
             </button>
           </div>
+          </div>
 
-          {/* Info card */}
+        {/* Cột phải: đặt xe — luôn ngang hàng gallery trên desktop, không sticky */}
+        <div className="min-w-0 w-full lg:max-w-[360px] lg:justify-self-end">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
+            <div className="mb-4">
+              <span className="text-[1.35rem] font-extrabold text-primary tabular-nums leading-tight block">
+                {formatVndPerDay(car.price)}
+              </span>
+            </div>
+            <div className="h-px bg-gray-100 my-4" />
+
+            {[
+              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
+              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
+            ].map(({ label, id: inputId, def }) => (
+              <div key={inputId} className="mb-3">
+                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
+                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
+              </div>
+            ))}
+
+            <div className="h-px bg-gray-100 my-4" />
+
+            <div className="flex flex-col gap-2 mb-4">
+              {[
+                [`${car.price ? car.price.toLocaleString('vi-VN') : 0} VNĐ × 2 ngày`, formatVnd(car.price ? car.price * 2 : 0)],
+                ['Phí dịch vụ (5%)', formatVnd(car.price ? Math.round(car.price * 2 * 0.05) : 0)],
+              ].map(([label, val]) => (
+                <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
+                  <span>{label}</span>
+                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
+                </div>
+              ))}
+              <div className="h-px bg-gray-100 my-1" />
+              <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
+                <span>Tổng cộng</span>
+                <span className="text-primary tabular-nums">
+                  {formatVnd(car.price ? car.price * 2 + Math.round(car.price * 2 * 0.05) : 0)}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBookNow}
+              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
+            >
+              Đặt xe ngay
+            </button>
+            <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
+
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
+                {car.showroom ? car.showroom[0] : 'C'}
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
+                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+          {/* Info card — full width dưới gallery + đặt xe */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
             <h1 className="text-2xl font-extrabold text-gray-900">{car.name}</h1>
 
@@ -653,72 +719,6 @@ const CarDetail = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Right: Booking card */}
-        <div className="sticky top-[76px]">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-[1.8rem] font-extrabold text-primary tabular-nums">
-                {car.price ? car.price.toLocaleString() : '—'}
-                {car.currency === 'VND' ? 'đ' : car.currency || 'K'}
-              </span>
-              <span className="text-[0.9rem] text-gray-500">/{car.chargeUnit === 'day' ? 'ngày' : car.chargeUnit}</span>
-            </div>
-            <div className="h-px bg-gray-100 my-4" />
-
-            {[
-              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
-              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
-            ].map(({ label, id: inputId, def }) => (
-              <div key={inputId} className="mb-3">
-                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
-                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
-              </div>
-            ))}
-
-            <div className="h-px bg-gray-100 my-4" />
-
-            <div className="flex flex-col gap-2 mb-4">
-              {[
-                [`${car.price ? car.price.toLocaleString() : 0} × 2 ngày`, `${car.price ? (car.price * 2).toLocaleString() : 0}`],
-                ['Phí dịch vụ (5%)', `${car.price ? Math.round(car.price * 2 * 0.05).toLocaleString() : 0}`],
-              ].map(([label, val]) => (
-                <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
-                  <span>{label}</span>
-                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
-                </div>
-              ))}
-              <div className="h-px bg-gray-100 my-1" />
-              <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
-                <span>Tổng cộng</span>
-                <span className="text-primary tabular-nums">
-                  {car.price ? (car.price * 2 + Math.round(car.price * 2 * 0.05)).toLocaleString() : 0}
-                  {car.currency === 'VND' ? 'đ' : 'K'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleBookNow}
-              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
-            >
-              Đặt xe ngay
-            </button>
-            <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
-
-            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
-                {car.showroom ? car.showroom[0] : 'C'}
-              </div>
-              <div>
-                <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
-                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -35,6 +35,15 @@ class AuthController {
         }
     }
 
+    async getMe(req, res, next) {
+        try {
+            const data = await authService.getProfile(req.user.userId);
+            return res.status(200).json({ message: "OK", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async updateProfile(req, res, next) {
         try {
             const data = await authService.updateProfile(req.user.userId, req.body);

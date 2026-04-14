@@ -24,6 +24,12 @@ const STATUS_CONFIG = {
   signed:      { label: 'Đã ký',         bg: '#d1fae5', color: '#059669' },
   expired:     { label: 'Hết hạn',       bg: '#f3f4f6', color: '#6b7280' },
   draft:       { label: 'Nháp',          bg: '#f3f4f6', color: '#6b7280' },
+  confirmed:            { label: 'Đã duyệt',              bg: '#d1fae5', color: '#059669' },
+  waiting_payment:      { label: 'Chờ thanh toán',       bg: '#fef3c7', color: '#d97706' },
+  waiting_handover:     { label: 'Chờ giao xe',          bg: '#fef3c7', color: '#d97706' },
+  handed_over:          { label: 'Đã giao xe',           bg: '#dbeafe', color: '#2563eb' },
+  in_use:               { label: 'Đang thuê',            bg: '#dbeafe', color: '#2563eb' },
+  waiting_return_confirmation: { label: 'Chờ xác nhận trả', bg: '#fef3c7', color: '#d97706' },
 };
 
 const StatusBadge = ({ status, customLabel }) => {

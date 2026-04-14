@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCar, FaCalendarAlt, FaMapMarkerAlt, FaChevronRight } from 'react-icons/fa';
+import { FaCar, FaCalendarAlt, FaMapMarkerAlt, FaChevronRight, FaSpinner } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import bookingService from '../../../services/bookingService';
+import Modal from '../../../components/common/Modal';
+import { BOOKING_STATUS_LABELS } from '../../../constants/bookingStatus';
+import { formatVnd } from '../../../utils/currencyFormat';
 
-const STATUS_LABEL = {
-  pending: { text: 'Chờ xác nhận', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  confirmed: { text: 'Đã xác nhận', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  active: { text: 'Đang thuê', cls: 'bg-green-50 text-green-700 border-green-200' },
-  completed: { text: 'Hoàn thành', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  cancelled: { text: 'Đã hủy', cls: 'bg-red-50 text-red-600 border-red-200' },
+const STATUS_STYLES = {
+  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
+  cancelled: 'bg-red-50 text-red-600 border-red-200',
+  completed: 'bg-gray-100 text-gray-600 border-gray-200',
+  waiting_payment: 'bg-amber-50 text-amber-800 border-amber-200',
+  paid: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  waiting_handover: 'bg-sky-50 text-sky-800 border-sky-200',
+  handed_over: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+  in_use: 'bg-green-50 text-green-800 border-green-200',
+  waiting_return_confirmation: 'bg-orange-50 text-orange-800 border-orange-200',
+};
+
+const renterStatusDisplay = (status) => {
+  const text = BOOKING_STATUS_LABELS[status] || status;
+  const cls = STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 border-gray-200';
+  return { text, cls };
 };
 
 const formatDate = (dateStr) => {
@@ -17,15 +31,13 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
-const formatCurrency = (amount) => {
-  if (amount == null) return '—';
-  return Number(amount).toLocaleString('vi-VN') + 'đ';
-};
+const formatCurrency = (amount) => formatVnd(amount);
 
 const BookingCard = ({ booking, onClick }) => {
-  const status = STATUS_LABEL[booking.status] || { text: booking.status, cls: 'bg-gray-100 text-gray-600 border-gray-200' };
+  const status = renterStatusDisplay(booking.status);
   return (
     <button
+      type="button"
       className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] p-5 flex gap-4 items-start"
       onClick={onClick}
     >
@@ -42,12 +54,12 @@ const BookingCard = ({ booking, onClick }) => {
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2 mb-1">
           <span className="font-bold text-gray-900 text-[0.95rem] truncate">
             {booking.vehicle_id?.vehicle_name ||
              [booking.vehicle_id?.vehicle_brand, booking.vehicle_id?.vehicle_model].filter(Boolean).join(' ') ||
-             booking.vehicle?.brand + ' ' + booking.vehicle?.model ||
+             (booking.vehicle?.brand && booking.vehicle?.model ? `${booking.vehicle.brand} ${booking.vehicle.model}` : '') ||
              'Xe không xác định'}
           </span>
           <FaChevronRight className="text-gray-300 shrink-0" size={13} aria-hidden="true" />
@@ -82,24 +94,43 @@ const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [detail, setDetail] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { items } = await bookingService.getListBookings({ limit: 100, page: 1 });
+      setBookings(items);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchBookings = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await bookingService.getListBookings();
-        if (!cancelled) setBookings(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (!cancelled) setError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
     fetchBookings();
-    return () => { cancelled = true; };
-  }, []);
+  }, [fetchBookings]);
+
+  const canCancel = (b) =>
+    b && ['pending', 'confirmed', 'waiting_payment'].includes(b.status);
+
+  const handleCancel = async () => {
+    if (!detail?._id && !detail?.id) return;
+    const id = detail._id || detail.id;
+    setCancelling(true);
+    try {
+      await bookingService.updateBookingStatus(id, 'cancelled');
+      setBookings((prev) => prev.map((x) => ((x._id || x.id) === id ? { ...x, status: 'cancelled' } : x)));
+      setDetail((d) => (d ? { ...d, status: 'cancelled' } : null));
+    } catch {
+      fetchBookings();
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -131,8 +162,9 @@ const MyBookings = () => {
             <p className="text-[0.85rem] text-gray-400">Hãy tìm và đặt xe để bắt đầu hành trình của bạn.</p>
           </div>
           <button
+            type="button"
             className="mt-2 px-6 py-2.5 bg-primary text-white font-semibold rounded-xl text-[0.875rem] hover:bg-primary-dark transition-colors"
-            onClick={() => navigate('/cars')}
+            onClick={() => navigate('/')}
           >
             Tìm xe ngay
           </button>
@@ -145,11 +177,47 @@ const MyBookings = () => {
             <BookingCard
               key={booking._id || booking.id}
               booking={booking}
-              onClick={() => {/* booking detail page not yet implemented */}}
+              onClick={() => setDetail(booking)}
             />
           ))}
         </div>
       )}
+
+      <Modal isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết chuyến đi" width={480}>
+        {detail && (
+          <div className="flex flex-col gap-3 text-[0.875rem]">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span className="text-gray-500">Trạng thái</span>
+              <span className={`px-2.5 py-0.5 rounded-full border text-[0.75rem] font-semibold ${renterStatusDisplay(detail.status).cls}`}>
+                {renterStatusDisplay(detail.status).text}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Nhận xe</span>
+              <span className="font-medium text-gray-900">{formatDate(detail.start_date)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Trả xe</span>
+              <span className="font-medium text-gray-900">{formatDate(detail.end_date)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Tổng tiền</span>
+              <span className="font-bold text-primary">{formatCurrency(detail.total_price)}</span>
+            </div>
+            {canCancel(detail) && (
+              <button
+                type="button"
+                className="mt-2 w-full py-2.5 rounded-xl border border-red-200 text-red-600 font-semibold text-[0.85rem] hover:bg-red-50 flex items-center justify-center gap-2"
+                disabled={cancelling}
+                onClick={handleCancel}
+              >
+                {cancelling ? <FaSpinner className="animate-spin" aria-hidden="true" /> : null}
+                Hủy đặt xe
+              </button>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

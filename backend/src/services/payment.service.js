@@ -15,7 +15,8 @@ const throwError = require('../utils/throwError');
 const BookingService = require('./booking.service');
 const BaseService = require('./base.service');
 
-const ALLOWED_PAYMENT_STATUSES = ['pending', 'waiting_payment'];
+/** Cho phép thanh toán khi chờ showroom (pending), đã xác nhận (confirmed), hoặc đang chờ intent (waiting_payment). */
+const ALLOWED_PAYMENT_STATUSES = ['pending', 'confirmed', 'waiting_payment'];
 
 class QueryBuilder {
   static buildExactFieldFilter(filters = {}) {

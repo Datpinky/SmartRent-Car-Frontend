@@ -25,6 +25,7 @@
 import React, { useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { formatVndPerDay } from '../../utils/currencyFormat';
 
 // ─── Icon factory ────────────────────────────────────────────────────────────
 const makeCarIcon = (isSelected) =>
@@ -43,7 +44,7 @@ const makeCarIcon = (isSelected) =>
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const formatPrice = (price) => {
   if (!price) return null;
-  return Number(price).toLocaleString('vi-VN') + ' ₫/ngày';
+  return formatVndPerDay(price);
 };
 
 const formatDistance = (km) => {

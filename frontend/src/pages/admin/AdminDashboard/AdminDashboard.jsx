@@ -8,6 +8,7 @@ import StatCard from '../../../components/common/StatCard';
 import StatusBadge from '../../../components/common/StatusBadge';
 import adminService from '../../../services/adminService';
 import { useNavigate } from 'react-router-dom';
+import { formatVnd } from '../../../utils/currencyFormat';
 
 const currentMonthYear = new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(new Date());
 
@@ -16,15 +17,16 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 14px', fontSize: '0.8rem' }}>
       <div style={{ fontWeight: 700, marginBottom: 4, color: '#111827' }}>{label}</div>
-      {payload.map((p, i) => <div key={i} style={{ color: p.color }}>{p.name}: {typeof p.value === 'number' && p.name.includes('Doanh') ? `${p.value}M` : p.value}</div>)}
+      {payload.map((p, i) => {
+        const isTriệuDoanhThu =
+          typeof p.value === 'number' &&
+          p.dataKey === 'revenue' &&
+          String(p.name || '').toLowerCase().includes('doanh');
+        const val = isTriệuDoanhThu ? formatVnd(p.value * 1_000_000) : p.value;
+        return <div key={i} style={{ color: p.color }}>{p.name}: {val}</div>;
+      })}
     </div>
   );
-};
-
-const fmt = (n) => {
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + ' tỷ';
-  if (n >= 1_000_000) return Math.round(n / 1_000_000) + 'M';
-  return n.toLocaleString('vi-VN');
 };
 
 const AdminDashboard = () => {
@@ -90,7 +92,7 @@ const AdminDashboard = () => {
         <StatCard title="Tổng người dùng"    value={stats?.totalUsers?.toLocaleString() ?? '—'}   icon={<FaUsers />}         color="#6d28d9" />
         <StatCard title="Tổng Showroom"       value={stats?.totalShowrooms?.toLocaleString() ?? '—'} icon={<FaStore />}        color="#0891b2" />
         <StatCard title="Tổng lượt đặt xe"   value={stats?.totalBookings?.toLocaleString() ?? '—'}  icon={<FaCalendarCheck />} color="#00b14f" />
-        <StatCard title="Doanh thu hệ thống"  value={fmt(stats?.totalRevenue ?? 0)}                  icon={<FaMoneyBillWave />} color="#d97706" />
+        <StatCard title="Doanh thu hệ thống"  value={formatVnd(stats?.totalRevenue ?? 0)}                  icon={<FaMoneyBillWave />} color="#d97706" />
         <StatCard title="Xe đang hoạt động"  value={stats?.activeVehicles?.toLocaleString() ?? '—'} icon={<FaCar />}           color="#dc2626" />
         <StatCard title="Chờ duyệt"          value={stats?.pendingCount?.toLocaleString() ?? '—'}   icon={<FaExclamationTriangle />} color="#f59e0b" subtext="showroom chờ duyệt" />
       </div>
@@ -221,7 +223,7 @@ const AdminDashboard = () => {
                     <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.vehicle}</td>
                     <td>{b.from}</td>
                     <td>{b.to}</td>
-                    <td className="tabular-nums" style={{ fontWeight: 600, color: '#00b14f' }}>{b.total.toLocaleString()}đ</td>
+                    <td className="tabular-nums" style={{ fontWeight: 600, color: '#00b14f' }}>{formatVnd(b.total)}</td>
                     <td><StatusBadge status={b.status} /></td>
                   </tr>
                 ))}

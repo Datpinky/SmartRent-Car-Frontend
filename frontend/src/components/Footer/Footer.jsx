@@ -38,22 +38,7 @@ const Footer = () => (
             </a>
           ))}
         </div>
-        <div className="flex gap-2.5 mt-3.5">
-          {[{ icon: '🍎', store: 'App Store' }, { icon: '▶', store: 'Google Play' }].map(({ icon, store }) => (
-            <a
-              key={store}
-              href="#"
-              aria-label={`Tải về từ ${store}`}
-              className="py-[7px] px-3.5 rounded-lg border border-white/[0.15] flex items-center gap-2 text-[0.75rem] text-white transition-[border-color,background-color] hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <span aria-hidden="true" className="text-[1.2rem]">{icon}</span>
-              <div>
-                <div className="text-[0.6rem] opacity-70">Tải về từ</div>
-                <div className="font-bold text-[0.8rem]">{store}</div>
-              </div>
-            </a>
-          ))}
-        </div>
+
       </div>
 
       {/* About */}
