@@ -41,6 +41,9 @@ const CarLocationMap = ({
   lng,
   plusCode = '',
   city = '',
+  showOpenMapLink = true,
+  openMapLabel = 'Mở trong Maps',
+  mapHeight = 280,
 }) => {
   const numericLat = Number(lat);
   const numericLng = Number(lng);
@@ -69,17 +72,14 @@ const CarLocationMap = ({
       <div className="clm-address-bar">
         <span className="clm-address-icon">Pin</span>
         <span className="clm-address-text">{address}</span>
-        <a
-          href={googleMapsUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="clm-open-maps-btn"
-        >
-          Mo trong Maps
-        </a>
+        {showOpenMapLink && (
+          <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="clm-open-maps-btn">
+            {openMapLabel}
+          </a>
+        )}
       </div>
 
-      <div className="clm-map-wrap">
+      <div className="clm-map-wrap" style={{ height: mapHeight }}>
         <MapContainer
           center={latlng}
           zoom={16}

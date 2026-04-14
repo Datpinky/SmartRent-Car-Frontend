@@ -1,7 +1,18 @@
 import axios from 'axios';
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 const AUTH_CLEARED_EVENT = 'smartrent:auth-cleared';
+
+const resolveBaseUrl = () => {
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
+  }
+
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '3000') {
+    return '';
+  }
+
+  return 'http://localhost:5000';
+};
 
 const clearStoredAuth = () => {
   localStorage.removeItem('smartrent_token');
@@ -13,7 +24,7 @@ const clearStoredAuth = () => {
 };
 
 const apiClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: resolveBaseUrl(),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -23,6 +34,7 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
@@ -33,19 +45,19 @@ apiClient.interceptors.response.use(
     const serverMessage = error.response?.data?.message;
     const validationErrors = error.response?.data?.errors;
 
-    let normalizedMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+    let normalizedMessage = 'Da xay ra loi. Vui long thu lai.';
 
     if (!error.response) {
-      normalizedMessage = 'Không thể kết nối đến máy chủ. Kiểm tra backend đang chạy tại cổng 5000.';
+      normalizedMessage = 'Khong the ket noi den may chu. Kiem tra backend dang chay tai cong 5000.';
     } else if (status === 401) {
-      normalizedMessage = serverMessage || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+      normalizedMessage = serverMessage || 'Phien dang nhap het han. Vui long dang nhap lai.';
       clearStoredAuth();
     } else if (status === 403) {
-      normalizedMessage = serverMessage || 'Bạn không có quyền thực hiện thao tác này.';
+      normalizedMessage = serverMessage || 'Ban khong co quyen thuc hien thao tac nay.';
     } else if (status === 404) {
-      normalizedMessage = serverMessage || 'Không tìm thấy dữ liệu yêu cầu.';
+      normalizedMessage = serverMessage || 'Khong tim thay du lieu yeu cau.';
     } else if (status === 422 && validationErrors) {
-      normalizedMessage = validationErrors.map((e) => e.msg || e.message).join(', ');
+      normalizedMessage = validationErrors.map((item) => item.msg || item.message).join(', ');
     } else if (serverMessage) {
       normalizedMessage = serverMessage;
     }

@@ -1,42 +1,69 @@
 import apiClient from './apiClient';
+import profileService from './profileService';
 
-/**
- * Maps backend role to frontend role used in routing/UI.
- * Backend:  user | owner | showroom | admin
- * Frontend: renter (=user) | owner | showroom | admin
- */
 export const mapBackendRole = (backendRole) => {
   if (backendRole === 'user') return 'renter';
   return backendRole;
 };
 
 export const mapAuthUser = (user = {}) => ({
-  id: user._id,
-  _id: user._id,
+  id: user._id || user.id || '',
+  _id: user._id || user.id || '',
   name: user.name || '',
   email: user.email || '',
-  role: mapBackendRole(user.role),
-  backendRole: user.role,
+  role: mapBackendRole(user.role || user.backendRole),
+  backendRole: user.role || user.backendRole || '',
   phone: user.phone || '',
+  address: user.address || '',
+  age: user.age ?? '',
   showroom_status: user.showroom_status || '',
   business_name: user.business_name || '',
   createdAt: user.createdAt || '',
   updatedAt: user.updatedAt || '',
 });
 
+const readStoredUserId = () => {
+  try {
+    const raw = localStorage.getItem('smartrent_user');
+    if (!raw) {
+      return '';
+    }
+
+    const parsed = JSON.parse(raw);
+    return parsed?._id || parsed?.id || '';
+  } catch {
+    return '';
+  }
+};
+
+const enrichWithProfile = async (user) => {
+  const userId = user?._id || user?.id;
+  if (!userId) {
+    return mapAuthUser(user);
+  }
+
+  try {
+    const profile = await profileService.getProfileById(userId);
+    return {
+      ...mapAuthUser(user),
+      ...profile,
+    };
+  } catch {
+    return mapAuthUser(user);
+  }
+};
+
 export const authService = {
   async login(email, password) {
     const res = await apiClient.post('/api/auth/login', { email, password });
     const { user, token } = res.data.data;
-    const frontendUser = mapAuthUser(user);
 
     localStorage.setItem('smartrent_token', token);
+
+    const frontendUser = await enrichWithProfile(user);
     return { user: frontendUser, token };
   },
 
-  /**
-   * Đăng ký consumer: renter (account_type renter) hoặc owner (account_type owner).
-   */
   async registerConsumer({ name, email, password, phone, account_type = 'renter' }) {
     const body = {
       name,
@@ -44,22 +71,28 @@ export const authService = {
       password,
       account_type,
     };
-    if (phone && String(phone).length === 10) body.phone = phone;
+
+    if (phone && String(phone).trim()) {
+      body.phone = String(phone).trim();
+    }
+
     const res = await apiClient.post('/api/auth/register', body);
     return res.data.data;
   },
 
-  /**
-   * Đăng ký đối tác showroom (form riêng).
-   */
   async registerShowroom(payload) {
     const res = await apiClient.post('/api/auth/register-showroom', payload);
     return res.data.data;
   },
 
   async getCurrentUser() {
-    const res = await apiClient.get('/api/auth/me');
-    return mapAuthUser(res.data.data);
+    const userId = readStoredUserId();
+    if (!userId) {
+      throw new Error('Khong tim thay user id de dong bo ho so.');
+    }
+
+    const profile = await profileService.getProfileById(userId);
+    return mapAuthUser(profile);
   },
 
   logout() {

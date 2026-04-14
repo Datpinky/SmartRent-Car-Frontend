@@ -10,12 +10,11 @@ import {
   FaMapMarkerAlt,
   FaMobileAlt,
   FaShieldAlt,
-  FaStar,
   FaStore,
   FaUniversity,
 } from 'react-icons/fa';
-import { BsLightningChargeFill } from 'react-icons/bs';
 import { MdDirectionsCar, MdPeople, MdSettings } from 'react-icons/md';
+import { BsLightningChargeFill } from 'react-icons/bs';
 import { useAuth } from '../../../contexts/AuthContext';
 import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
@@ -67,15 +66,6 @@ const createDefaultReturnDate = (pickupDate) => {
   return toDateTimeLocalValue(date);
 };
 
-const StarRow = ({ rating }) => (
-  <span className="flex items-center gap-[2px]">
-    {[1, 2, 3, 4, 5].map((i) => (
-      <FaStar key={i} size={11} color={i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb'} />
-    ))}
-    <span style={{ fontSize: '0.78rem', fontWeight: 700, marginLeft: 3, color: '#374151' }}>{rating}</span>
-  </span>
-);
-
 const CarBanner = ({ car, normalizedCurrency }) => {
   if (!car) return null;
 
@@ -124,13 +114,11 @@ const CarBanner = ({ car, normalizedCurrency }) => {
           </div>
         )}
 
-        {car.location && (
+        {(car.address || car.location) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#00b14f', marginBottom: 4 }}>
-            <FaMapMarkerAlt size={10} /> {car.location}
+            <FaMapMarkerAlt size={10} /> {car.address || car.location}
           </div>
         )}
-
-        <StarRow rating={car.rating || 5} />
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
           {[
@@ -214,21 +202,20 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
   const nowStr = useMemo(() => {
     const d = new Date();
     d.setSeconds(0, 0);
-    const p = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    return toDateTimeLocalValue(d);
   }, []);
 
   const minReturnStr = useMemo(() => {
     if (!pickupDate) return nowStr;
     const d = new Date(pickupDate);
     d.setDate(d.getDate() + 1);
-    const p = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    return toDateTimeLocalValue(d);
   }, [pickupDate, nowStr]);
 
-  const days = useMemo(() => {
-    return Math.max(1, Math.round((new Date(returnDate) - new Date(pickupDate)) / 86400000));
-  }, [pickupDate, returnDate]);
+  const days = useMemo(
+    () => Math.max(1, Math.round((new Date(returnDate) - new Date(pickupDate)) / 86400000)),
+    [pickupDate, returnDate]
+  );
 
   useEffect(() => {
     if (!car) return;
@@ -284,10 +271,15 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
     }));
   };
 
+  const navigateToPaymentResult = (bookingId, status) => {
+    navigate(`/renter/payment-result?bookingId=${bookingId}&status=${status}`);
+  };
+
   const handleOrder = async () => {
     if (isSubmitting) return;
 
     let cardElement = null;
+    let createdBookingId = '';
 
     try {
       setOrderError('');
@@ -314,29 +306,34 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
         }
       }
 
-      const payload = {
+      const showroomId = car.addedBy || car.raw?.added_by || '';
+      if (!showroomId) {
+        throw new Error('Xe nay chua co showroom_id de tao booking.');
+      }
+
+      const booking = await bookingService.createBooking({
+        user_id: user?._id || user?.id,
         vehicle_id: car._id || car.id,
+        showroom_id: showroomId,
         start_date: new Date(pickupDate).toISOString(),
         end_date: new Date(returnDate).toISOString(),
         total_price: totalWithDelivery,
-        payment_method: payMethod,
         delivery_type: deliveryType,
         delivery_address: deliveryType === 'delivery' ? address : '',
-        note: '',
-      };
+      });
 
-      const result = await bookingService.createBooking(payload);
-      const booking = result?.booking || result;
-      const bookingId = booking?._id || booking?.id || result?._id;
-
-      if (!bookingId) {
-        throw new Error('Booking was created but no booking id was returned.');
+      createdBookingId = booking?._id || booking?.id || '';
+      if (!createdBookingId) {
+        throw new Error('Booking da tao nhung khong co booking id tra ve.');
       }
 
       if (payMethod === 'stripe') {
-        const { clientSecret } = await paymentService.createPaymentIntent(bookingId);
+        await paymentService.ensurePaymentRecord(createdBookingId, totalWithDelivery, 'stripe');
+        const paymentIntent = await paymentService.createPaymentIntent(createdBookingId);
+        const clientSecret = paymentIntent.clientSecret;
+
         if (!clientSecret) {
-          throw new Error('Backend did not return a Stripe client secret.');
+          throw new Error('Backend khong tra ve client secret cua Stripe.');
         }
 
         const confirmResult = await stripe.confirmCardPayment(clientSecret, {
@@ -354,21 +351,42 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
           throw new Error(confirmResult.error.message || 'Khong the xac nhan thanh toan bang the.');
         }
 
-        const paymentIntentId = confirmResult.paymentIntent?.id;
-        const verification = await paymentService.verifyPaymentIntent(bookingId, paymentIntentId);
+        const paymentIntentId = confirmResult.paymentIntent?.id || paymentIntent.paymentIntentId;
+        const verification = await paymentService.verifyPaymentIntent(createdBookingId, paymentIntentId);
+        const finalStatus = verification.success
+          ? 'success'
+          : verification.paymentState?.paymentStatus === 'pending'
+            ? 'pending'
+            : 'error';
 
-        if (!verification?.success) {
-          throw new Error('Thanh toan chua hoan tat. Vui long thu lai.');
-        }
-
-        navigate(`/renter/payment-result?status=success&bookingId=${bookingId}`);
+        navigateToPaymentResult(createdBookingId, finalStatus);
         return;
       }
 
+      await paymentService.ensurePaymentRecord(createdBookingId, totalWithDelivery, payMethod);
       setStep(3);
-      setTimeout(() => navigate(`/renter/payment-result?status=success&bookingId=${bookingId}`), 1200);
+      setTimeout(() => navigateToPaymentResult(createdBookingId, 'pending'), 900);
     } catch (err) {
       console.error('Booking error:', err);
+
+      if (createdBookingId) {
+        try {
+          const paymentState = await paymentService.getPaymentState(createdBookingId);
+          if (paymentState.paymentStatus || paymentState.bookingStatus) {
+            const fallbackStatus =
+              paymentState.paymentStatus === 'successful' || paymentState.bookingStatus === 'paid'
+                ? 'success'
+                : paymentState.paymentStatus === 'pending' || paymentState.bookingStatus === 'waiting_payment'
+                  ? 'pending'
+                  : 'error';
+            navigateToPaymentResult(createdBookingId, fallbackStatus);
+            return;
+          }
+        } catch {
+          // Keep inline error when the payment state is still unavailable.
+        }
+      }
+
       const msg = err.message || 'Unable to complete the booking.';
       setStep(2);
       const shouldShowCardError =
@@ -379,6 +397,7 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
           || msg.toLowerCase().includes('stripe dang khoi tao')
           || msg.toLowerCase().includes('xac nhan thanh toan')
         );
+
       if (shouldShowCardError) {
         setCardError(msg);
       } else {
@@ -480,6 +499,7 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
                   {[['pickup', 'Tu den lay', 'Mien phi'], ['delivery', 'Giao tan noi', '+50.000d']].map(([val, label, fee]) => (
                     <button
                       key={val}
+                      type="button"
                       onClick={() => setDeliveryType(val)}
                       style={{
                         flex: 1,
@@ -537,93 +557,55 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
                 <FaCreditCard style={{ color: '#00b14f' }} /> Phuong thuc thanh toan
               </h3>
 
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  background: '#f9fafb',
-                  border: '1px solid #f0f0f0',
-                  marginBottom: 18,
-                }}
-              >
-                <MdDirectionsCar style={{ fontSize: '1.4rem', color: '#00b14f', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>{car.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{days} ngay · {pickupDate.slice(0, 10)} &rarr; {returnDate.slice(0, 10)}</div>
-                </div>
-                <div style={{ fontWeight: 800, color: '#00b14f', fontSize: '0.95rem' }}>{formatAmount(totalWithDelivery, normalizedCurrency)}</div>
-              </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                {PAYMENT_METHODS.map((m) => (
-                  (() => {
-                    const isDisabled = m.id === 'stripe' && !isStripeSelectable;
-                    const subText = m.id === 'stripe' && !isVND
-                      ? 'Chi ho tro xe co gia VND'
-                      : (m.id === 'stripe' && stripeConfigError ? stripeConfigError : m.sub);
+                {PAYMENT_METHODS.map((method) => {
+                  const isDisabled = method.id === 'stripe' && !isStripeSelectable;
+                  const subText = method.id === 'stripe' && !isVND
+                    ? 'Chi ho tro xe co gia VND'
+                    : (method.id === 'stripe' && stripeConfigError ? stripeConfigError : method.sub);
 
-                    return (
+                  return (
+                    <div
+                      key={method.id}
+                      onClick={() => {
+                        if (!isDisabled) setPayMethod(method.id);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                        padding: '14px 16px',
+                        borderRadius: 12,
+                        border: `2px solid ${payMethod === method.id ? '#00b14f' : '#e5e7eb'}`,
+                        background: payMethod === method.id ? '#f0fdf4' : '#fff',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled ? 0.55 : 1,
+                        transition: 'all 0.15s',
+                      }}
+                    >
                       <div
-                        key={m.id}
-                        onClick={() => {
-                          if (!isDisabled) {
-                            setPayMethod(m.id);
-                          }
-                        }}
                         style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 10,
+                          background: payMethod === method.id ? `${method.color}18` : '#f3f4f6',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 14,
-                          padding: '14px 16px',
-                          borderRadius: 12,
-                          border: `2px solid ${payMethod === m.id ? '#00b14f' : '#e5e7eb'}`,
-                          background: payMethod === m.id ? '#f0fdf4' : '#fff',
-                          cursor: isDisabled ? 'not-allowed' : 'pointer',
-                          opacity: isDisabled ? 0.55 : 1,
-                          transition: 'all 0.15s',
+                          justifyContent: 'center',
+                          fontSize: '1.15rem',
+                          color: payMethod === method.id ? method.color : '#9ca3af',
+                          flexShrink: 0,
                         }}
                       >
-                        <div
-                          style={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 10,
-                            background: payMethod === m.id ? `${m.color}18` : '#f3f4f6',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.15rem',
-                            color: payMethod === m.id ? m.color : '#9ca3af',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {m.icon}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#111827' }}>{m.label}</div>
-                          <div style={{ fontSize: '0.75rem', color: isDisabled ? '#b45309' : '#9ca3af' }}>{subText}</div>
-                        </div>
-                        <div
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            border: `2px solid ${payMethod === m.id ? '#00b14f' : '#d1d5db'}`,
-                            background: payMethod === m.id ? '#00b14f' : '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {payMethod === m.id && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
-                        </div>
+                        {method.icon}
                       </div>
-                    );
-                  })()
-                ))}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#111827' }}>{method.label}</div>
+                        <div style={{ fontSize: '0.75rem', color: isDisabled ? '#b45309' : '#9ca3af' }}>{subText}</div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {payMethod === 'stripe' && (
@@ -647,16 +629,6 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
                       }}
                     />
                   </div>
-                  {!stripeConfigError && !stripe && (
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 6 }}>
-                      Dang tai cong thanh toan Stripe...
-                    </div>
-                  )}
-                  {stripeConfigError && (
-                    <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: 6 }}>
-                      {stripeConfigError}
-                    </div>
-                  )}
                   {cardError && (
                     <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: 6 }}>
                       {cardError}
@@ -727,7 +699,7 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
                 <FaCheckCircle />
               </div>
               <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#111827', marginBottom: 8 }}>
-                Dang xu ly thanh toan...
+                Dang xu ly don hang...
               </div>
               <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: 0 }}>
                 Vui long khong dong trang nay. Ban se duoc chuyen huong ngay.
@@ -753,7 +725,7 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
             <MdDirectionsCar style={{ fontSize: '1.6rem', color: '#00b14f', flexShrink: 0 }} />
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#111827' }}>{car.name}</div>
-              <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{car.location || car.showroom || 'SmartRent'}</div>
+              <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{car.address || car.location || car.showroom || 'SmartRent'}</div>
             </div>
           </div>
 
@@ -794,22 +766,6 @@ const CheckoutContent = ({ stripeConfigError = '' }) => {
               <span>Tong cong</span>
               <span style={{ color: '#00b14f' }}>{formatAmount(totalWithDelivery, normalizedCurrency)}</span>
             </div>
-          </div>
-
-          <div
-            style={{
-              background: '#f0fdf4',
-              borderRadius: 10,
-              padding: 12,
-              marginTop: 14,
-              fontSize: '0.76rem',
-              color: '#374151',
-              lineHeight: 1.7,
-            }}
-          >
-            Mien phi huy truoc 1 gio nhan xe<br />
-            Thanh toan ma hoa an toan<br />
-            Bao hiem toan dien trong chuyen di
           </div>
         </div>
       </div>

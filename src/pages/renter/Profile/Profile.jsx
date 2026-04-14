@@ -1,117 +1,221 @@
-import React, { useEffect, useMemo } from 'react';
-import { FaDatabase, FaUser } from 'react-icons/fa';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FaEdit, FaMapMarkerAlt, FaSave, FaSpinner, FaUser } from 'react-icons/fa';
 import { MdAlternateEmail, MdInfoOutline, MdPhoneIphone } from 'react-icons/md';
+import CarLocationMap from '../../../components/Map/CarLocationMap';
 import { useAuth } from '../../../contexts/AuthContext';
+import mapService from '../../../services/mapService';
+import profileService from '../../../services/profileService';
+import userLocationService from '../../../services/userLocationService';
 
 const ROLE_LABELS = {
-  renter: 'Khach thue',
-  owner: 'Chu xe',
+  renter: 'Khách thuê',
+  owner: 'Chủ xe',
   showroom: 'Showroom',
-  admin: 'Quan tri',
+  admin: 'Quản trị',
 };
 
-const READ_ONLY_FIELDS = [
-  {
-    key: 'name',
-    label: 'Ho va ten',
-    icon: <FaUser />,
-    getValue: (user) => user?.name || 'Khong co du lieu',
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    icon: <MdAlternateEmail />,
-    getValue: (user) => user?.email || 'Khong co du lieu',
-  },
-  {
-    key: 'phone',
-    label: 'So dien thoai',
-    icon: <MdPhoneIphone />,
-    getValue: (user) => user?.phone || 'Khong co du lieu',
-  },
-  {
-    key: 'role',
-    label: 'Vai tro',
-    icon: <FaDatabase />,
-    getValue: (user) => ROLE_LABELS[user?.role] || user?.role || 'Khong co du lieu',
-  },
-  {
-    key: '_id',
-    label: 'Ma tai khoan',
-    icon: <MdInfoOutline />,
-    getValue: (user) => user?._id || 'Khong co du lieu',
-    mono: true,
-  },
-];
-
-const DB_SCOPE_FIELDS = [
-  'Avatar anh',
-  'Dia chi',
-  'Ngay sinh',
-  'KYC/CCCD/GPLX',
-  'Doi mat khau truc tiep trong ho so',
-];
-
-const ReadOnlyField = ({ label, value, icon, mono = false }) => (
-  <div>
-    <label className="form-label">{label}</label>
-    <div
-      className="form-input"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        minHeight: 46,
-        background: '#f9fafb',
-        color: '#111827',
-        fontFamily: mono ? 'monospace' : 'inherit',
-        overflowWrap: 'anywhere',
-      }}
-    >
-      <span style={{ color: '#6b7280', display: 'inline-flex', alignItems: 'center' }}>{icon}</span>
-      <span>{value}</span>
-    </div>
-  </div>
-);
+const buildInitialForm = (user) => ({
+  name: user?.name || '',
+  phone: user?.phone || '',
+  address: user?.address || '',
+});
 
 const Profile = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, updateUser } = useAuth();
+  const userId = user?._id || user?.id || '';
+
+  const [form, setForm] = useState(buildInitialForm(user));
+  const [isEditing, setIsEditing] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedLocation, setSavedLocation] = useState(null);
+  const [notice, setNotice] = useState({ type: '', message: '' });
 
   useEffect(() => {
-    refreshUser().catch(() => {});
+    setForm(buildInitialForm(user));
+  }, [user]);
+
+  useEffect(() => {
+    refreshUser().catch(() => { });
   }, [refreshUser]);
+
+  const loadSavedLocation = useCallback(async () => {
+    if (!userId) {
+      setSavedLocation(null);
+      return;
+    }
+
+    setLoadingLocation(true);
+    try {
+      const location = await userLocationService.getByUserId(userId);
+      setSavedLocation(location || null);
+    } catch {
+      setSavedLocation(null);
+    } finally {
+      setLoadingLocation(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadSavedLocation();
+  }, [loadSavedLocation]);
 
   const initials = useMemo(
     () => user?.name?.split(' ').map((word) => word[0]).slice(-2).join('').toUpperCase() || 'U',
     [user?.name]
   );
 
-  const profileFields = useMemo(() => {
-    const fields = READ_ONLY_FIELDS.map((field) => ({
-      ...field,
-      value: field.getValue(user),
-    }));
+  const handleChange = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
 
-    if (user?.business_name) {
-      fields.push({
-        key: 'business_name',
-        label: 'Ten doanh nghiep',
-        icon: <FaDatabase />,
-        value: user.business_name,
-      });
+  const handleStartEdit = () => {
+    setForm(buildInitialForm(user));
+    setNotice({ type: '', message: '' });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setForm(buildInitialForm(user));
+    setNotice({ type: '', message: '' });
+    setIsEditing(false);
+  };
+
+  const validateForm = () => {
+    if (!String(form.name || '').trim()) {
+      return 'Vui lòng nhập họ và tên.';
     }
 
-    return fields;
-  }, [user]);
+    const phone = String(form.phone || '').trim();
+    if (phone && !/^[0-9+\s-]{8,15}$/.test(phone)) {
+      return 'Số điện thoại không hợp lệ.';
+    }
+
+    return '';
+  };
+
+  const syncUserLocation = async (profileAddress) => {
+    const trimmedAddress = String(profileAddress || '').trim();
+
+    if (!trimmedAddress) {
+      try {
+        await userLocationService.remove(userId);
+      } catch {
+        // Nothing to remove.
+      }
+      setSavedLocation(null);
+      return {
+        type: 'success',
+        message: 'Đã lưu hồ sơ.',
+      };
+    }
+
+    const geocodeResults = await mapService.forwardGeocode(trimmedAddress);
+    if (!geocodeResults.length) {
+      setSavedLocation(null);
+      return {
+        type: 'warning',
+        message: 'Đã lưu hồ sơ, nhưng không tìm thấy tọa độ cho địa chỉ này.',
+      };
+    }
+
+    const bestMatch = geocodeResults[0];
+    const payload = {
+      address: bestMatch.address || trimmedAddress,
+      latitude: String(bestMatch.lat),
+      longitude: String(bestMatch.lng),
+      plus_code: bestMatch.plusCode || '',
+    };
+
+    let nextLocation = null;
+    try {
+      nextLocation = savedLocation?.id
+        ? await userLocationService.update(userId, payload)
+        : await userLocationService.create(userId, payload);
+    } catch {
+      nextLocation = await userLocationService.update(userId, payload);
+    }
+
+    setSavedLocation(nextLocation || null);
+    return {
+      type: 'success',
+      message: 'Cập nhật thành công',
+    };
+  };
+
+  const handleSave = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setNotice({ type: 'error', message: validationError });
+      return;
+    }
+
+    if (!userId) {
+      setNotice({ type: 'error', message: 'Không tìm thấy thông tin tài khoản để cập nhật.' });
+      return;
+    }
+
+    setSaving(true);
+    setNotice({ type: '', message: '' });
+
+    try {
+      const updatedProfile = await profileService.updateProfile(userId, {
+        name: String(form.name || '').trim(),
+        phone: String(form.phone || '').trim(),
+        address: String(form.address || '').trim(),
+      });
+
+      updateUser(updatedProfile);
+      setForm(buildInitialForm(updatedProfile));
+
+      const locationResult = await syncUserLocation(updatedProfile.address);
+      setNotice(locationResult);
+      setIsEditing(false);
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error.message || 'Không thể cập nhật hồ sơ lúc này.',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const previewMap = savedLocation ? (
+    <CarLocationMap
+      locationText={savedLocation.address || form.address}
+      lat={savedLocation.latitude}
+      lng={savedLocation.longitude}
+      plusCode={savedLocation.plusCode}
+      showOpenMapLink
+      openMapLabel="Mở trong Maps"
+      mapHeight={400}
+    />
+  ) : null;
+
+  const noticeStyles = {
+    success: {
+      background: '#f0fdf4',
+      border: '1px solid #bbf7d0',
+      color: '#166534',
+    },
+    warning: {
+      background: '#fffbeb',
+      border: '1px solid #fde68a',
+      color: '#92400e',
+    },
+    error: {
+      background: '#fef2f2',
+      border: '1px solid #fecaca',
+      color: '#b91c1c',
+    },
+  };
 
   return (
     <div className="profile-page">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Ho so ca nhan</h1>
-          <p className="page-subtitle">
-            Frontend dang goi backend auth de dong bo lai thong tin renter hien tai tu DB.
-          </p>
+          <h1 className="page-title">Hồ sơ cá nhân</h1>
         </div>
       </div>
 
@@ -121,8 +225,8 @@ const Profile = () => {
         </div>
 
         <div className="profile-hero-info">
-          <div className="profile-hero-name">{user?.name || 'Khong co du lieu'}</div>
-          <div className="profile-hero-email">{user?.email || 'Khong co du lieu'}</div>
+          <div className="profile-hero-name">{user?.name || 'Không có dữ liệu'}</div>
+          <div className="profile-hero-email">{user?.email || 'Không có dữ liệu'}</div>
           <div
             style={{
               marginTop: 10,
@@ -138,82 +242,156 @@ const Profile = () => {
               color: '#1d4ed8',
             }}
           >
-            <FaDatabase />
-            Da dong bo qua API auth
+            {loadingLocation ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
+            {savedLocation ? 'Đã cập nhật vị trí' : 'Chưa có vị trí'}
           </div>
         </div>
       </div>
 
-      <div className="profile-card">
-        <h3 className="profile-section-title">Thong tin renter tu DB</h3>
-
+      {notice.message && (
         <div
           style={{
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
+            ...(noticeStyles[notice.type] || noticeStyles.success),
             borderRadius: 12,
-            padding: 14,
+            padding: '12px 14px',
             marginBottom: 16,
-            color: '#1d4ed8',
-            fontSize: '0.82rem',
+            fontSize: '0.84rem',
           }}
         >
-          UI nay da bo han cac form luu local. Ho so renter duoc refresh lai tu backend qua token dang nhap khi mo app va khi vao trang ho so.
+          {notice.message}
+        </div>
+      )}
+
+      <div className="profile-card">
+        <div style={{ marginBottom: 18 }}>
+          <h3 className="profile-section-title" style={{ marginBottom: 0 }}>Thông tin cá nhân</h3>
         </div>
 
         <div className="profile-form-grid">
-          {profileFields.map((field) => (
-            <ReadOnlyField
-              key={field.key}
-              label={field.label}
-              value={field.value}
-              icon={field.icon}
-              mono={field.mono}
+          <div>
+            <label className="form-label">Họ và tên</label>
+            <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ color: '#6b7280' }}><FaUser /></span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(event) => handleChange('name', event.target.value)}
+                disabled={!isEditing}
+                style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Email</label>
+            <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f9fafb' }}>
+              <span style={{ color: '#6b7280' }}><MdAlternateEmail /></span>
+              <span>{user?.email || 'Không có dữ liệu'}</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Số điện thoại</label>
+            <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ color: '#6b7280' }}><MdPhoneIphone /></span>
+              <input
+                type="text"
+                value={form.phone}
+                onChange={(event) => handleChange('phone', event.target.value)}
+                disabled={!isEditing}
+                style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Vai trò</label>
+            <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f9fafb' }}>
+              <span style={{ color: '#6b7280' }}><MdInfoOutline /></span>
+              <span>{ROLE_LABELS[user?.role] || user?.role || 'Không có dữ liệu'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label className="form-label">Địa chỉ</label>
+          <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ color: '#6b7280' }}><FaMapMarkerAlt /></span>
+            <input
+              type="text"
+              value={form.address}
+              onChange={(event) => handleChange('address', event.target.value)}
+              disabled={!isEditing}
+              placeholder="Nhập địa chỉ của bạn"
+              style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%' }}
             />
-          ))}
-        </div>
-      </div>
-
-      <div className="profile-card">
-        <h3 className="profile-section-title">Nhung muc chua co trong API hien tai</h3>
-
-        <div
-          style={{
-            background: '#fff7ed',
-            border: '1px solid #fdba74',
-            borderRadius: 12,
-            padding: 14,
-            marginBottom: 16,
-            color: '#c2410c',
-            fontSize: '0.82rem',
-          }}
-        >
-          Backend hien tai khong tra ve cac field ben duoi cho renter, nen frontend khong con hien thi nhu du lieu that.
+          </div>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {DB_SCOPE_FIELDS.map((item) => (
+        <div style={{ marginTop: 24 }}>
+          <h3 className="profile-section-title" style={{ marginBottom: 12 }}>Vị trí của bạn</h3>
+          {loadingLocation ? (
             <div
-              key={item}
               style={{
+                minHeight: 220,
+                borderRadius: 16,
                 border: '1px solid #e5e7eb',
-                borderRadius: 14,
-                padding: 14,
-                background: '#f9fafb',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                color: '#374151',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#6b7280',
+                gap: 8,
               }}
             >
-              {item}
+              <FaSpinner className="animate-spin" />
+              Đang tải vị trí của bạn...
             </div>
-          ))}
+          ) : previewMap ? (
+            previewMap
+          ) : (
+            <div
+              style={{
+                minHeight: 220,
+                borderRadius: 16,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                color: '#9ca3af',
+                padding: 24,
+              }}
+            >
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label className="form-label">Mã tài khoản</label>
+          <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f9fafb', fontFamily: 'monospace' }}>
+            <span style={{ color: '#6b7280' }}><MdInfoOutline /></span>
+            <span>{user?._id || 'Không có dữ liệu'}</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
+          {isEditing ? (
+            <>
+              <button className="btn-primary" type="button" onClick={handleSave} disabled={saving}>
+                {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                Lưu thông tin
+              </button>
+              <button className="btn-secondary" type="button" onClick={handleCancelEdit} disabled={saving}>
+                Hủy chỉnh sửa
+              </button>
+            </>
+          ) : (
+            <button className="btn-primary" type="button" onClick={handleStartEdit}>
+              <FaEdit /> Chỉnh sửa thông tin
+            </button>
+          )}
         </div>
       </div>
     </div>

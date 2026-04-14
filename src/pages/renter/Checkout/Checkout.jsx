@@ -10,39 +10,17 @@ const Checkout = () => {
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
   useEffect(() => {
-    let ignore = false;
+    const publishableKey = paymentService.getStripePublishableKey();
 
-    const loadStripeConfig = async () => {
-      try {
-        setIsLoadingConfig(true);
-        setStripeConfigError('');
+    if (!publishableKey) {
+      setStripeConfigError('Chua cau hinh Stripe publishable key cho frontend.');
+      setIsLoadingConfig(false);
+      return;
+    }
 
-        const config = await paymentService.getStripeConfig();
-        const publishableKey = config?.publishableKey?.trim();
-
-        if (!publishableKey) {
-          throw new Error('Stripe publishable key is missing.');
-        }
-
-        if (!ignore) {
-          setStripePromise(loadStripe(publishableKey));
-        }
-      } catch (err) {
-        if (!ignore) {
-          setStripeConfigError(err.message || 'Unable to load Stripe configuration.');
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoadingConfig(false);
-        }
-      }
-    };
-
-    loadStripeConfig();
-
-    return () => {
-      ignore = true;
-    };
+    setStripePromise(loadStripe(publishableKey));
+    setStripeConfigError('');
+    setIsLoadingConfig(false);
   }, []);
 
   if (isLoadingConfig) {

@@ -118,9 +118,12 @@ const CarCard = ({ car }) => {
           </div>
         )}
 
-        <div className="flex items-center gap-1 text-[0.78rem] text-primary font-medium">
+        <div
+          className="flex items-center gap-1 text-[0.78rem] text-primary font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+          title={car.address || car.location || ''}
+        >
           <FaMapMarkerAlt size={11} />
-          {car.location}
+          {car.address || car.location || 'Chua co dia chi'}
         </div>
 
         <div className="flex items-center gap-1.5 mt-0.5">

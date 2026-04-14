@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar } from 'react-icons/fa';
+import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const CITIES = ['Hà Nội', 'Đà Nẵng', 'Hồ Chí Minh'];
 
@@ -26,6 +27,16 @@ const SearchBar = ({ onSearch }) => {
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedDist, setDist] = useState('');
   const [carName, setCarName] = useState('');
+
+  useEffect(() => {
+    if (!showModal) {
+      return undefined;
+    }
+
+    lockPageScroll();
+    return () => unlockPageScroll();
+  }, [showModal]);
+
   const handleCityClick = (city) => {
     setSelectedCity(city);
     setDist('');

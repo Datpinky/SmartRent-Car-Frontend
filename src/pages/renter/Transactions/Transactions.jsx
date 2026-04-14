@@ -45,17 +45,21 @@ const formatMoney = (value) => `${Number(value || 0).toLocaleString('vi-VN')}d`;
 const mapTransaction = (booking) => {
   const payment = booking.payment || null;
   const images = sanitizeImageList([
+    ...(booking.vehicle?.images || []),
     ...(booking.vehicle_id?.vehicle_images_paths || []),
     ...(booking.vehicle_id?.images || []),
   ]);
 
-  const paymentStatus = payment?.payment_status || 'pending';
+  const paymentStatus =
+    payment?.payment_status
+    || booking.paymentState?.paymentStatus
+    || (booking.status === 'paid' ? 'successful' : 'pending');
 
   return {
     id: payment?._id || booking._id,
     bookingId: booking._id,
-    vehicleName: booking.vehicle_id?.vehicle_name || 'Xe khong ten',
-    showroomName: booking.showroom_id?.name || 'SmartRent',
+    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe khong ten',
+    showroomName: booking.showroom?.name || booking.showroom_id?.name || 'SmartRent',
     amount: payment?.amount || booking.total_price || 0,
     method: payment?.payment_method || 'Chua co',
     status: paymentStatus,

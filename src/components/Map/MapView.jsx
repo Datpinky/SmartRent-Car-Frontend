@@ -41,9 +41,7 @@ const FlyToUser = ({ position }) => {
 
 const formatDistance = (distance) => {
   if (distance === null || distance === undefined) return '';
-  return distance < 1
-    ? `${Math.round(distance * 1000)} m`
-    : `${distance.toFixed(1)} km`;
+  return distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`;
 };
 
 const formatPrice = (car) => {
@@ -52,20 +50,50 @@ const formatPrice = (car) => {
   return `${Number(car.price).toLocaleString('vi-VN')} ${car.currency || 'VND'}${unitLabel}`;
 };
 
-const MapView = ({ cars = [], height = '600px' }) => {
-  const [userLocation, setUserLocation] = useState(null);
+const normalizeInitialUserLocation = (value) => {
+  if (!value) return null;
+
+  const lat = Number(value.lat ?? value.latitude);
+  const lng = Number(value.lng ?? value.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+};
+
+const MapView = ({
+  cars = [],
+  height = '600px',
+  initialUserLocation = null,
+  userLocationTitle = 'Vi tri cua ban',
+  userLocationSubtitle = '',
+}) => {
+  const [userLocation, setUserLocation] = useState(() => normalizeInitialUserLocation(initialUserLocation));
   const [locationError, setLocationError] = useState(null);
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(!initialUserLocation);
   const [selectedCarId, setSelectedCarId] = useState(null);
   const [radiusKm, setRadiusKm] = useState(null);
   const [showSidebar, setShowSidebar] = useState(true);
 
   useEffect(() => {
+    const normalizedInitialLocation = normalizeInitialUserLocation(initialUserLocation);
+
+    if (normalizedInitialLocation) {
+      setUserLocation(normalizedInitialLocation);
+      setLocationError(null);
+      setLocationLoading(false);
+      return undefined;
+    }
+
     if (!navigator.geolocation) {
       setLocationError('Trinh duyet cua ban khong ho tro dinh vi.');
       setLocationLoading(false);
       return undefined;
     }
+
+    setLocationLoading(true);
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -88,7 +116,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [initialUserLocation]);
 
   const carsWithDistance = useMemo(
     () => enrichCarsWithDistance(cars, userLocation),
@@ -123,6 +151,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
   };
 
   const isApiKeyMissing = LOCATIONIQ_API_KEY.startsWith('pk.your_');
+  const usingSavedLocation = Boolean(normalizeInitialUserLocation(initialUserLocation));
 
   return (
     <div className="mapview-root">
@@ -139,7 +168,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
             </span>
           ) : (
             <span className="mapview-status mapview-status--ok">
-              Da xac dinh vi tri cua ban
+              {usingSavedLocation ? 'Dang dung dia chi da luu trong ho so' : 'Da xac dinh vi tri cua ban'}
             </span>
           )}
         </div>
@@ -192,7 +221,12 @@ const MapView = ({ cars = [], height = '600px' }) => {
           >
             <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
             <FlyToUser position={userLocation} />
-            <UserLocation position={userLocation} radiusKm={radiusKm} />
+            <UserLocation
+              position={userLocation}
+              radiusKm={radiusKm}
+              title={userLocationTitle}
+              subtitle={userLocationSubtitle}
+            />
 
             {visibleCars.map((car) => (
               <CarMarker
@@ -216,7 +250,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
               <div className="mapview-selected-summary">
                 <div className="mapview-selected-title">{selectedCar.name}</div>
                 <div className="mapview-selected-sub">
-                  {[selectedCar.plateNumber, selectedCar.statusLabel].filter(Boolean).join(' · ')}
+                  {[selectedCar.plateNumber, selectedCar.statusLabel].filter(Boolean).join(' - ')}
                 </div>
               </div>
             )}
@@ -242,11 +276,7 @@ const MapView = ({ cars = [], height = '600px' }) => {
                     }}
                   >
                     {car.image ? (
-                      <img
-                        src={car.image}
-                        alt={car.name}
-                        className="mapview-car-thumb"
-                      />
+                      <img src={car.image} alt={car.name} className="mapview-car-thumb" />
                     ) : (
                       <div className="mapview-car-thumb-placeholder">Xe</div>
                     )}
@@ -254,22 +284,16 @@ const MapView = ({ cars = [], height = '600px' }) => {
                     <div className="mapview-car-info">
                       <p className="mapview-car-name">{car.name}</p>
                       <p className="mapview-car-meta">
-                        {[car.plateNumber, car.category].filter(Boolean).join(' · ')}
+                        {[car.plateNumber, car.category].filter(Boolean).join(' - ')}
                       </p>
                       <p className="mapview-car-meta">
-                        {[car.seats ? `${car.seats} cho` : '', car.fuel].filter(Boolean).join(' · ')}
+                        {[car.seats ? `${car.seats} cho` : '', car.fuel].filter(Boolean).join(' - ')}
                       </p>
-                      {car.address && (
-                        <p className="mapview-car-address">{car.address}</p>
-                      )}
-                      {car.distance !== null && (
-                        <p className="mapview-car-dist">{formatDistance(car.distance)} tu ban</p>
-                      )}
+                      {car.address && <p className="mapview-car-address">{car.address}</p>}
+                      {car.distance !== null && <p className="mapview-car-dist">{formatDistance(car.distance)} tu ban</p>}
                     </div>
 
-                    {formatPrice(car) && (
-                      <div className="mapview-car-price">{formatPrice(car)}</div>
-                    )}
+                    {formatPrice(car) && <div className="mapview-car-price">{formatPrice(car)}</div>}
                   </li>
                 ))}
               </ul>

@@ -11,9 +11,7 @@ import {
 import bookingService from '../../../services/bookingService';
 
 const formatDate = (value) => {
-  if (!value) {
-    return 'N/A';
-  }
+  if (!value) return 'N/A';
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -23,16 +21,35 @@ const formatDate = (value) => {
   return date.toLocaleString('vi-VN');
 };
 
+const deriveResultStatus = (booking, fallbackStatus) => {
+  const paymentStatus = booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || '';
+  const bookingStatus = booking?.paymentState?.bookingStatus || booking?.status || '';
+
+  if (paymentStatus === 'successful' || bookingStatus === 'paid') {
+    return 'success';
+  }
+
+  if (paymentStatus === 'pending' || bookingStatus === 'waiting_payment') {
+    return 'pending';
+  }
+
+  if (paymentStatus === 'failed' || paymentStatus === 'declined') {
+    return 'error';
+  }
+
+  return fallbackStatus || 'pending';
+};
+
 const PaymentResult = () => {
   const [params] = useSearchParams();
   const routeParams = useParams();
   const navigate = useNavigate();
 
   const bookingId = params.get('bookingId') || routeParams.bookingId || '';
-  const [status, setStatus] = useState(params.get('status') || 'success');
+  const fallbackStatus = params.get('status') || 'pending';
+  const [status, setStatus] = useState(fallbackStatus);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(null);
-  const [payment, setPayment] = useState(null);
 
   const isSuccess = status === 'success';
   const isPending = status === 'pending';
@@ -46,6 +63,7 @@ const PaymentResult = () => {
 
         if (!bookingId) {
           if (mounted) {
+            setStatus('error');
             setLoading(false);
           }
           return;
@@ -56,8 +74,8 @@ const PaymentResult = () => {
           return;
         }
 
-        setBooking(data.booking || null);
-        setPayment(data.payment || null);
+        setBooking(data || null);
+        setStatus(deriveResultStatus(data, fallbackStatus));
       } catch (err) {
         if (!mounted) {
           return;
@@ -76,7 +94,7 @@ const PaymentResult = () => {
     return () => {
       mounted = false;
     };
-  }, [bookingId]);
+  }, [bookingId, fallbackStatus]);
 
   if (loading) {
     return (
@@ -97,7 +115,7 @@ const PaymentResult = () => {
             </div>
             <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan thanh cong</h2>
             <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Booking cua ban da duoc xac nhan. Chi tiet payment ben duoi dang duoc doc truc tiep tu backend.
+              Booking cua ban da duoc ghi nhan thanh toan thanh cong tren he thong.
             </p>
           </>
         ) : isPending ? (
@@ -125,13 +143,14 @@ const PaymentResult = () => {
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'left' }}>
           {[
             ['Ma booking', bookingId || 'N/A'],
-            ['Xe', booking?.vehicle_id?.vehicle_name || 'Dang tai...'],
+            ['Xe', booking?.vehicle?.name || booking?.vehicle_id?.vehicle_name || 'Dang tai...'],
             ['Thoi gian thue', booking ? `${formatDate(booking.start_date)} -> ${formatDate(booking.end_date)}` : 'N/A'],
             ['Tong tien', booking ? `${Number(booking.total_price || 0).toLocaleString('vi-VN')}d` : 'N/A'],
-            ['Payment method', payment?.payment_method || 'Chua co'],
-            ['Payment status', payment?.payment_status || 'pending'],
-            ['Paid at', formatDate(payment?.paid_at)],
-            ['Transaction code', payment?.transaction_code || payment?.stripe_payment_intent_id || 'Chua co'],
+            ['Payment method', booking?.payment?.payment_method || 'Chua co'],
+            ['Payment status', booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || 'pending'],
+            ['Booking status', booking?.paymentState?.bookingStatus || booking?.status || 'N/A'],
+            ['Paid at', formatDate(booking?.payment?.paid_at)],
+            ['Transaction code', booking?.payment?.transaction_code || booking?.payment?.stripe_payment_intent_id || 'Chua co'],
           ].map(([label, value]) => (
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8, fontSize: '0.82rem' }}>
               <span style={{ color: '#9ca3af' }}>{label}</span>

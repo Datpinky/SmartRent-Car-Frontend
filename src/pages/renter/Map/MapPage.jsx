@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import MapView from '../../../components/Map/MapView';
+import { useAuth } from '../../../contexts/AuthContext';
+import userLocationService from '../../../services/userLocationService';
 import vehicleLocationService from '../../../services/vehicleLocationService';
 import vehicleService from '../../../services/vehicleService';
 import './MapPage.css';
@@ -38,8 +40,26 @@ const mapVehicleToMapCar = (vehicle, location) => {
   };
 };
 
+const toUserLocationForMap = (location) => {
+  if (!location) return null;
+
+  const latitude = Number(location.latitude);
+  const longitude = Number(location.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return {
+    lat: latitude,
+    lng: longitude,
+  };
+};
+
 const MapPage = () => {
+  const { user } = useAuth();
   const [cars, setCars] = useState([]);
+  const [savedUserLocation, setSavedUserLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -57,6 +77,20 @@ const MapPage = () => {
             setLoading(false);
           }
           return;
+        }
+
+        const userId = user?._id || user?.id || '';
+        if (userId) {
+          try {
+            const userLocation = await userLocationService.getByUserId(userId);
+            if (!cancelled) {
+              setSavedUserLocation(userLocation || null);
+            }
+          } catch {
+            if (!cancelled) {
+              setSavedUserLocation(null);
+            }
+          }
         }
 
         const { data: vehicleList } = await vehicleService.getList({ limit: 100 });
@@ -101,7 +135,7 @@ const MapPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user?._id, user?.id]);
 
   const stats = useMemo(
     () => ({
@@ -121,7 +155,7 @@ const MapPage = () => {
             Ban do xe cho thue
           </h1>
           <p className="map-page-subtitle">
-            Ghep du lieu tu bang Vehicle va VehicleLocation, hien thi bang Leaflet va tile cua LocationIQ.
+            Ghep du lieu tu Vehicle, VehicleLocation va dia chi da luu trong ho so renter.
           </p>
         </div>
 
@@ -164,10 +198,16 @@ const MapPage = () => {
               color: '#6b7280',
             }}
           >
-            Dang tai du lieu Vehicle va VehicleLocation...
+            Dang tai du lieu Vehicle, VehicleLocation va vi tri nguoi dung...
           </div>
         ) : (
-          <MapView cars={cars} height="620px" />
+          <MapView
+            cars={cars}
+            height="620px"
+            initialUserLocation={toUserLocationForMap(savedUserLocation)}
+            userLocationTitle="Dia chi da luu trong ho so"
+            userLocationSubtitle={savedUserLocation?.address || savedUserLocation?.plusCode || ''}
+          />
         )}
       </div>
 
@@ -178,7 +218,7 @@ const MapPage = () => {
         </div>
         <div className="map-tip-item">
           <span className="map-tip-icon">2</span>
-          <span>Popup va sidebar doc truc tiep bien so, gia, dia chi va trang thai tu 2 bang Vehicle + VehicleLocation.</span>
+          <span>Neu renter da luu dia chi trong ho so, map se uu tien marker cua dia chi do thay vi GPS trinh duyet.</span>
         </div>
         <div className="map-tip-item">
           <span className="map-tip-icon">3</span>

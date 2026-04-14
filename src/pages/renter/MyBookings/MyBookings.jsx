@@ -69,15 +69,21 @@ const matchTab = (booking, tabKey) => {
 
 const mapBooking = (booking) => {
   const images = sanitizeImageList([
+    ...(booking.vehicle?.images || []),
     ...(booking.vehicle_id?.vehicle_images_paths || []),
     ...(booking.vehicle_id?.images || []),
   ]);
 
+  const paymentStatus =
+    booking.payment?.payment_status
+    || booking.paymentState?.paymentStatus
+    || (booking.status === 'paid' ? 'successful' : 'pending');
+
   return {
     id: booking._id,
-    vehicleName: booking.vehicle_id?.vehicle_name || 'Xe khong ten',
-    showroomName: booking.showroom_id?.name || 'SmartRent',
-    showroomEmail: booking.showroom_id?.email || '',
+    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe khong ten',
+    showroomName: booking.showroom?.name || booking.showroom_id?.name || 'SmartRent',
+    showroomEmail: booking.showroom?.email || booking.showroom_id?.email || '',
     startDate: booking.start_date,
     endDate: booking.end_date,
     durationDays: getDurationDays(booking.start_date, booking.end_date),
@@ -86,7 +92,7 @@ const mapBooking = (booking) => {
     totalPrice: booking.total_price,
     note: booking.note || '',
     image: images[0] || '',
-    paymentStatus: booking.payment?.payment_status || 'pending',
+    paymentStatus,
     paymentMethod: booking.payment?.payment_method || 'Chua co',
     paymentRecord: booking.payment || null,
     canCancel: CANCELLABLE_STATUSES.includes(booking.status),
