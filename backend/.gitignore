@@ -42,5 +42,14 @@ Thumbs.db
 document/
 PROJECT_PHASES_SMARTRENT.md
 
+# Environment variables
 .env
 .env.*
+
+# Markdown files
+*.md
+.mdc/
+.cursor/
+.cursor/rules/
+.cursor/rules/smartrent-scope.mdc
+.cursor/rules/smartrent-scope.mdc   
