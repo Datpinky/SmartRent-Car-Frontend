@@ -16,6 +16,23 @@ export const uploadService = {
 
     return res.data.data || [];
   },
+
+  /**
+   * So sánh ảnh trước/sau thuê qua AI (multipart: before_rental, after_return).
+   * Trả về object JSON phân tích từ backend (damage_detected, severity, summary, …).
+   */
+  async compareVehicleDamage(beforeFile, afterFile) {
+    const formData = new FormData();
+    formData.append('before_rental', beforeFile);
+    formData.append('after_return', afterFile);
+
+    const res = await apiClient.post('/api/uploads/image/vehicle-damage', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    });
+
+    return res.data?.data ?? null;
+  },
 };
 
 export default uploadService;

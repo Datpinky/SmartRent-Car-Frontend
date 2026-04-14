@@ -74,6 +74,14 @@ const DashboardLayout = ({ children }) => {
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  /** Tiêu đề topbar khi URL không nằm trong menu (vd. admin đang ở /renter/checkout). */
+  const headerTitle = (() => {
+    const fromMenu = menus.find((m) => isActive(m.path))?.label;
+    if (fromMenu) return fromMenu;
+    if (location.pathname.startsWith('/renter/checkout')) return 'Thanh toán đặt xe';
+    return 'Dashboard';
+  })();
+
   const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'U';
 
   useEffect(() => {
@@ -251,7 +259,7 @@ const DashboardLayout = ({ children }) => {
               <FaBars aria-hidden="true" />
             </button>
             <div className="text-[0.9rem] font-semibold text-gray-900">
-              {menus.find(m => isActive(m.path))?.label || 'Dashboard'}
+              {headerTitle}
             </div>
           </div>
           <div className="flex items-center gap-2">

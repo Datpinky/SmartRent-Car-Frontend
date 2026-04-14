@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -64,6 +64,272 @@ function formatDateTimeVi(isoLocal) {
   } catch {
     return '—';
   }
+}
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+function toLocalInputValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function parseLocalDateTime(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function formatDateTimeInputLabel(isoLocal) {
+  const d = parseLocalDateTime(isoLocal);
+  if (!d) return 'Chọn ngày giờ';
+  const hour12 = d.getHours() % 12 || 12;
+  const ampm = d.getHours() >= 12 ? 'CH' : 'SA';
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(hour12)}:${pad2(d.getMinutes())} ${ampm}`;
+}
+
+const CALENDAR_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const CALENDAR_MONTHS = [
+  'Tháng 1',
+  'Tháng 2',
+  'Tháng 3',
+  'Tháng 4',
+  'Tháng 5',
+  'Tháng 6',
+  'Tháng 7',
+  'Tháng 8',
+  'Tháng 9',
+  'Tháng 10',
+  'Tháng 11',
+  'Tháng 12',
+];
+
+function DateTimeField({ id, label, value, minValue, onChange }) {
+  const rootRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const selectedDate = parseLocalDateTime(value) || new Date();
+  const minDate = parseLocalDateTime(minValue);
+  const [viewMonth, setViewMonth] = useState(
+    new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+  );
+
+  useEffect(() => {
+    setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+  }, [selectedDate.getFullYear(), selectedDate.getMonth()]);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
+  const first = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingEmpty = (first.getDay() + 6) % 7;
+
+  const applyDate = (nextDate) => {
+    if (!nextDate || Number.isNaN(nextDate.getTime())) return;
+    if (minDate && nextDate < minDate) {
+      onChange(toLocalInputValue(minDate));
+      return;
+    }
+    onChange(toLocalInputValue(nextDate));
+  };
+
+  const onSelectDay = (day) => {
+    const next = new Date(selectedDate);
+    next.setFullYear(year, month, day);
+    applyDate(next);
+  };
+
+  const hour12 = selectedDate.getHours() % 12 || 12;
+  const minute = selectedDate.getMinutes();
+  const ampm = selectedDate.getHours() >= 12 ? 'CH' : 'SA';
+
+  const onHourChange = (nextHour12) => {
+    const next = new Date(selectedDate);
+    const h = Number(nextHour12) % 12;
+    next.setHours(ampm === 'CH' ? h + 12 : h);
+    applyDate(next);
+  };
+
+  const onMinuteChange = (nextMinute) => {
+    const next = new Date(selectedDate);
+    next.setMinutes(Number(nextMinute));
+    applyDate(next);
+  };
+
+  const onAmPmChange = (nextAmPm) => {
+    const next = new Date(selectedDate);
+    const h12 = next.getHours() % 12;
+    next.setHours(nextAmPm === 'CH' ? h12 + 12 : h12);
+    applyDate(next);
+  };
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <label htmlFor={id} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-2">
+        <FaCalendarAlt aria-hidden="true" className="text-primary/80" />
+        {label}
+      </label>
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white text-left hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
+        onClick={() => setOpen((v) => !v)}
+      >
+        {formatDateTimeInputLabel(value)}
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label={label}
+          className="absolute z-30 mt-2 w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 bg-white shadow-lg p-3"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              className="h-8 w-8 rounded-md border border-gray-200 hover:bg-gray-50"
+              onClick={() => setViewMonth(new Date(year, month - 1, 1))}
+            >
+              {'<'}
+            </button>
+            <select
+              className="h-8 rounded-md border border-gray-200 px-2 text-sm"
+              value={month}
+              onChange={(e) => setViewMonth(new Date(year, Number(e.target.value), 1))}
+            >
+              {CALENDAR_MONTHS.map((m, idx) => (
+                <option key={m} value={idx}>
+                  {m}
+                </option>
+              ))}
+            </select>
+            <select
+              className="h-8 rounded-md border border-gray-200 px-2 text-sm"
+              value={year}
+              onChange={(e) => setViewMonth(new Date(Number(e.target.value), month, 1))}
+            >
+              {Array.from({ length: 11 }).map((_, i) => {
+                const y = new Date().getFullYear() - 2 + i;
+                return (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                );
+              })}
+            </select>
+            <button
+              type="button"
+              className="ml-auto h-8 w-8 rounded-md border border-gray-200 hover:bg-gray-50"
+              onClick={() => setViewMonth(new Date(year, month + 1, 1))}
+            >
+              {'>'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center text-[0.72rem] text-gray-500 mb-1">
+            {CALENDAR_DAYS.map((d) => (
+              <div key={d} className="font-semibold py-1">
+                {d}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-3">
+            {Array.from({ length: leadingEmpty }).map((_, i) => (
+              <div key={`e-${i}`} />
+            ))}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const cur = new Date(year, month, day, selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+              const isSelected =
+                selectedDate.getDate() === day &&
+                selectedDate.getMonth() === month &&
+                selectedDate.getFullYear() === year;
+              const disabled = !!(minDate && cur < minDate);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  disabled={disabled}
+                  className={`h-9 rounded-md text-sm transition ${
+                    isSelected
+                      ? 'bg-primary text-white'
+                      : 'text-gray-700 hover:bg-primary-light'
+                  } ${disabled ? 'opacity-35 cursor-not-allowed hover:bg-transparent' : ''}`}
+                  onClick={() => onSelectDay(day)}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-2">
+            <select
+              className="h-9 rounded-md border border-gray-200 px-2 text-sm"
+              value={hour12}
+              onChange={(e) => onHourChange(e.target.value)}
+            >
+              {Array.from({ length: 12 }).map((_, i) => {
+                const v = i + 1;
+                return (
+                  <option key={v} value={v}>
+                    {pad2(v)}
+                  </option>
+                );
+              })}
+            </select>
+            <select
+              className="h-9 rounded-md border border-gray-200 px-2 text-sm"
+              value={minute}
+              onChange={(e) => onMinuteChange(e.target.value)}
+            >
+              {Array.from({ length: 12 }).map((_, i) => {
+                const v = i * 5;
+                return (
+                  <option key={v} value={v}>
+                    {pad2(v)}
+                  </option>
+                );
+              })}
+            </select>
+            <select
+              className="h-9 rounded-md border border-gray-200 px-2 text-sm"
+              value={ampm}
+              onChange={(e) => onAmPmChange(e.target.value)}
+            >
+              <option value="SA">SA</option>
+              <option value="CH">CH</option>
+            </select>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={() => applyDate(new Date())}
+            >
+              Hôm nay
+            </button>
+            <button
+              type="button"
+              className="text-xs text-gray-500 hover:text-gray-700"
+              onClick={() => setOpen(false)}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Inner card form (must be inside <Elements>) ─────────────────────────────
@@ -258,6 +524,7 @@ const Checkout = () => {
   const [pickupDate, setPickupDate] = useState(defaultPickup);
   const [returnDate, setReturnDate] = useState(defaultReturn);
   const [pickupMethod, setPickupMethod] = useState('self');
+  const minPickupDateTime = useMemo(() => defaultPickup(), []);
 
   const [clientSecret, setClientSecret] = useState('');
   const [bookingId, setBookingId] = useState('');
@@ -292,6 +559,14 @@ const Checkout = () => {
   useEffect(() => {
     fetchVehicle();
   }, [fetchVehicle]);
+
+  useEffect(() => {
+    const pick = parseLocalDateTime(pickupDate);
+    const ret = parseLocalDateTime(returnDate);
+    if (pick && ret && ret < pick) {
+      setReturnDate(toLocalInputValue(pick));
+    }
+  }, [pickupDate, returnDate]);
 
   const days = Math.max(
     1,
@@ -462,40 +737,20 @@ const Checkout = () => {
 
                 <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Thời gian thuê</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <label
-                      htmlFor="pickup-date"
-                      className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-2"
-                    >
-                      <FaCalendarAlt aria-hidden="true" className="text-primary/80" />
-                      Thời gian nhận xe
-                    </label>
-                    <input
-                      id="pickup-date"
-                      type="datetime-local"
-                      value={pickupDate}
-                      min={defaultPickup()}
-                      onChange={(e) => setPickupDate(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="return-date"
-                      className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-2"
-                    >
-                      <FaCalendarAlt aria-hidden="true" className="text-primary/80" />
-                      Thời gian trả xe
-                    </label>
-                    <input
-                      id="return-date"
-                      type="datetime-local"
-                      value={returnDate}
-                      min={pickupDate}
-                      onChange={(e) => setReturnDate(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
-                    />
-                  </div>
+                  <DateTimeField
+                    id="pickup-date"
+                    label="Thời gian nhận xe"
+                    value={pickupDate}
+                    minValue={minPickupDateTime}
+                    onChange={setPickupDate}
+                  />
+                  <DateTimeField
+                    id="return-date"
+                    label="Thời gian trả xe"
+                    value={returnDate}
+                    minValue={pickupDate}
+                    onChange={setReturnDate}
+                  />
                 </div>
                 <div className="mb-8">
                   <span className="inline-flex items-center rounded-full bg-primary-light px-3 py-1 text-[0.75rem] font-semibold text-primary border border-primary/20">

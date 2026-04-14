@@ -14,7 +14,7 @@ const ROLE_REDIRECTS = {
 /** Sau đăng nhập từ nút "Đặt xe ngay" (CarDetail) — cùng logic với BOOK_NOW_DESTINATIONS */
 const BOOK_NOW_AFTER_LOGIN = {
   renter: '/renter/bookings',
-  admin: '/renter/bookings',
+  admin: '/admin/dashboard',
   owner: '/owner/dashboard',
   showroom: '/showroom/bookings',
 };
@@ -128,12 +128,22 @@ const Login = () => {
     setSubmitting(false);
     if (result.success) {
       if (location.state?.bookNow) {
+        const fromPath = location.state?.from?.pathname || '';
+        const xeMatch = fromPath.match(/^\/xe\/([^/]+)/);
+        if (xeMatch && (result.user.role === 'renter' || result.user.role === 'admin')) {
+          setTimeout(() => navigate(`/renter/checkout/${xeMatch[1]}`, { replace: true }), 0);
+          return;
+        }
         const dest = BOOK_NOW_AFTER_LOGIN[result.user.role] || '/renter/bookings';
         setTimeout(() => navigate(dest, { replace: true }), 0);
         return;
       }
       const from = location.state?.from?.pathname;
-      const redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
+      let redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
+      // Admin chỉ được quay lại URL trong /admin — tránh lệch layout (menu admin + nội dung owner/renter)
+      if (result.user.role === 'admin' && from && from !== '/login' && !String(from).startsWith('/admin')) {
+        redirect = ROLE_REDIRECTS.admin;
+      }
       setTimeout(() => navigate(redirect, { replace: true }), 0);
     } else {
       setLoginError(result.error || 'Đăng nhập thất bại');

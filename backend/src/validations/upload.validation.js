@@ -29,4 +29,54 @@ function validateImageUpload(req, res, next) {
     next();
 }
 
-module.exports = { validateImageUpload };
+/**
+ * Chạy sau multer.fields([ before_rental, after_return ]).
+ * Format lỗi giống validateImageUpload (422).
+ */
+function validateVehicleDamageImages(req, res, next) {
+    const errors = [];
+    const before = req.files?.before_rental;
+    const after = req.files?.after_return;
+
+    if (!before || !before.length) {
+        errors.push({
+            field: "before_rental",
+            msg: "Cần đúng 1 ảnh xe trước khi cho thuê (form-data, field: before_rental)",
+        });
+    } else if (before.length > 1) {
+        errors.push({
+            field: "before_rental",
+            msg: "Chỉ gửi 1 file cho before_rental",
+        });
+    } else if (!before[0].mimetype?.startsWith("image/")) {
+        errors.push({
+            field: "before_rental",
+            msg: `${before[0].originalname || "file"} không phải ảnh`,
+        });
+    }
+
+    if (!after || !after.length) {
+        errors.push({
+            field: "after_return",
+            msg: "Cần đúng 1 ảnh xe khi trả (form-data, field: after_return)",
+        });
+    } else if (after.length > 1) {
+        errors.push({
+            field: "after_return",
+            msg: "Chỉ gửi 1 file cho after_return",
+        });
+    } else if (!after[0].mimetype?.startsWith("image/")) {
+        errors.push({
+            field: "after_return",
+            msg: `${after[0].originalname || "file"} không phải ảnh`,
+        });
+    }
+
+    if (errors.length) {
+        return res.status(422).json({ message: "Validation error", errors });
+    }
+
+    next();
+}
+
+module.exports = { validateImageUpload, validateVehicleDamageImages };

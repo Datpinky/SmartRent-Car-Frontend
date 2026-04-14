@@ -57,8 +57,17 @@ const DashboardPage = ({ children, roles }) => (
   </ProtectedRoute>
 );
 
-// Renter page wrapper (uses main layout, just needs auth)
+/** Trang chỉ dành cho khách thuê — admin không dùng chung (tránh sidebar admin + nội dung renter). */
 const RenterPage = ({ children }) => (
+  <ProtectedRoute>
+    <RoleRoute roles={['renter']}>
+      <DashboardLayout>{children}</DashboardLayout>
+    </RoleRoute>
+  </ProtectedRoute>
+);
+
+/** Thanh toán đặt xe: cho phép admin test flow checkout cùng layout dashboard. */
+const RenterOrAdminCheckout = ({ children }) => (
   <ProtectedRoute>
     <RoleRoute roles={['renter', 'admin']}>
       <DashboardLayout>{children}</DashboardLayout>
@@ -85,27 +94,27 @@ const App = () => {
           <Route path="/admin/reports"    element={<Navigate to="/admin/dashboard" replace />} />
 
           {/* Showroom Dashboard */}
-          <Route path="/showroom/dashboard"     element={<DashboardPage roles={['showroom', 'admin']}><ShowroomDashboard /></DashboardPage>} />
-          <Route path="/showroom/vehicles"      element={<DashboardPage roles={['showroom', 'admin']}><VehicleManagement /></DashboardPage>} />
-          <Route path="/showroom/bookings"      element={<DashboardPage roles={['showroom', 'admin']}><BookingManagement /></DashboardPage>} />
-          <Route path="/showroom/contracts"     element={<DashboardPage roles={['showroom', 'admin']}><ContractManagement /></DashboardPage>} />
-          <Route path="/showroom/customers"     element={<DashboardPage roles={['showroom', 'admin']}><CustomerManagement /></DashboardPage>} />
-          <Route path="/showroom/revenue"       element={<DashboardPage roles={['showroom', 'admin']}><RevenueReports /></DashboardPage>} />
-          <Route path="/showroom/ai-inspection" element={<DashboardPage roles={['showroom', 'admin']}><AIInspection /></DashboardPage>} />
-          <Route path="/showroom/profile"       element={<DashboardPage roles={['showroom', 'admin']}><ShowroomProfile /></DashboardPage>} />
+          <Route path="/showroom/dashboard"     element={<DashboardPage roles={['showroom']}><ShowroomDashboard /></DashboardPage>} />
+          <Route path="/showroom/vehicles"      element={<DashboardPage roles={['showroom']}><VehicleManagement /></DashboardPage>} />
+          <Route path="/showroom/bookings"      element={<DashboardPage roles={['showroom']}><BookingManagement /></DashboardPage>} />
+          <Route path="/showroom/contracts"     element={<DashboardPage roles={['showroom']}><ContractManagement /></DashboardPage>} />
+          <Route path="/showroom/customers"     element={<DashboardPage roles={['showroom']}><CustomerManagement /></DashboardPage>} />
+          <Route path="/showroom/revenue"       element={<DashboardPage roles={['showroom']}><RevenueReports /></DashboardPage>} />
+          <Route path="/showroom/ai-inspection" element={<DashboardPage roles={['showroom']}><AIInspection /></DashboardPage>} />
+          <Route path="/showroom/profile"       element={<DashboardPage roles={['showroom']}><ShowroomProfile /></DashboardPage>} />
 
           {/* Owner Dashboard */}
-          <Route path="/owner/dashboard" element={<DashboardPage roles={['owner', 'admin']}><OwnerDashboard /></DashboardPage>} />
-          <Route path="/owner/vehicles"  element={<DashboardPage roles={['owner', 'admin']}><MyVehicles /></DashboardPage>} />
-          <Route path="/owner/tracking"  element={<DashboardPage roles={['owner', 'admin']}><VehicleTracking /></DashboardPage>} />
-          <Route path="/owner/revenue"   element={<DashboardPage roles={['owner', 'admin']}><Revenue /></DashboardPage>} />
-          <Route path="/owner/profile"   element={<DashboardPage roles={['owner', 'admin']}><OwnerProfile /></DashboardPage>} />
+          <Route path="/owner/dashboard" element={<DashboardPage roles={['owner']}><OwnerDashboard /></DashboardPage>} />
+          <Route path="/owner/vehicles"  element={<DashboardPage roles={['owner']}><MyVehicles /></DashboardPage>} />
+          <Route path="/owner/tracking"  element={<DashboardPage roles={['owner']}><VehicleTracking /></DashboardPage>} />
+          <Route path="/owner/revenue"   element={<DashboardPage roles={['owner']}><Revenue /></DashboardPage>} />
+          <Route path="/owner/profile"   element={<DashboardPage roles={['owner']}><OwnerProfile /></DashboardPage>} />
 
           {/* Renter portal */}
           <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
-          <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
-          <Route path="/renter/checkout"        element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/checkout/:carId" element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
+          <Route path="/renter/checkout"        element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
           <Route path="/renter/payment-result"  element={<PaymentResult />} />
           <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
 
