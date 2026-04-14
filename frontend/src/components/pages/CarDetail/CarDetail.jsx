@@ -1,235 +1,727 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaShareAlt, FaChevronLeft, FaStore } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { FaStar, FaMapMarkerAlt, FaGasPump, FaHeart, FaRegHeart, FaShareAlt, FaChevronLeft, FaChevronRight, FaStore } from 'react-icons/fa';
 import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
-import { cars } from '../../data/cars';
-import './CarDetail.css';
+import { cars as MOCK_CARS } from '../../data/cars';
+import MapView from '../../Map/MapView';
+import vehicleService from '../../../services/vehicleService';
+import vehicleLocationService from '../../../services/vehicleLocationService';
+import reviewService from '../../../services/reviewService';
+import favoriteService from '../../../services/favoriteService';
+import { useAuth } from '../../../contexts/AuthContext';
+import { LOCATIONIQ_API_KEY } from '../../Map/mapConfig';
+import '../../../pages/renter/Map/MapPage.css';
+import '../../Map/CarLocationMap.css';
 
 const SpecItem = ({ icon, label, value }) => (
-    <div className="detail-spec-item">
-        <div className="detail-spec-icon">{icon}</div>
-        <div>
-            <div className="detail-spec-label">{label}</div>
-            <div className="detail-spec-value">{value}</div>
-        </div>
+  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+    <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center text-primary shrink-0" aria-hidden="true">{icon}</div>
+    <div>
+      <div className="text-[0.72rem] text-gray-400 font-medium uppercase tracking-wide">{label}</div>
+      <div className="text-[0.9rem] font-semibold text-gray-800">{value}</div>
     </div>
+  </div>
 );
 
+const sectionTitle = "text-[0.9rem] font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100";
+
+const StarRow = ({ rating, count }) => (
+  <span className="flex items-center gap-1 text-[0.85rem]">
+    {[1, 2, 3, 4, 5].map(i => (
+      <FaStar key={i} size={13} color={i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb'} aria-hidden="true" />
+    ))}
+    <strong className="ml-1 tabular-nums">{rating}</strong>
+    {count !== undefined && <span className="text-gray-400 tabular-nums">({count} đánh giá)</span>}
+  </span>
+);
+
+const isMongoId = (str) => /^[a-f\d]{24}$/i.test(str);
+
+/** Sau khi đăng nhập — khách thuê / admin: chuyến đi; chủ xe / showroom: khu vực quản lý tương ứng */
+const BOOK_NOW_DESTINATIONS = {
+  owner: '/owner/dashboard',
+  showroom: '/showroom/bookings',
+};
+
 const CarDetail = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const car = cars.find(c => c.id === Number(id));
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
-    if (!car) return (
-        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: '4rem', marginBottom: 16 }}>🚗</div>
-            <h2>Không tìm thấy xe</h2>
-            <button className="btn-book" style={{ maxWidth: 200, margin: '20px auto' }} onClick={() => navigate('/')}>Về trang chủ</button>
-        </div>
-    );
+  const [car, setCar] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsMeta, setReviewsMeta] = useState({ total: 0 });
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
-    const hue = Math.abs(car.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 360;
+  // New review form state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
+  /** Tọa độ để hiển thị MapView (cùng stack với /map) */
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [resolvedAddress, setResolvedAddress] = useState('');
+  const [coordsLoading, setCoordsLoading] = useState(false);
+  const [coordsError, setCoordsError] = useState(null);
+
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const thumbStripRef = useRef(null);
+
+  const loadCar = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (isMongoId(id)) {
+        const apiCar = await vehicleService.getById(id);
+        setCar(apiCar || null);
+      } else {
+        // Numeric id from mock data
+        const mockCar = MOCK_CARS.find(c => c.id === Number(id));
+        setCar(mockCar || null);
+      }
+    } catch {
+      const mockCar = MOCK_CARS.find(c => c.id === Number(id));
+      setCar(mockCar || null);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  const loadReviews = useCallback(async () => {
+    if (!isMongoId(id)) return;
+    setReviewsLoading(true);
+    try {
+      const res = await reviewService.getByVehicleId(id);
+      setReviews(res.data || []);
+      setReviewsMeta(res.pagination || { total: 0 });
+    } catch {
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    loadCar();
+    loadReviews();
+  }, [loadCar, loadReviews]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!car) return undefined;
+
+    const run = async () => {
+      setCoordsLoading(true);
+      setCoordsError(null);
+      setPickupCoords(null);
+
+      const directLat = car.latitude ?? car.lat;
+      const directLng = car.longitude ?? car.lng;
+      if (directLat != null && directLng != null) {
+        if (!cancelled) {
+          setPickupCoords({ lat: Number(directLat), lng: Number(directLng) });
+          setResolvedAddress(car.pickupAddress || car.address || car.location || '');
+          setCoordsLoading(false);
+        }
+        return;
+      }
+
+      if (isMongoId(id)) {
+        try {
+          const loc = await vehicleLocationService.getByVehicleId(id);
+          if (!cancelled && loc?.latitude != null && loc?.longitude != null) {
+            setPickupCoords({ lat: Number(loc.latitude), lng: Number(loc.longitude) });
+            setResolvedAddress(loc.address || car.pickupAddress || car.address || car.location || '');
+            setCoordsLoading(false);
+            return;
+          }
+        } catch {
+          /* 401 hoặc chưa có bản ghi — geocode tiếp */
+        }
+      }
+
+      const text = car.pickupAddress || car.address || car.location;
+      if (!text) {
+        if (!cancelled) setCoordsLoading(false);
+        return;
+      }
+
+      const query = encodeURIComponent(`${text}, Việt Nam`);
+      try {
+        const r = await fetch(
+          `https://us1.locationiq.com/v1/search?key=${LOCATIONIQ_API_KEY}&q=${query}&format=json&limit=1&accept-language=vi`
+        );
+        if (!r.ok) throw new Error('Không geocode được địa chỉ.');
+        const data = await r.json();
+        if (!data?.length) throw new Error('Không tìm thấy vị trí.');
+        const { lat, lon, display_name } = data[0];
+        if (!cancelled) {
+          setPickupCoords({ lat: parseFloat(lat), lng: parseFloat(lon) });
+          setResolvedAddress(display_name);
+        }
+      } catch (e) {
+        if (!cancelled) setCoordsError(e.message || 'Lỗi bản đồ');
+      } finally {
+        if (!cancelled) setCoordsLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [car, id]);
+
+  const mapCarsForView = useMemo(() => {
+    if (!car || !pickupCoords) return [];
+    const thumb = (Array.isArray(car.images) && car.images[0]) || car.image;
+    return [
+      {
+        id: car.id || car._id,
+        name: car.name,
+        latitude: pickupCoords.lat,
+        longitude: pickupCoords.lng,
+        price: car.price,
+        seats: car.seats,
+        fuel: car.fuel,
+        category: car.category || car.type,
+        image: thumb,
+      },
+    ];
+  }, [car, pickupCoords]);
+
+  /** Tất cả URL ảnh hợp lệ — ưu tiên `images` từ API, fallback một ảnh đại diện */
+  const galleryImages = useMemo(() => {
+    if (!car) return [];
+    const raw =
+      Array.isArray(car.images) && car.images.length > 0
+        ? car.images
+        : car.image
+          ? [car.image]
+          : [];
+    return raw.filter(Boolean);
+  }, [car]);
+
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [id]);
+
+  const googleMapsHref = pickupCoords
+    ? `https://www.google.com/maps?q=${pickupCoords.lat},${pickupCoords.lng}`
+    : `https://www.google.com/maps/search/${encodeURIComponent(car?.pickupAddress || car?.address || car?.location || '')}`;
+
+  const handleToggleFavorite = async (e) => {
+    e.stopPropagation();
+    if (!user) { navigate('/login'); return; }
+    if (!isMongoId(id)) { setLiked(p => !p); return; }
+    setLikeLoading(true);
+    try {
+      const res = await favoriteService.toggle(id);
+      setLiked(res.favorited);
+    } catch {
+      setLiked(p => !p);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  const handleBookNow = () => {
+    if (!user) {
+      navigate('/login', { state: { from: location, bookNow: true } });
+      return;
+    }
+    // Renter và admin đặt xe qua checkout flow; các role khác về dashboard
+    const dest = BOOK_NOW_DESTINATIONS[user.role] || `/renter/checkout/${id}`;
+    navigate(dest);
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) { navigate('/login'); return; }
+    setReviewError('');
+    setReviewSubmitting(true);
+    try {
+      await reviewService.create({ vehicle_id: id, ...reviewForm });
+      setShowReviewForm(false);
+      setReviewForm({ rating: 5, comment: '' });
+      loadReviews();
+    } catch (err) {
+      setReviewError(err.message);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="car-detail-page">
-            <button className="car-detail-back" onClick={() => navigate(-1)}>
-                <FaChevronLeft size={12} /> Quay lại danh sách xe
-            </button>
-
-            <div className="car-detail-layout">
-                {/* Left: Gallery + Info */}
-                <div>
-                    {/* Image */}
-                    <div className="car-gallery-main">
-                        {car.image ? (
-                            <img
-                                src={car.image}
-                                alt={car.name}
-                                className="car-gallery-img"
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                }}
-                            />
-                        ) : null}
-                        <div className="car-gallery-placeholder" style={{
-                            background: `linear-gradient(135deg, hsl(${hue},30%,88%) 0%, hsl(${hue},20%,95%) 100%)`,
-                            display: car.image ? 'none' : 'flex',
-                        }}>
-                            <MdDirectionsCar style={{
-                                fontSize: '8rem',
-                                color: car.color || `hsl(${hue},40%,50%)`,
-                                filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.15))',
-                                transform: 'scaleX(-1)',
-                            }} />
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 12, marginTop: 12, marginBottom: 24 }}>
-                        <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid var(--gray-200)', borderRadius: 50, fontSize: '0.82rem', color: 'var(--gray-600)', cursor: 'pointer', background: 'white' }}>
-                            <FaShareAlt size={13} /> Chia sẻ
-                        </button>
-                        <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid var(--gray-200)', borderRadius: 50, fontSize: '0.82rem', color: 'var(--gray-600)', cursor: 'pointer', background: 'white' }}>
-                            <FaHeart size={13} /> Yêu thích
-                        </button>
-                    </div>
-
-                    {/* Info */}
-                    <div className="car-detail-info">
-                        <h1 className="car-detail-name">{car.name}</h1>
-
-                        {/* Meta */}
-                        <div className="car-detail-meta">
-                            <div className="car-detail-meta-item">
-                                <FaMapMarkerAlt size={12} color="var(--primary)" /> {car.location}
-                            </div>
-                            {car.showroom && (
-                                <div className="car-detail-meta-item" style={{ color: 'var(--gray-500)', fontSize: '0.82rem' }}>
-                                    <FaStore size={12} color="var(--gray-400)" /> {car.showroom}
-                                </div>
-                            )}
-                            <div className="car-detail-rating-row">
-                                <div className="detail-stars">
-                                    {[1, 2, 3, 4, 5].map(i => <FaStar key={i} size={13} color={i <= Math.round(car.rating) ? '#f59e0b' : '#e5e7eb'} />)}
-                                </div>
-                                <strong>{car.rating}</strong>
-                                <span style={{ color: 'var(--gray-400)' }}>({car.trips} chuyến)</span>
-                            </div>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--primary)', fontWeight: 600 }}>
-                                <MdVerified size={15} /> {car.type}
-                            </span>
-                        </div>
-
-                        {/* Specs */}
-                        <div>
-                            <div className="car-detail-section-title">Thông số kỹ thuật</div>
-                            <div className="car-detail-specs">
-                                <SpecItem icon={<MdPeople size={18} />} label="Số chỗ" value={`${car.seats} chỗ ngồi`} />
-                                <SpecItem icon={<MdSettings size={18} />} label="Hộp số" value={car.transmission} />
-                                <SpecItem
-                                    icon={car.fuel === 'Điện' ? <BsLightningChargeFill size={16} color="#2196f3" /> : <FaGasPump size={16} />}
-                                    label="Nhiên liệu"
-                                    value={car.fuel}
-                                />
-                                <SpecItem icon={<MdDirectionsCar size={18} />} label="Loại xe" value={car.category} />
-                            </div>
-                        </div>
-
-                        {/* Description */}
-                        <div>
-                            <div className="car-detail-section-title">Mô tả xe</div>
-                            <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', lineHeight: 1.8 }}>
-                                {car.name} là lựa chọn tuyệt vời cho những chuyến đi trong và ngoài thành phố.
-                                Xe được bảo dưỡng định kỳ, đảm bảo an toàn và thoải mái cho người lái.
-                                Xe có đầy đủ các tiện nghi hiện đại, điều hòa, camera lùi, hỗ trợ đỗ xe,
-                                và hệ thống âm thanh chất lượng cao.
-                            </p>
-                        </div>
-
-                        {/* Features */}
-                        <div>
-                            <div className="car-detail-section-title">Tiện nghi</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                {['Điều hòa', 'Camera lùi', 'Cảm biến', 'GPS', 'Bluetooth', 'USB', 'Bản đồ', 'Túi khí'].map(f => (
-                                    <span key={f} style={{
-                                        padding: '4px 12px',
-                                        background: 'var(--primary-light)',
-                                        color: 'var(--primary)',
-                                        borderRadius: 50,
-                                        fontSize: '0.78rem',
-                                        fontWeight: 500,
-                                    }}>✓ {f}</span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Insurance */}
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#f0f9f4', padding: 14, borderRadius: 10, border: '1px solid #c8ecd8' }}>
-                            <MdShield size={20} color="var(--primary)" style={{ flexShrink: 0, marginTop: 2 }} />
-                            <div>
-                                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--gray-800)', marginBottom: 4 }}>Bảo hiểm toàn diện</div>
-                                <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)' }}>
-                                    Xe được bảo hiểm tai nạn toàn diện trong suốt chuyến đi. Mức bồi thường lên đến 1 tỷ đồng.
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Terms & Regulations */}
-                        <div className="car-detail-terms">
-                            <div className="car-detail-terms-title">Điều khoản</div>
-                            <div className="car-detail-terms-subtitle">Quy định khác:</div>
-                            <div className="car-detail-terms-body">
-                                <p>– Sử dụng xe đúng mục đích.</p>
-                                <p>– Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.</p>
-                                <p>– Không sử dụng xe thuê để cầm cố, thế chấp.</p>
-                                <p>– Không hút thuốc, nhả kẹo cao su, xả rác trong xe.</p>
-                                <p>– Không chở hàng quốc cấm dễ cháy nổ.</p>
-                                <p>– Không chở hoa quả, thực phẩm nặng mùi trong xe.</p>
-                                <p>– Khi trả xe, nếu xe bẩn hoặc có mùi trong xe, khách hàng vui lòng vệ sinh xe sạch sẽ hoặc gửi phụ thu phí vệ sinh xe.</p>
-                                <p>Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: Booking card */}
-                <div>
-                    <div className="booking-card">
-                        <div className="booking-price-row">
-                            <span className="booking-price">{car.price.toLocaleString()}K</span>
-                            <span className="booking-price-unit">/ngày</span>
-                        </div>
-
-                        <div className="booking-divider" />
-
-                        <div className="booking-field">
-                            <div className="booking-field-label">Thời gian nhận xe</div>
-                            <input type="datetime-local" className="booking-field-input" defaultValue="2026-02-24T15:00" />
-                        </div>
-                        <div className="booking-field">
-                            <div className="booking-field-label">Thời gian trả xe</div>
-                            <input type="datetime-local" className="booking-field-input" defaultValue="2026-02-26T19:00" />
-                        </div>
-
-                        <div className="booking-divider" />
-
-                        {/* Price breakdown */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                            {[
-                                [`${car.price.toLocaleString()}K × 2 ngày`, `${(car.price * 2).toLocaleString()}K`],
-                                ['Phí dịch vụ (5%)', `${Math.round(car.price * 2 * 0.05).toLocaleString()}K`],
-                                ['Bảo hiểm', 'Miễn phí'],
-                            ].map(([label, val]) => (
-                                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--gray-600)' }}>
-                                    <span>{label}</span>
-                                    <span style={{ fontWeight: 600, color: 'var(--gray-800)' }}>{val}</span>
-                                </div>
-                            ))}
-                            <div className="booking-divider" style={{ margin: '4px 0' }} />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '0.95rem', color: 'var(--gray-900)' }}>
-                                <span>Tổng cộng</span>
-                                <span style={{ color: 'var(--primary)' }}>{(car.price * 2 + Math.round(car.price * 2 * 0.05)).toLocaleString()}K</span>
-                            </div>
-                        </div>
-
-                        <button className="btn-book">Đặt xe ngay</button>
-                        <div className="booking-note">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
-
-                        {/* Owner */}
-                        <div className="owner-card">
-                            <div className="owner-avatar">{car.showroom ? car.showroom[0] : 'C'}</div>
-                            <div>
-                                <div className="owner-name">{car.showroom || 'Chủ xe SmartRent'}</div>
-                                <div className="owner-meta">⭐ 4.9 · Phản hồi trong 5 phút</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="max-w-[1280px] mx-auto px-5 py-20 text-center">
+        <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin motion-reduce:animate-none mb-4" />
+        <p className="text-gray-500">Đang tải thông tin xe…</p>
+      </div>
     );
+  }
+
+  if (!car) {
+    return (
+      <div className="text-center py-20 px-5">
+        <div className="text-[4rem] mb-4">🚗</div>
+        <h2 className="text-xl font-bold text-gray-800 mb-5">Không tìm thấy xe</h2>
+        <button
+          type="button"
+          className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors"
+          onClick={() => navigate('/')}
+        >
+          Về trang chủ
+        </button>
+      </div>
+    );
+  }
+
+  const hue = Math.abs(car.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 360;
+  const avgRating = reviews.length
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : (car.rating || 0);
+  const tripCount = reviewsMeta.total || car.trips || 0;
+
+  const locationLine =
+    car.pickupAddress ||
+    resolvedAddress ||
+    car.address ||
+    car.location ||
+    'Chưa có địa chỉ nhận xe';
+
+  const nImg = galleryImages.length;
+  const activeIdx = nImg ? ((galleryIndex % nImg) + nImg) % nImg : 0;
+  const mainSrc = nImg ? galleryImages[activeIdx] : '';
+  const goGalleryPrev = () => nImg && setGalleryIndex((i) => (i - 1 + nImg) % nImg);
+  const goGalleryNext = () => nImg && setGalleryIndex((i) => (i + 1) % nImg);
+  const scrollThumbStrip = (dir) => {
+    thumbStripRef.current?.scrollBy({ left: dir * 160, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="max-w-[1280px] mx-auto px-5 py-6">
+      <button
+        type="button"
+        className="flex items-center gap-2 text-[0.82rem] text-gray-500 font-medium mb-5 hover:text-primary transition-colors"
+        onClick={() => navigate(-1)}
+      >
+        <FaChevronLeft size={12} aria-hidden="true" /> Quay lại danh sách xe
+      </button>
+
+      <div className="grid grid-cols-[1fr_360px] gap-8 items-start max-[900px]:grid-cols-1">
+        {/* Left */}
+        <div>
+          {/* Gallery — nhiều ảnh: ảnh lớn + mũi tên + thumbnail (kiểu Shopee) */}
+          <div className="w-full space-y-2">
+            <div
+              className="w-full rounded-2xl overflow-hidden bg-gray-100 relative group"
+              style={{ aspectRatio: '16/9' }}
+            >
+              {mainSrc ? (
+                <img
+                  key={mainSrc}
+                  src={mainSrc}
+                  alt={`${car.name} — ảnh ${activeIdx + 1}/${nImg}`}
+                  width={600}
+                  height={400}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const el = e.target.nextElementSibling;
+                    if (el) el.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div
+                className="w-full h-full flex items-center justify-center absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${hue},30%,88%) 0%, hsl(${hue},20%,95%) 100%)`,
+                  display: mainSrc ? 'none' : 'flex',
+                }}
+              >
+                <MdDirectionsCar
+                  aria-hidden="true"
+                  style={{
+                    fontSize: '8rem',
+                    color: car.color || `hsl(${hue},40%,50%)`,
+                    filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.15))',
+                    transform: 'scaleX(-1)',
+                  }}
+                />
+              </div>
+              {nImg > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Ảnh trước"
+                    onClick={goGalleryPrev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white opacity-90 hover:opacity-100 transition-opacity z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <FaChevronLeft size={18} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Ảnh sau"
+                    onClick={goGalleryNext}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white opacity-90 hover:opacity-100 transition-opacity z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <FaChevronRight size={18} aria-hidden />
+                  </button>
+                  <div
+                    className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1 rounded-full bg-black/35"
+                    aria-hidden
+                  >
+                    {galleryImages.map((_, i) => (
+                      <span
+                        key={i}
+                        className={`w-1.5 h-1.5 rounded-full transition-colors ${i === activeIdx ? 'bg-white' : 'bg-white/45'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {nImg > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="Cuộn ảnh nhỏ sang trái"
+                  onClick={() => scrollThumbStrip(-1)}
+                  className="shrink-0 w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <FaChevronLeft size={14} aria-hidden />
+                </button>
+                <div
+                  ref={thumbStripRef}
+                  className="flex-1 flex gap-2 overflow-x-auto py-0.5 px-0.5 min-w-0 [scrollbar-width:thin]"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  {galleryImages.map((src, i) => (
+                    <button
+                      key={`${src}-${i}`}
+                      type="button"
+                      aria-label={`Xem ảnh ${i + 1}`}
+                      aria-current={i === activeIdx ? 'true' : undefined}
+                      onClick={() => setGalleryIndex(i)}
+                      className={`shrink-0 w-[72px] h-[72px] rounded-lg overflow-hidden border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        i === activeIdx ? 'border-primary ring-2 ring-primary/25' : 'border-transparent hover:border-gray-300'
+                      }`}
+                    >
+                      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cuộn ảnh nhỏ sang phải"
+                  onClick={() => scrollThumbStrip(1)}
+                  className="shrink-0 w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <FaChevronRight size={14} aria-hidden />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 mt-3 mb-6">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-full text-[0.82rem] text-gray-600 cursor-pointer bg-white hover:border-primary hover:text-primary transition-colors"
+              onClick={() => navigator.share?.({ title: document.title, url: window.location.href }) || navigator.clipboard?.writeText(window.location.href)}
+            >
+              <FaShareAlt size={13} aria-hidden="true" /> Chia sẻ
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleFavorite}
+              disabled={likeLoading}
+              className={`flex items-center gap-1.5 px-4 py-2 border rounded-full text-[0.82rem] cursor-pointer bg-white transition-colors
+                ${liked ? 'border-red-400 text-red-500 hover:border-red-500' : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
+            >
+              {liked ? <FaHeart size={13} aria-hidden="true" /> : <FaRegHeart size={13} aria-hidden="true" />}
+              {liked ? 'Đã yêu thích' : 'Yêu thích'}
+            </button>
+          </div>
+
+          {/* Info card */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+            <h1 className="text-2xl font-extrabold text-gray-900">{car.name}</h1>
+
+            <div className="flex flex-wrap gap-3">
+              <span className="flex items-center gap-1 text-[0.85rem] text-primary font-medium">
+                <FaMapMarkerAlt size={12} aria-hidden="true" /> {locationLine}
+              </span>
+              {car.listerProfile?.listingSubtitle && (
+                <span className="flex items-center gap-1 text-[0.82rem] text-gray-600">
+                  <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.listerProfile.listingSubtitle}
+                </span>
+              )}
+              <StarRow rating={avgRating} count={tripCount} />
+              <span className="flex items-center gap-1 text-primary font-semibold text-[0.85rem]">
+                <MdVerified size={15} aria-hidden="true" /> {car.type || car.category}
+              </span>
+            </div>
+
+            {/* Specs */}
+            <div>
+              <div className={sectionTitle}>Thông số kỹ thuật</div>
+              <div className="grid grid-cols-2 gap-3 max-[480px]:grid-cols-1">
+                <SpecItem icon={<MdPeople size={18} />} label="Số chỗ" value={`${car.seats || 5} chỗ ngồi`} />
+                <SpecItem icon={<MdSettings size={18} />} label="Hộp số" value={car.transmission || 'Số tự động'} />
+                <SpecItem
+                  icon={car.fuel === 'Điện' ? <BsLightningChargeFill size={16} color="#2196f3" /> : <FaGasPump size={16} />}
+                  label="Nhiên liệu"
+                  value={car.fuel || 'Xăng'}
+                />
+                <SpecItem icon={<MdDirectionsCar size={18} />} label="Loại xe" value={car.category || car.type || 'Sedan'} />
+              </div>
+            </div>
+
+            {/* Map — MapView embed + style MapPage.css (cùng /map) */}
+            {(car.pickupAddress || car.address || car.location || isMongoId(id)) && (
+              <div>
+                <div className={sectionTitle}>Vị trí nhận xe</div>
+                <div className="clm-root">
+                  <div className="clm-address-bar">
+                    <span className="clm-address-icon">📍</span>
+                    <span className="clm-address-text">
+                      {coordsLoading
+                        ? 'Đang tải vị trí…'
+                        : coordsError
+                          ? car.pickupAddress || car.address || car.location || '—'
+                          : resolvedAddress || car.pickupAddress || car.address || car.location || '—'}
+                    </span>
+                    <a href={googleMapsHref} target="_blank" rel="noreferrer" className="clm-open-maps-btn">
+                      Mở trong Maps ↗
+                    </a>
+                  </div>
+                  <div className="map-page-map-container car-detail-map-wrap relative min-h-[280px]">
+                    {coordsLoading && (
+                      <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-white/90 rounded-xl">
+                        <div className="w-9 h-9 border-[3px] border-primary border-t-transparent rounded-full animate-spin motion-reduce:animate-none mb-2" />
+                        <p className="text-[0.82rem] text-gray-500">Đang tải bản đồ…</p>
+                      </div>
+                    )}
+                    {!coordsLoading && coordsError && (
+                      <div className="flex flex-col items-center justify-center min-h-[200px] bg-gray-50 rounded-xl border border-gray-100 p-4 text-center">
+                        <span className="text-2xl mb-2">⚠️</span>
+                        <p className="text-[0.85rem] text-gray-600">{coordsError}</p>
+                      </div>
+                    )}
+                    {!coordsLoading && !coordsError && pickupCoords && mapCarsForView.length > 0 && (
+                      <MapView embed height="340px" cars={mapCarsForView} />
+                    )}
+                    {!coordsLoading && !coordsError && !pickupCoords && (car.pickupAddress || car.address || car.location) && (
+                      <div className="flex items-center justify-center min-h-[120px] bg-gray-50 rounded-xl text-[0.82rem] text-gray-500">
+                        Không xác định được tọa độ từ địa chỉ.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {car.description && (
+              <div>
+                <div className={sectionTitle}>Mô tả xe</div>
+                <p className="text-[0.875rem] text-gray-600 leading-[1.8]">{car.description}</p>
+              </div>
+            )}
+
+            {/* Tiện nghi — chỉ hiển thị khi chủ xe đã chọn trên hệ thống */}
+            {Array.isArray(car.amenities) && car.amenities.length > 0 && (
+              <div>
+                <div className={sectionTitle}>Tiện nghi</div>
+                <div className="flex flex-wrap gap-2">
+                  {car.amenities.map((f) => (
+                    <span key={f} className="px-3 py-1 bg-primary-light text-primary rounded-full text-[0.78rem] font-medium">
+                      ✓ {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Disclaimer bảo hiểm — không tuyên bố mức BH cụ thể */}
+            <div className="flex items-start gap-2.5 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+              <MdShield size={20} className="text-gray-500 shrink-0 mt-0.5" aria-hidden="true" />
+              <div>
+                <div className="font-bold text-[0.85rem] text-gray-800 mb-1">Bảo hiểm & trách nhiệm</div>
+                <div className="text-[0.78rem] text-gray-500 leading-relaxed">
+                  Điều kiện bảo hiểm và mức khấu trừ theo hợp đồng thuê tại thời điểm đặt xe. SmartRent không xác nhận chủ xe đã mua gói bảo hiểm vật lý cụ thể — vui lòng đọc kỹ hợp đồng và trao đổi với chủ xe khi cần.
+                </div>
+              </div>
+            </div>
+
+            {/* Reviews section */}
+            <div>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                <span className="text-[0.9rem] font-bold text-gray-800">
+                  Đánh giá {reviewsMeta.total > 0 && <span className="tabular-nums">({reviewsMeta.total})</span>}
+                </span>
+                {user && user.role === 'renter' && isMongoId(id) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewForm(p => !p)}
+                    className="text-[0.8rem] text-primary font-semibold hover:underline"
+                  >
+                    {showReviewForm ? 'Hủy' : '+ Viết đánh giá'}
+                  </button>
+                )}
+              </div>
+
+              {user && user.role !== 'renter' && isMongoId(id) && (
+                <p className="text-[0.78rem] text-gray-500 mb-2">
+                  Chỉ tài khoản <strong>khách thuê</strong> mới có thể gửi đánh giá. Đăng nhập bằng tài khoản khách thuê để viết nhận xét.
+                </p>
+              )}
+
+              {showReviewForm && user?.role === 'renter' && (
+                <form onSubmit={handleReviewSubmit} className="bg-gray-50 rounded-xl p-4 mb-4 flex flex-col gap-3 border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[0.82rem] text-gray-600 font-medium">Điểm:</span>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={`${n} sao`}
+                        onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                      >
+                        <FaStar size={20} color={n <= reviewForm.rating ? '#f59e0b' : '#e5e7eb'} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Nhận xét của bạn…"
+                    value={reviewForm.comment}
+                    onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[0.85rem] outline-none focus:border-primary resize-none"
+                  />
+                  {reviewError && <p className="text-red-500 text-[0.8rem]">{reviewError}</p>}
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="self-end px-5 py-2 bg-primary text-white rounded-lg text-[0.85rem] font-semibold hover:bg-primary-dark transition-colors disabled:opacity-60"
+                  >
+                    {reviewSubmitting ? 'Đang gửi…' : 'Gửi đánh giá'}
+                  </button>
+                </form>
+              )}
+
+              {reviewsLoading && <p className="text-gray-400 text-[0.82rem] py-2">Đang tải đánh giá…</p>}
+
+              {!reviewsLoading && reviews.length === 0 && (
+                <p className="text-gray-400 text-[0.82rem] py-2">Chưa có đánh giá nào.</p>
+              )}
+
+              {reviews.map(r => (
+                <div key={r._id} className="border-b border-gray-100 py-3 last:border-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[0.75rem] font-bold shrink-0">
+                      {(r.user?.name || 'U')[0]}
+                    </div>
+                    <span className="text-[0.85rem] font-semibold text-gray-800">{r.user?.name || 'Ẩn danh'}</span>
+                    <StarRow rating={r.rating} />
+                  </div>
+                  {r.comment && <p className="text-[0.82rem] text-gray-600 ml-9">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Terms */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="font-bold text-[0.88rem] text-gray-800 mb-2">Điều khoản</div>
+              <div className="text-[0.8rem] text-gray-600 leading-[1.8] flex flex-col gap-0.5">
+                {[
+                  'Sử dụng xe đúng mục đích.',
+                  'Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.',
+                  'Không sử dụng xe thuê để cầm cố, thế chấp.',
+                  'Không hút thuốc, nhả kẹo cao su, xả rác trong xe.',
+                  'Không chở hàng quốc cấm dễ cháy nổ.',
+                  'Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !',
+                ].map((t, i) => <p key={i}>– {t}</p>)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Booking card */}
+        <div className="sticky top-[76px]">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-[1.8rem] font-extrabold text-primary tabular-nums">
+                {car.price ? car.price.toLocaleString() : '—'}
+                {car.currency === 'VND' ? 'đ' : car.currency || 'K'}
+              </span>
+              <span className="text-[0.9rem] text-gray-500">/{car.chargeUnit === 'day' ? 'ngày' : car.chargeUnit}</span>
+            </div>
+            <div className="h-px bg-gray-100 my-4" />
+
+            {[
+              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
+              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
+            ].map(({ label, id: inputId, def }) => (
+              <div key={inputId} className="mb-3">
+                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
+                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
+              </div>
+            ))}
+
+            <div className="h-px bg-gray-100 my-4" />
+
+            <div className="flex flex-col gap-2 mb-4">
+              {[
+                [`${car.price ? car.price.toLocaleString() : 0} × 2 ngày`, `${car.price ? (car.price * 2).toLocaleString() : 0}`],
+                ['Phí dịch vụ (5%)', `${car.price ? Math.round(car.price * 2 * 0.05).toLocaleString() : 0}`],
+              ].map(([label, val]) => (
+                <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
+                  <span>{label}</span>
+                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
+                </div>
+              ))}
+              <div className="h-px bg-gray-100 my-1" />
+              <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
+                <span>Tổng cộng</span>
+                <span className="text-primary tabular-nums">
+                  {car.price ? (car.price * 2 + Math.round(car.price * 2 * 0.05)).toLocaleString() : 0}
+                  {car.currency === 'VND' ? 'đ' : 'K'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBookNow}
+              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
+            >
+              Đặt xe ngay
+            </button>
+            <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
+
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
+                {car.showroom ? car.showroom[0] : 'C'}
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
+                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default CarDetail;
