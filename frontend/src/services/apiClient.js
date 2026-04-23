@@ -35,6 +35,7 @@ apiClient.interceptors.response.use(
 
     if (!error.response) {
       normalizedMessage = 'Khong the ket noi den may chu. Kiem tra backend dang chay tai cong 3000.';
+      console.log(`Lỗi không rõ: ${error};`)
     } else if (status === 401) {
       const enToVi = {
         'Invalid email or password': 'Email hoac mat khau khong dung.',

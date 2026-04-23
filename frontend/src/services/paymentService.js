@@ -52,12 +52,12 @@ const paymentService = {
     return res.data?.data ?? res.data;
   },
 
-  async syncIntent(paymentIntentId) {
+  async confirmPayment(paymentIntentId) {
     if (!paymentIntentId) {
       return null;
     }
 
-    const res = await apiClient.post('/api/payment/sync-intent', { paymentIntentId });
+    const res = await apiClient.post('/api/payment/confirmPayment', { paymentIntentId });
     return res.data?.data ?? res.data;
   },
 

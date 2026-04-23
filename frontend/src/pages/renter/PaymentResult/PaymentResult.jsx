@@ -79,7 +79,7 @@ const PaymentResult = () => {
 
         if (paymentIntentId) {
           try {
-            const syncResult = await paymentService.syncIntent(paymentIntentId);
+            const syncResult = await paymentService.confirmPayment(paymentIntentId);
             if (mounted && syncResult?.paymentStatus) {
               if (syncResult.paymentStatus === 'successful') {
                 setStatus('success');

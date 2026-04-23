@@ -1126,7 +1126,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Quy trình nhận / trả xe - ${booking?.vehicleName || ''}`}
+      title={`Yêu cầu trả xe - ${booking?.vehicleName || ''}`}
       width={1040}
     >
       {booking && (
