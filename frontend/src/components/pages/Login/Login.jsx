@@ -1,0 +1,328 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { MdEmail, MdLock, MdPhone, MdDirectionsCar } from 'react-icons/md';
+import { useAuth } from '../../../contexts/AuthContext';
+import {
+  PasswordStrengthInput,
+  PasswordToggleInput,
+  passwordMeetsPolicy,
+} from '../../common/PasswordInput';
+
+const ROLE_REDIRECTS = {
+  admin: '/admin/dashboard',
+  showroom: '/showroom/dashboard',
+  owner: '/owner/dashboard',
+  renter: '/renter/dashboard',
+};
+
+const inputCls = "w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]";
+
+/**
+ * Đặt ở ngoài Login để tránh remount input mỗi lần state đổi (mất focus khi gõ).
+ */
+const LoginFormField = ({
+  label,
+  name,
+  type = 'text',
+  icon: Icon,
+  placeholder,
+  required,
+  value,
+  onChange,
+  error,
+  extra = {},
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[0.8rem] font-semibold text-gray-700">{label}</label>
+    <div className="relative flex items-center">
+      <Icon className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
+      <input
+        className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
+        name={name}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        {...extra}
+      />
+    </div>
+    {error && (
+      <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">
+        ⚠ {error}
+      </div>
+    )}
+  </div>
+);
+
+const Login = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, register } = useAuth();
+  const [tab, setTab] = useState('login');
+  const [form, setForm] = useState({
+    email: '', password: '', confirmPassword: '', phone: '', name: '', accountType: 'renter',
+  });
+  const [confirmError, setConfirmError] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [registerError, setRegisterError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState('');
+  const registerPasswordInvalid = tab === 'register' && !!registerError && !passwordMeetsPolicy(form.password);
+  const registerPhoneInvalid = tab === 'register'
+    && !!registerError
+    && (form.phone || '').replace(/\D/g, '').length !== 10;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      const digits = value.replace(/\D/g, '').slice(0, 10);
+      setForm(f => ({ ...f, phone: digits }));
+      if (registerError) setRegisterError('');
+      return;
+    }
+    if (name === 'accountType') {
+      setForm(f => ({ ...f, accountType: value }));
+      return;
+    }
+    setForm(f => ({ ...f, [name]: value }));
+    if (tab === 'register' && registerError) setRegisterError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoginError(''); setRegisterError(''); setConfirmError(''); setRegisterSuccess('');
+
+    if (tab === 'register') {
+      if (!passwordMeetsPolicy(form.password)) {
+        setRegisterError('Mật khẩu phải có ít nhất 8 ký tự, gồm 1 chữ in hoa và 1 ký tự đặc biệt.');
+        return;
+      }
+      if (form.password !== form.confirmPassword) { setConfirmError('Mật khẩu xác nhận không khớp!'); return; }
+      const phoneDigits = (form.phone || '').replace(/\D/g, '');
+      if (phoneDigits.length !== 10) { setRegisterError('Số điện thoại phải có đúng 10 chữ số.'); return; }
+      setSubmitting(true);
+      const result = await register(
+        form.name,
+        form.email,
+        form.password,
+        form.phone,
+        form.accountType || 'renter',
+      );
+      setSubmitting(false);
+      if (result.success) {
+        setRegisterSuccess('Tạo tài khoản thành công! Vui lòng đăng nhập.');
+        setTab('login');
+        setForm(f => ({ ...f, password: '', confirmPassword: '' }));
+      } else {
+        setRegisterError(result.error || 'Đăng ký thất bại. Vui lòng thử lại.');
+      }
+      return;
+    }
+
+    setSubmitting(true);
+    const result = await login(form.email, form.password);
+    setSubmitting(false);
+    if (result.success) {
+      const from = location.state?.from?.pathname;
+      const redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
+      setTimeout(() => navigate(redirect, { replace: true }), 0);
+    } else {
+      setLoginError(result.error || 'Đăng nhập thất bại');
+    }
+  };
+
+  return (
+    <div className="h-screen flex overflow-hidden bg-gray-50">
+      {/* Left panel — fixed height, never scrolls */}
+      <div
+        className="flex-1 hidden md:flex items-center justify-center px-10 py-[60px] relative overflow-hidden h-full sticky top-0"
+        style={{ background: 'linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 50%, #f8fffc 100%)' }}
+      >
+        {/* Subtle green blobs */}
+        <div className="absolute w-[420px] h-[420px] -top-[80px] -right-[80px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.12) 0%, transparent 70%)' }} />
+        <div className="absolute w-[280px] h-[280px] -bottom-[40px] -left-[40px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.08) 0%, transparent 70%)' }} />
+        <div className="relative z-[1] flex flex-col items-center justify-center max-w-[400px] w-full">
+          <img
+            src="/logo_transparent.png"
+            alt="SmartRent Logo"
+            className="w-full max-w-[340px] object-contain drop-shadow-md"
+          />
+        </div>
+      </div>
+
+      {/* Right panel — scrolls independently */}
+      <div className="w-full md:w-[480px] flex flex-col justify-center bg-white px-12 py-[60px] max-[480px]:px-6 max-[480px]:py-10 overflow-y-auto h-full">
+        <div className="text-[1.75rem] font-extrabold text-gray-900 mb-2">
+          {tab === 'login' ? 'Chào mừng trở lại!' : 'Tạo tài khoản'}
+        </div>
+        <div className="text-[0.875rem] text-gray-500 mb-8">
+          {tab === 'login' && 'Đăng nhập để tiếp tục thuê xe'}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b-2 border-gray-200 mb-7">
+          {['login', 'register'].map(t => (
+            <div
+              key={t}
+              className={`flex-1 py-2.5 text-center text-[0.9rem] font-semibold cursor-pointer border-b-2 -mb-0.5 transition-all
+                ${tab === t ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
+              onClick={() => setTab(t)}
+            >
+              {t === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+            </div>
+          ))}
+        </div>
+
+        {registerSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700 text-[0.82rem] mb-2.5">{registerSuccess}</div>
+        )}
+        {loginError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.82rem] mb-2.5">{loginError}</div>
+        )}
+
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          {tab === 'register' && (
+            <LoginFormField
+              label="Họ và tên"
+              name="name"
+              icon={MdDirectionsCar}
+              placeholder="Nguyễn Văn A"
+              value={form.name}
+              onChange={handleChange}
+            />
+          )}
+          {tab === 'register' && (
+            <LoginFormField
+              label="Số điện thoại (10 số)"
+              name="phone"
+              type="tel"
+              icon={MdPhone}
+              placeholder="0901234567"
+              value={form.phone}
+              onChange={handleChange}
+              error={registerPhoneInvalid ? registerError : ''}
+              extra={{ inputMode: 'numeric', autoComplete: 'tel', maxLength: 10 }}
+            />
+          )}
+          {tab === 'register' && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[0.8rem] font-semibold text-gray-700">Tôi muốn</span>
+              <div className="flex flex-col gap-2">
+                {[
+                  { value: 'renter', label: 'Thuê xe (khách hàng)' },
+                  { value: 'owner', label: 'Cho thuê xe cá nhân (chủ xe)' },
+                ].map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors
+                      ${form.accountType === value ? 'border-primary bg-primary-light' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value={value}
+                      checked={form.accountType === value}
+                      onChange={handleChange}
+                      className="accent-primary w-4 h-4"
+                    />
+                    <span className="text-[0.88rem] text-gray-800 font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          <LoginFormField
+            label="Email"
+            name="email"
+            type="email"
+            icon={MdEmail}
+            placeholder="example@email.com"
+            required
+            value={form.email}
+            onChange={handleChange}
+            extra={{ autoComplete: tab === 'login' ? 'username' : 'email' }}
+          />
+          {tab === 'register' ? (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
+              <PasswordStrengthInput
+                name="password"
+                id="register-password"
+                value={form.password}
+                onChange={handleChange}
+                error={registerPasswordInvalid}
+                placeholder="Nhập mật khẩu"
+              />
+              {registerPasswordInvalid && (
+                <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-1">
+                  ⚠ {registerError}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
+              <div className="relative flex items-center">
+                <MdLock className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
+                <input
+                  className={inputCls}
+                  name="password"
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="text-[0.78rem] text-primary cursor-pointer text-right font-medium">Quên mật khẩu?</div>
+            </div>
+          )}
+          {tab === 'register' && (
+            <div className="flex flex-col gap-1.5">
+              <PasswordToggleInput
+                label="Xác nhận mật khẩu"
+                name="confirmPassword"
+                id="confirm-password"
+                value={form.confirmPassword}
+                onChange={(e) => { handleChange(e); setConfirmError(''); }}
+                error={confirmError}
+                placeholder="Nhập lại mật khẩu"
+                autoComplete="new-password"
+                required
+              />
+              {confirmError && (
+                <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">⚠ {confirmError}</div>
+              )}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+          >
+            {submitting ? 'Đang xử lý...' : (tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')}
+          </button>
+        </form>
+
+        <div className="text-center text-[0.83rem] text-gray-500 mt-5 space-y-2">
+          {tab === 'login'
+            ? <>Chưa có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('register')}>Đăng ký ngay</span></>
+            : <>Đã có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('login')}>Đăng nhập</span></>
+          }
+          {tab === 'register' && (
+            <div>
+              Bạn là doanh nghiệp / showroom?{' '}
+              <Link to="/partner/register" className="text-primary font-semibold hover:underline">
+                Đăng ký đối tác
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

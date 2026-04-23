@@ -1,0 +1,32 @@
+# SmartRent — chạy: docker compose up --build
+# Backend đọc biến từ backend/.env (Mongo Atlas, JWT, Stripe, …)
+# Frontend build: đặt REACT_APP_* trong file .env cùng thư mục với compose (xem docker.env.example)
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      PORT: "5000"
+      # Cho phép SPA tại http://localhost:3000 gọi API
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-http://localhost:5000}
+        REACT_APP_STRIPE_PUBLIC_KEY: ${REACT_APP_STRIPE_PUBLIC_KEY:-}
+        REACT_APP_STRIPE_TESTING_ASSISTANT: ${REACT_APP_STRIPE_TESTING_ASSISTANT:-false}
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
