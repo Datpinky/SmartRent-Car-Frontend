@@ -1,0 +1,29 @@
+### Sửa @host nếu cần. Sửa đường dẫn sau dấu < trỏ tới file ảnh thật trên máy (Windows: D:/anh/xe.jpg)
+@host = http://localhost:3000
+
+### 1) Upload — field form-data: files (có thể lặp lại nhiều part "files", tối đa 5)
+POST {{host}}/api/uploads/image/files
+Content-Type: multipart/form-data; boundary=----UploadBoundary
+
+------UploadBoundary
+Content-Disposition: form-data; name="files"; filename="a.jpg"
+Content-Type: image/jpeg
+
+< D:/path/to/your-image.jpg
+------UploadBoundary--
+
+### 2) Vehicle damage — 2 field: before_rental, after_return (mỗi cái 1 file)
+POST {{host}}/api/uploads/image/vehicle-damage
+Content-Type: multipart/form-data; boundary=----DamageBoundary
+
+------DamageBoundary
+Content-Disposition: form-data; name="before_rental"; filename="before.jpg"
+Content-Type: image/jpeg
+
+< D:/path/to/before.jpg
+------DamageBoundary
+Content-Disposition: form-data; name="after_return"; filename="after.jpg"
+Content-Type: image/jpeg
+
+< D:/path/to/after.jpg
+------DamageBoundary--
