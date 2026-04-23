@@ -30,7 +30,8 @@ app.use(
 );
 
 /** Dev + production: thêm origin frontend vào CORS_ORIGINS trong .env (phân tách bằng dấu phẩy) */
-const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:3001')
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ||
+  'http://localhost:3000,http://localhost:3001,http://localhost:5000')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);

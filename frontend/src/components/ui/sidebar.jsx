@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 
 const MD = 768;
@@ -76,20 +75,17 @@ export function SidebarBody({ className, children, ...props }) {
   }, [isMobile, expanded]);
 
   return (
-    <motion.aside
+    <aside
       role="navigation"
       aria-label="Điều hướng chính"
-      initial={false}
-      animate={
-        isMobile
-          ? undefined
-          : { width: expanded ? 300 : 76 }
-      }
-      transition={animate ? { type: 'spring', stiffness: 420, damping: 38 } : { duration: 0 }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
         'fixed left-0 top-0 z-[200] flex h-screen flex-col overflow-hidden border-r border-neutral-200 bg-neutral-100 text-neutral-800 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200',
+        !isMobile && (expanded ? 'md:w-[300px]' : 'md:w-[76px]'),
+        !isMobile &&
+          animate &&
+          'md:transition-[width] md:duration-200 md:ease-out motion-reduce:md:transition-none',
         isMobile && 'w-[260px] max-md:shadow-2xl md:w-auto',
         isMobile && (open ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'),
         isMobile && 'max-md:transition-transform max-md:duration-300 max-md:ease-out',
@@ -99,7 +95,7 @@ export function SidebarBody({ className, children, ...props }) {
       {...props}
     >
       {children}
-    </motion.aside>
+    </aside>
   );
 }
 
@@ -108,8 +104,9 @@ export function SidebarBody({ className, children, ...props }) {
  * @param {{ label: string, href?: string, path?: string, icon?: React.ReactNode, onClick?: () => void }} props.link
  */
 export function SidebarLink({ link, className, ...rest }) {
-  const { expanded, setOpen, isMobile } = useSidebar();
+  const { setOpen, isMobile, expanded } = useSidebar();
   const location = useLocation();
+  const showLabel = isMobile || expanded;
 
   const closeMobile = () => {
     if (isMobile) setOpen(false);
@@ -121,6 +118,7 @@ export function SidebarLink({ link, className, ...rest }) {
 
   const baseClass = cn(
     'group/sidebar relative flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors',
+    showLabel ? 'justify-start' : 'justify-center gap-0 px-0',
     'hover:bg-neutral-200/80 dark:hover:bg-neutral-800/80',
     isPathActive && 'bg-primary/15 text-primary dark:bg-primary/20 dark:text-primary',
     !isPathActive && 'text-neutral-700 dark:text-neutral-200',
@@ -139,18 +137,17 @@ export function SidebarLink({ link, className, ...rest }) {
   );
 
   const label = (
-    <motion.span
-      initial={false}
-      animate={{
-        opacity: expanded ? 1 : 0,
-        width: expanded ? 'auto' : 0,
-      }}
-      transition={{ duration: animateDuration(expanded) }}
-      className="overflow-hidden whitespace-nowrap text-left"
+    <span
+      className={cn(
+        'min-w-0 overflow-hidden text-left whitespace-nowrap transition-all',
+        showLabel ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'
+      )}
+      aria-hidden={!showLabel}
     >
       {link.label}
-    </motion.span>
+    </span>
   );
+  const compactA11y = !showLabel ? { 'aria-label': link.label, title: link.label } : {};
 
   if (link.onClick) {
     return (
@@ -161,6 +158,7 @@ export function SidebarLink({ link, className, ...rest }) {
           link.onClick();
           closeMobile();
         }}
+        {...compactA11y}
         {...rest}
       >
         {iconWrap}
@@ -178,6 +176,7 @@ export function SidebarLink({ link, className, ...rest }) {
         className={baseClass}
         onClick={closeMobile}
         aria-current={isPathActive ? 'page' : undefined}
+        {...compactA11y}
         {...rest}
       >
         {iconWrap}
@@ -187,13 +186,9 @@ export function SidebarLink({ link, className, ...rest }) {
   }
 
   return (
-    <a href={to} className={baseClass} onClick={closeMobile} {...rest}>
+    <a href={to} className={baseClass} onClick={closeMobile} {...compactA11y} {...rest}>
       {iconWrap}
       {label}
     </a>
   );
-}
-
-function animateDuration(expanded) {
-  return expanded ? 0.18 : 0.12;
 }

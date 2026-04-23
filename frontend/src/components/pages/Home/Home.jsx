@@ -3,6 +3,31 @@ import SearchBar from '../../SearchBar/SearchBar';
 import FilterBar from '../../FilterBar/FilterBar';
 import CarGrid from '../../CarGrid/CarGrid';
 import vehicleService from '../../../services/vehicleService';
+import { cars as staticCarCatalog } from '../../data/cars';
+
+/** Đồng bộ `components/data/cars.js` với shape CarCard/CarGrid (giá VNĐ/ngày). */
+const mapStaticCarToGrid = (m) => {
+  const raw = Number(m.price) || 0;
+  const priceVnd = raw > 0 && raw < 100000 ? raw * 1000 : raw;
+  return {
+    id: `demo-${m.id}`,
+    name: m.name,
+    showroom: m.showroom,
+    location: m.address || '',
+    address: m.address,
+    type: m.type,
+    seats: m.seats,
+    transmission: m.transmission,
+    fuel: m.fuel,
+    rating: m.rating,
+    trips: m.trips,
+    image: m.image,
+    brand: m.brand,
+    category: m.category,
+    color: m.color,
+    price: priceVnd,
+  };
+};
 
 const Home = () => {
     const [allCars, setAllCars] = useState([]);
@@ -29,9 +54,11 @@ const Home = () => {
             } catch (err) {
                 if (cancelled) return;
                 console.warn('[Home] API vehicles:', err.message);
-                setAllCars([]);
-                setFilteredCars([]);
-                setApiError(err?.response?.data?.message || err.message || 'Không tải được danh sách xe.');
+                const fallback = staticCarCatalog.map(mapStaticCarToGrid);
+                setAllCars(fallback);
+                setFilteredCars(applyFilters(fallback, currentFilters.current, currentSearch.current));
+                const baseMsg = err?.response?.data?.message || err.message || 'Không tải được danh sách xe.';
+                setApiError(`${baseMsg} Đang hiển thị danh sách xe mẫu (offline/demo).`);
             } finally {
                 if (!cancelled) setLoading(false);
             }

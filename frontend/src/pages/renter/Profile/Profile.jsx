@@ -1,457 +1,577 @@
-import React, { useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FaEdit, FaMapMarkerAlt, FaSave, FaSpinner, FaUser } from 'react-icons/fa';
+import { MdAlternateEmail, MdInfoOutline, MdPhoneIphone } from 'react-icons/md';
+import CarLocationMap from '../../../components/Map/CarLocationMap';
 import { useAuth } from '../../../contexts/AuthContext';
-import {
-  FaCheckCircle, FaUser, FaShieldAlt,
-  FaCamera, FaEdit, FaPhone, FaEnvelope, FaBirthdayCake,
-  FaMapMarkerAlt, FaSyncAlt, FaCheck
-} from 'react-icons/fa';
+import mapService from '../../../services/mapService';
+import profileService from '../../../services/profileService';
 
-/* ── Hiển thị một dòng thông tin ── */
-const InfoRow = ({ icon, label, value }) => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: '13px 0',
-    borderBottom: '1px solid #f3f4f6',
-  }}>
-    <div
-      aria-hidden="true"
-      style={{
-        width: 34,
-        height: 34,
-        borderRadius: 9,
-        background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        color: '#0284c7',
-        fontSize: '0.82rem',
-      }}>
-      {icon}
-    </div>
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: '0.73rem', color: '#9ca3af', fontWeight: 600, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {label}
-      </div>
-      <div style={{ fontSize: '0.9rem', color: '#111827', fontWeight: 600, wordBreak: 'break-word' }}>
-        {value || <span style={{ color: '#d1d5db', fontStyle: 'italic', fontWeight: 400 }}>Chưa cập nhật</span>}
-      </div>
-    </div>
-  </div>
-);
+const ROLE_LABELS = {
+  renter: 'Khách thuê',
+  owner: 'Chủ xe',
+  showroom: 'Showroom',
+  admin: 'Quản trị',
+};
+
+const buildInitialForm = (user) => ({
+  name: user?.name || '',
+  phone: user?.phone || '',
+  address: user?.address || '',
+});
+
+const FIELD_INPUT_STYLE = {
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  width: '100%',
+};
+
+const noticeStyles = {
+  success: {
+    background: '#f0fdf4',
+    border: '1px solid #bbf7d0',
+    color: '#166534',
+  },
+  warning: {
+    background: '#fffbeb',
+    border: '1px solid #fde68a',
+    color: '#92400e',
+  },
+  error: {
+    background: '#fef2f2',
+    border: '1px solid #fecaca',
+    color: '#b91c1c',
+  },
+};
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
-  const [tab, setTab] = useState('info');
+  const authUserId = user?._id || user?.id || '';
+  const [profile, setProfile] = useState(() => profileService.mapProfileUser(user));
+  const fallbackProfileRef = useRef(profileService.mapProfileUser(user));
 
-  const defaultForm = {
-    name: user?.name || '',
-    phone: user?.phone || '',
-    email: user?.email || '',
-    dob: '01/01/1995',
-    address: '123 Nguyễn Trãi, Q.1, TP.HCM',
-    bio: '',
+  const activeUser = useMemo(
+    () => (profile?._id ? profile : profileService.mapProfileUser(user)),
+    [profile, user]
+  );
+  const userId = activeUser?._id || activeUser?.id || authUserId || '';
+
+  const [form, setForm] = useState(buildInitialForm(activeUser));
+  const [savedAddress, setSavedAddress] = useState(activeUser?.address || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [mapLocation, setMapLocation] = useState(null);
+  const [notice, setNotice] = useState({ type: '', message: '' });
+
+  const initials = useMemo(
+    () => activeUser?.name?.split(' ').map((word) => word[0]).slice(-2).join('').toUpperCase() || 'U',
+    [activeUser?.name]
+  );
+
+  const loadMapPreview = useCallback(async (address) => {
+    const trimmedAddress = String(address || '').trim();
+    if (!trimmedAddress) {
+      setLoadingLocation(false);
+      setMapLocation(null);
+      return;
+    }
+
+    setLoadingLocation(true);
+    try {
+      const results = await mapService.forwardGeocode(trimmedAddress, { limit: 1 });
+      const bestMatch = results[0] || null;
+
+      setMapLocation(
+        bestMatch
+          ? {
+              address: bestMatch.address || trimmedAddress,
+              latitude: bestMatch.lat,
+              longitude: bestMatch.lng,
+              plusCode: bestMatch.plusCode || '',
+            }
+          : null
+      );
+    } catch {
+      setMapLocation((current) => current);
+    } finally {
+      setLoadingLocation(false);
+    }
+  }, []);
+
+  const applyStoredLocation = useCallback((userLocation) => {
+    const latitude = Number(userLocation?.latitude);
+    const longitude = Number(userLocation?.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return false;
+    }
+
+    setLoadingLocation(false);
+    setMapLocation({
+      address: userLocation?.address || '',
+      latitude,
+      longitude,
+      plusCode: userLocation?.plusCode || '',
+    });
+    return true;
+  }, []);
+
+  const hydrateProfileLocation = useCallback(
+    async (profileData) => {
+      if (applyStoredLocation(profileData?.userLocation)) {
+        return;
+      }
+
+      const nextAddress = String(profileData?.address || '').trim();
+      if (!nextAddress) {
+        setLoadingLocation(false);
+        setMapLocation(null);
+        return;
+      }
+
+      await loadMapPreview(nextAddress);
+    },
+    [applyStoredLocation, loadMapPreview]
+  );
+
+  useEffect(() => {
+    fallbackProfileRef.current = profileService.mapProfileUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    if (!authUserId) {
+      setProfile(fallbackProfileRef.current);
+      setSavedAddress('');
+      setLoadingProfile(false);
+      setMapLocation(null);
+      return;
+    }
+
+    let mounted = true;
+    setLoadingProfile(true);
+
+    profileService
+      .getProfileById(authUserId)
+      .then(async (nextProfile) => {
+        if (!mounted) {
+          return;
+        }
+
+        const resolvedProfile = nextProfile || fallbackProfileRef.current;
+        setProfile(resolvedProfile);
+        setSavedAddress(resolvedProfile.address || '');
+        updateUser(resolvedProfile);
+        await hydrateProfileLocation(resolvedProfile);
+      })
+      .catch((error) => {
+        if (!mounted) {
+          return;
+        }
+
+        setProfile(fallbackProfileRef.current);
+        setNotice({
+          type: 'error',
+          message: error.message || 'Không thể tải hồ sơ',
+        });
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoadingProfile(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [authUserId, hydrateProfileLocation, updateUser]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setForm({
+        ...buildInitialForm(activeUser),
+        address: savedAddress || activeUser?.address || '',
+      });
+    }
+  }, [activeUser, isEditing, savedAddress]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      return undefined;
+    }
+
+    const normalizedAddress = String(form.address || '').trim();
+    if (!normalizedAddress || normalizedAddress.length < 6) {
+      setLoadingLocation(false);
+      setMapLocation(null);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      loadMapPreview(normalizedAddress);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [form.address, isEditing, loadMapPreview]);
+
+  const handleChange = (field, value) => {
+    if (field === 'address') {
+      setMapLocation(null);
+    }
+    setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const [form, setForm] = useState(defaultForm);
-  const [editForm, setEditForm] = useState(defaultForm);      // bản nháp khi đang sửa
-  const [isEditing, setIsEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const fileRef = useRef();
-
-  /* ── Mở chế độ chỉnh sửa ── */
   const handleStartEdit = () => {
-    setEditForm({ ...form });
-    setFormError('');
-    setSaved(false);
+    setForm({
+      ...buildInitialForm(activeUser),
+      address: savedAddress || activeUser?.address || '',
+    });
+    setNotice({ type: '', message: '' });
     setIsEditing(true);
   };
 
-  /* ── Huỷ chỉnh sửa ── */
-  const handleCancel = () => {
-    setEditForm({ ...form });
-    setFormError('');
+  const handleCancelEdit = () => {
+    setForm({
+      ...buildInitialForm(activeUser),
+      address: savedAddress || activeUser?.address || '',
+    });
+    setNotice({ type: '', message: '' });
     setIsEditing(false);
+    hydrateProfileLocation(activeUser).catch(() => {});
   };
 
-  /* ── Thay đổi trường ── */
-  const handleFieldChange = (key, value) => {
-    if (key === 'phone') {
-      const digits = String(value).replace(/\D/g, '').slice(0, 10);
-      setEditForm(f => ({ ...f, phone: digits }));
-      return;
+  const validateForm = () => {
+    if (!String(form.name || '').trim()) {
+      return 'Vui lòng nhập họ và tên.';
     }
-    setEditForm(f => ({ ...f, [key]: value }));
+
+    const phoneDigits = String(form.phone || '').replace(/\D/g, '');
+    if (phoneDigits && phoneDigits.length !== 10) {
+      return 'Số điện thoại phải có đúng 10 số';
+    }
+
+    return '';
   };
 
-  /* ── Lưu ── */
   const handleSave = async () => {
-    const phoneDigits = (editForm.phone || '').replace(/\D/g, '');
-    if (phoneDigits.length !== 10) {
-      setFormError('Số điện thoại phải có đúng 10 chữ số.');
+    const validationError = validateForm();
+    if (validationError) {
+      setNotice({ type: 'error', message: validationError });
       return;
     }
-    setFormError('');
+
+    if (!userId) {
+      setNotice({ type: 'error', message: 'Không tìm thấy thông tin để cập nhật' });
+      return;
+    }
+
     setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    updateUser({ name: editForm.name, phone: editForm.phone });
-    setForm({ ...editForm });
-    setSaving(false);
-    setSaved(true);
-    setIsEditing(false);
-    setTimeout(() => setSaved(false), 2500);
+    setNotice({ type: '', message: '' });
+
+    try {
+      const trimmedName = String(form.name || '').trim();
+      const normalizedPhone = String(form.phone || '').replace(/\D/g, '');
+      const trimmedAddress = String(form.address || '').trim();
+      const currentName = String(activeUser?.name || '').trim();
+      const currentPhone = String(activeUser?.phone || '').replace(/\D/g, '');
+      const currentAddress = String(activeUser?.address || '').trim();
+      const fallbackLatitude =
+        trimmedAddress && trimmedAddress === currentAddress ? activeUser?.userLocation?.latitude : undefined;
+      const fallbackLongitude =
+        trimmedAddress && trimmedAddress === currentAddress ? activeUser?.userLocation?.longitude : undefined;
+      const fallbackPlusCode =
+        trimmedAddress && trimmedAddress === currentAddress ? activeUser?.userLocation?.plusCode : '';
+      const hasSupportedChanges =
+        trimmedName !== currentName || normalizedPhone !== currentPhone || trimmedAddress !== currentAddress;
+
+      if (!hasSupportedChanges) {
+        setNotice({
+          type: 'warning',
+          message: 'Không có thay đổi nào để lưu',
+        });
+        return;
+      }
+
+      const updatedProfile = await profileService.updateProfile(userId, {
+        name: trimmedName,
+        phone: normalizedPhone,
+        address: trimmedAddress,
+        latitude: mapLocation?.latitude ?? fallbackLatitude,
+        longitude: mapLocation?.longitude ?? fallbackLongitude,
+        plusCode: mapLocation?.plusCode || fallbackPlusCode || '',
+      });
+
+      setProfile(updatedProfile);
+      updateUser(updatedProfile);
+      setSavedAddress(updatedProfile.address || '');
+
+      if (updatedProfile.userLocation) {
+        applyStoredLocation(updatedProfile.userLocation);
+      } else if (trimmedAddress) {
+        await loadMapPreview(trimmedAddress);
+      } else {
+        setMapLocation(null);
+      }
+
+      setIsEditing(false);
+
+      setNotice({
+        type: trimmedAddress && !updatedProfile.userLocation ? 'warning' : 'success',
+        message:
+          trimmedAddress && !updatedProfile.userLocation
+            ? 'Đã cập nhật hồ sơ. Địa chỉ đã được lưu, nhưng hệ thống chưa xác định được toạ độ chính xác để đồng bộ'
+            : 'Đã cập nhật hồ sơ thành công.',
+      });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error.message || 'Không thể cập nhật hồ sơ',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'U';
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setAvatarPreview(URL.createObjectURL(file));
-  };
-
-  const fields = [
-    { icon: <FaUser />, label: 'Họ và tên', key: 'name', type: 'text', id: 'profile-name', name: 'name', autoComplete: 'name' },
-    { icon: <FaEnvelope />, label: 'Email', key: 'email', type: 'email', readonly: true, id: 'profile-email', name: 'email', autoComplete: 'email' },
-    {
-      icon: <FaPhone />, label: 'Số điện thoại', key: 'phone', type: 'tel',
-      inputProps: { maxLength: 10, inputMode: 'numeric', pattern: '[0-9]*' },
-      id: 'profile-phone', name: 'tel', autoComplete: 'tel'
-    },
-    { icon: <FaBirthdayCake />, label: 'Ngày sinh', key: 'dob', type: 'text', id: 'profile-dob', name: 'bday', autoComplete: 'bday' },
-  ];
+  const renderReadonlyField = (icon, value) => (
+    <div
+      className="form-input"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        background: '#f9fafb',
+      }}
+    >
+      <span style={{ color: '#6b7280' }}>{icon}</span>
+      <span>{value || 'Chưa cập nhật'}</span>
+    </div>
+  );
 
   return (
     <div className="profile-page">
-      {/* Page Header */}
-      <div className="page-header" style={{ marginBottom: 4 }}>
+      <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
           <h1 className="page-title">Hồ sơ cá nhân</h1>
-          <p className="page-subtitle">Quản lý thông tin cá nhân và bảo mật tài khoản</p>
         </div>
       </div>
 
-      {/* ── Profile Hero ── */}
-      <div className="profile-hero">
-        <div className="profile-avatar-wrap">
-          {avatarPreview ? (
-            <img src={avatarPreview} alt="avatar" className="profile-avatar-big"
-              style={{ objectFit: 'cover', border: '3px solid rgba(255,255,255,0.25)' }} />
-          ) : (
-            <div className="profile-avatar-big">{initials}</div>
-          )}
-          <button
-            type="button"
-            className="profile-avatar-edit"
-            onClick={() => fileRef.current.click()}
-            title="Đổi ảnh đại diện"
-            aria-label="Đổi ảnh đại diện"
+      {notice.message && (
+        <div
+          style={{
+            ...(noticeStyles[notice.type] || noticeStyles.success),
+            borderRadius: 12,
+            padding: '12px 14px',
+            marginBottom: 16,
+            fontSize: '0.84rem',
+          }}
+        >
+          {notice.message}
+        </div>
+      )}
+
+      <div className="profile-card" style={{ padding: 24 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 18,
+            marginBottom: 24,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div
+            className="profile-avatar-big"
+            style={{
+              width: 72,
+              height: 72,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #00b14f 0%, #059669 100%)',
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: '1.4rem',
+              flexShrink: 0,
+            }}
           >
-            <FaCamera style={{ fontSize: '0.6rem' }} aria-hidden="true" />
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            style={{ display: 'none' }}
-            aria-label="Chọn ảnh đại diện"
-          />
-        </div>
-
-        <div className="profile-hero-info">
-          <div className="profile-hero-name">{form.name || user?.name}</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {initials}
           </div>
-        </div>
 
-        <div className="profile-hero-stats">
-          <div className="profile-stat">
-            <div className="profile-stat-val tabular-nums">8</div>
-            <div className="profile-stat-label">Chuyến đã thuê</div>
-          </div>
-          <div style={{ width: 1, background: 'rgba(255,255,255,0.12)', alignSelf: 'stretch' }} />
-          <div className="profile-stat">
-            <div className="profile-stat-val tabular-nums">4.9</div>
-            <div className="profile-stat-label">Đánh giá TB</div>
-          </div>
-          <div style={{ width: 1, background: 'rgba(255,255,255,0.12)', alignSelf: 'stretch' }} />
-          <div className="profile-stat">
-            <div className="profile-stat-val tabular-nums">0</div>
-            <div className="profile-stat-label">Báo cáo vi phạm</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Tabs ── */}
-      <div className="profile-tabs">
-        {[
-          ['info', <FaUser aria-hidden="true" />, 'Thông tin'],
-          ['security', <FaShieldAlt aria-hidden="true" />, 'Bảo mật'],
-        ].map(([key, icon, label]) => (
-          <button
-            type="button"
-            key={key}
-            className={`profile-tab ${tab === key ? 'active' : ''}`}
-            onClick={() => { setTab(key); setIsEditing(false); }}
-          >
-            {icon} {label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── INFO TAB ── */}
-      {tab === 'info' && (
-        <div className="profile-card">
-
-          {/* Card header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <div>
-              <h3 className="profile-section-title" style={{ marginBottom: 3 }}>
-                {isEditing ? 'Chỉnh sửa thông tin' : 'Thông tin cá nhân'}
-              </h3>
-              <p style={{ fontSize: '0.77rem', color: '#9ca3af', margin: 0 }}>
-                {isEditing
-                  ? 'Thay đổi thông tin bên dưới, sau đó bấm "Cập nhật thông tin"'
-                  : 'Bấm "Chỉnh sửa" để cập nhật thông tin của bạn'}
-              </p>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827' }}>
+              {activeUser?.name || 'Chưa cập nhật'}
             </div>
-
-            {/* Nút Chỉnh sửa (chỉ hiện khi chưa edit) */}
-            {!isEditing && (
-              <button
-                type="button"
-                onClick={handleStartEdit}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 7,
-                  background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-                  border: '1.5px solid #7dd3fc',
-                  borderRadius: 10,
-                  padding: '8px 18px',
-                  fontSize: '0.83rem',
-                  fontWeight: 700,
-                  color: '#0284c7',
-                  cursor: 'pointer',
-                  transition: 'background 0.18s, border-color 0.18s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg, #e0f2fe, #bae6fd)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #f0f9ff, #e0f2fe)'}
-              >
-                <FaEdit style={{ fontSize: '0.78rem' }} aria-hidden="true" />
-                Chỉnh sửa
-              </button>
-            )}
-          </div>
-
-          {/* Thông báo đã lưu */}
-          <div aria-live="polite">
-            {saved && (
-              <div role="status" style={{
-                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-                border: '1px solid #7dd3fc',
-                borderRadius: 10,
-                padding: '11px 16px',
-                marginBottom: 16,
-                display: 'flex',
+            <div style={{ fontSize: '0.84rem', color: '#6b7280', marginTop: 4 }}>
+              {activeUser?.email || 'Chưa cập nhật'}
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                fontSize: '0.84rem',
+                background: mapLocation ? '#eff6ff' : '#f9fafb',
+                border: `1px solid ${mapLocation ? '#bfdbfe' : '#e5e7eb'}`,
+                borderRadius: 999,
+                padding: '6px 12px',
+                fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#0284c7',
-                animation: 'fadeIn 0.3s ease',
-              }}>
-                <FaCheck aria-hidden="true" />
-                Thông tin đã được cập nhật thành công!
-              </div>
-            )}
+                color: mapLocation ? '#1d4ed8' : '#6b7280',
+              }}
+            >
+              {loadingProfile || loadingLocation ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
+              {loadingProfile
+                ? 'Đang cập nhật hồ sơ'
+                : loadingLocation
+                  ? 'Đang xác định vị trí'
+                  : mapLocation
+                    ? 'Đã xác định vị trí'
+                    : 'Chưa xác định được vị trí'}
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-form-grid">
+          <div>
+            <label className="form-label">Họ và tên</label>
+            <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ color: '#6b7280' }}>
+                <FaUser />
+              </span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(event) => handleChange('name', event.target.value)}
+                disabled={!isEditing || loadingProfile}
+                style={FIELD_INPUT_STYLE}
+              />
+            </div>
           </div>
 
-          {/* ── CHẾ ĐỘ XEM ── */}
-          {!isEditing && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
-                {fields.map(({ icon, label, key }) => (
-                  <InfoRow key={key} icon={icon} label={label} value={form[key]} />
-                ))}
-              </div>
-              {/* Địa chỉ full-width */}
-              <InfoRow icon={<FaMapMarkerAlt />} label="Địa chỉ" value={form.address} />
-              {/* Bio */}
-              {form.bio && (
-                <div style={{ padding: '13px 0', borderBottom: '1px solid #f3f4f6' }}>
-                  <div style={{ fontSize: '0.73rem', color: '#9ca3af', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Giới thiệu bản thân
-                  </div>
-                  <div style={{ fontSize: '0.88rem', color: '#374151', lineHeight: 1.7 }}>{form.bio}</div>
-                </div>
-              )}
+          <div>
+            <label className="form-label">Email</label>
+            {renderReadonlyField(<MdAlternateEmail />, activeUser?.email || 'Chưa cập nhật')}
+          </div>
+
+          <div>
+            <label className="form-label">Số điện thoại</label>
+            <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ color: '#6b7280' }}>
+                <MdPhoneIphone />
+              </span>
+              <input
+                type="text"
+                value={form.phone}
+                onChange={(event) => handleChange('phone', event.target.value)}
+                disabled={!isEditing || loadingProfile}
+                style={FIELD_INPUT_STYLE}
+              />
             </div>
-          )}
+          </div>
 
-          {/* ── CHẾ ĐỘ SỬA ── */}
-          {isEditing && (
-            <div>
-              <div className="profile-form-grid">
-                {fields.map(({ icon, label, key, type, readonly, inputProps, id, name, autoComplete }) => (
-                  <div key={key}>
-                    <label className="form-label" htmlFor={id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ color: '#0284c7', fontSize: '0.7rem' }} aria-hidden="true">{icon}</span>
-                      {label}
-                    </label>
-                    <input
-                      id={id}
-                      name={name}
-                      autoComplete={autoComplete}
-                      type={type}
-                      value={editForm[key]}
-                      onChange={e => handleFieldChange(key, e.target.value)}
-                      className="form-input"
-                      readOnly={readonly}
-                      style={readonly ? { background: '#f9fafb', color: '#9ca3af', cursor: 'not-allowed' } : {}}
-                      {...(inputProps || {})}
-                    />
-                    {readonly && (
-                      <span style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: 3, display: 'block' }}>
-                        Email không thể thay đổi
-                      </span>
-                    )}
-                  </div>
-                ))}
+          <div>
+            <label className="form-label">Vai trò</label>
+            {renderReadonlyField(<MdInfoOutline />, ROLE_LABELS[activeUser?.role] || activeUser?.role || 'Chưa cập nhật')}
+          </div>
+        </div>
 
-                {/* Địa chỉ — full width */}
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label" htmlFor="profile-address" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <FaMapMarkerAlt style={{ color: '#0284c7', fontSize: '0.7rem' }} aria-hidden="true" />
-                    Địa chỉ
-                  </label>
-                  <input
-                    id="profile-address"
-                    name="street-address"
-                    autoComplete="street-address"
-                    value={editForm.address}
-                    onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
-                    className="form-input"
-                    placeholder="Nhập địa chỉ của bạn…"
-                  />
-                </div>
+        <div style={{ marginTop: 16 }}>
+          <label className="form-label">Địa chỉ</label>
+          <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ color: '#6b7280' }}>
+              <FaMapMarkerAlt />
+            </span>
+            <input
+              type="text"
+              value={form.address}
+              onChange={(event) => handleChange('address', event.target.value)}
+              disabled={!isEditing || loadingProfile}
+              placeholder="Nhập địa chỉ để đồng bộ"
+              style={FIELD_INPUT_STYLE}
+            />
+          </div>
+        </div>
 
-                {/* Bio — full width */}
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label" htmlFor="profile-bio">Giới thiệu bản thân</label>
-                  <textarea
-                    id="profile-bio"
-                    value={editForm.bio}
-                    onChange={e => handleFieldChange('bio', e.target.value)}
-                    className="form-input"
-                    rows={3}
-                    placeholder="Viết vài dòng giới thiệu về bạn (không bắt buộc)…"
-                    style={{ resize: 'vertical', minHeight: 76, lineHeight: 1.65 }}
-                  />
-                </div>
-
-                {/* Lỗi */}
-                {formError && (
-                  <div role="alert" style={{
-                    gridColumn: 'span 2',
-                    background: '#fef2f2',
-                    border: '1px solid #fecaca',
-                    borderRadius: 9,
-                    padding: '10px 14px',
-                    color: '#dc2626',
-                    fontSize: '0.82rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}>
-                    ⚠ {formError}
-                  </div>
-                )}
-              </div>
-
-              {/* Divider + nút Cập nhật */}
-              <div style={{ height: 1, background: '#f3f4f6', margin: '20px 0' }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  style={{
-                    padding: '9px 20px',
-                    borderRadius: 9,
-                    border: '1.5px solid #e5e7eb',
-                    background: '#fff',
-                    color: '#6b7280',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Huỷ bỏ
-                </button>
-
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={handleSave}
-                  disabled={saving}
-                  style={{
-                    minWidth: 172,
-                    justifyContent: 'center',
-                    padding: '10px 22px',
-                    fontSize: '0.88rem',
-                    opacity: saving ? 0.85 : 1,
-                    boxShadow: '0 2px 8px rgba(2, 132, 199,0.25)',
-                    transition: 'opacity 0.2s, box-shadow 0.2s',
-                  }}
-                >
-                  {saving ? (
-                    <>
-                      <FaSyncAlt style={{ fontSize: '0.8rem', animation: 'spin 0.8s linear infinite' }} aria-hidden="true" />
-                      Đang lưu…
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck style={{ fontSize: '0.8rem' }} aria-hidden="true" />
-                      Cập nhật thông tin
-                    </>
-                  )}
-                </button>
-              </div>
+        <div style={{ marginTop: 24 }}>
+          <h3 className="profile-section-title" style={{ marginBottom: 12 }}>
+            Vị trí của bạn
+          </h3>
+          {loadingLocation ? (
+            <div
+              style={{
+                minHeight: 280,
+                borderRadius: 16,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#6b7280',
+                gap: 8,
+              }}
+            >
+              <FaSpinner className="animate-spin" />
+              Đang lấy địa chỉ…
+            </div>
+          ) : mapLocation ? (
+            <CarLocationMap
+              locationText={mapLocation.address || form.address}
+              lat={mapLocation.latitude}
+              lng={mapLocation.longitude}
+            />
+          ) : (
+            <div
+              style={{
+                minHeight: 280,
+                borderRadius: 16,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                color: '#9ca3af',
+                padding: 24,
+              }}
+            >
+              Chưa có dữ liệu địa chỉ để hiển thị bản đồ
             </div>
           )}
         </div>
-      )}
 
-      {/* ── SECURITY TAB ── */}
-      {tab === 'security' && (
-        <div className="profile-card">
-          <h3 className="profile-section-title">Đổi mật khẩu</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 440 }}>
-            {[
-              ['Mật khẩu hiện tại', 'pw-current', 'current-password'],
-              ['Mật khẩu mới', 'pw-new', 'new-password'],
-              ['Xác nhận mật khẩu mới', 'pw-confirm', 'new-password'],
-            ].map(([label, id, autoComplete]) => (
-              <div key={id}>
-                <label className="form-label" htmlFor={id}>{label}</label>
-                <input
-                  type="password"
-                  id={id}
-                  name={autoComplete}
-                  autoComplete={autoComplete}
-                  className="form-input"
-                  placeholder="••••••••"
-                />
-              </div>
-            ))}
-            <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }}>Cập nhật mật khẩu</button>
-          </div>
+        <div style={{ marginTop: 16 }}>
+          <label className="form-label">Mã tài khoản</label>
+          {renderReadonlyField(<MdInfoOutline />, activeUser?._id || activeUser?.id || 'Chưa cập nhật')}
         </div>
-      )}
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            flexWrap: 'wrap',
+            justifyContent: 'flex-start',
+            marginTop: 24,
+          }}
+        >
+          {isEditing ? (
+            <>
+              <button className="btn-primary" type="button" onClick={handleSave} disabled={saving || loadingProfile}>
+                {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                Lưu
+              </button>
+              <button className="btn-outline" type="button" onClick={handleCancelEdit} disabled={saving || loadingProfile}>
+                Hủy
+              </button>
+            </>
+          ) : (
+            <button className="btn-primary" type="button" onClick={handleStartEdit} disabled={loadingProfile}>
+              <FaEdit />
+              {loadingProfile ? 'Đang đồng bộ...' : 'Chỉnh sửa hồ sơ'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

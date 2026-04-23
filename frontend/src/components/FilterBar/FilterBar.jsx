@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { MdDirectionsCar, MdPeople, MdBrush, MdSort, MdFilterList, MdClose } from 'react-icons/md';
 import { FaGasPump, FaCar } from 'react-icons/fa';
+import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const FILTERS = [
   { id: 'all', label: 'Tất cả', icon: <MdFilterList aria-hidden="true" /> },
@@ -84,7 +85,9 @@ const FilterBar = ({ onFilter, onSort }) => {
     const handleClickOutside = (e) => {
       if (popupRef.current && !popupRef.current.contains(e.target)) setOpenPopup(null);
     };
-    const handleKey = (e) => { if (e.key === 'Escape') setOpenPopup(null); };
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setOpenPopup(null);
+    };
     if (openPopup) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKey);
@@ -93,6 +96,14 @@ const FilterBar = ({ onFilter, onSort }) => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKey);
     };
+  }, [openPopup]);
+
+  useEffect(() => {
+    if (!openPopup) {
+      return undefined;
+    }
+    lockPageScroll();
+    return () => unlockPageScroll();
   }, [openPopup]);
 
   const handleChipClick = (f) => {

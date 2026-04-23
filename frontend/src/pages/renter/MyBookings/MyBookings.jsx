@@ -1,223 +1,517 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCar, FaCalendarAlt, FaMapMarkerAlt, FaChevronRight, FaSpinner } from 'react-icons/fa';
+import {
+  FaCalendarAlt,
+  FaCamera,
+  FaClock,
+  FaEnvelope,
+  FaExchangeAlt,
+  FaEye,
+  FaMapMarkerAlt,
+  FaMoneyBillWave,
+  FaTimesCircle,
+} from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
-import bookingService from '../../../services/bookingService';
 import Modal from '../../../components/common/Modal';
-import { BOOKING_STATUS_LABELS } from '../../../constants/bookingStatus';
-import { formatVnd } from '../../../utils/currencyFormat';
+import StatusBadge from '../../../components/common/StatusBadge';
+import bookingService from '../../../services/bookingService';
+import RentalFlowModal from './RentalFlowModal';
+import { sanitizeImageList } from '../../../utils/media';
+import { getRentalWorkflow } from '../../../utils/rentalWorkflowStorage';
 
-const STATUS_STYLES = {
-  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
-  cancelled: 'bg-red-50 text-red-600 border-red-200',
-  completed: 'bg-gray-100 text-gray-600 border-gray-200',
-  waiting_payment: 'bg-amber-50 text-amber-800 border-amber-200',
-  paid: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  waiting_handover: 'bg-sky-50 text-sky-800 border-sky-200',
-  handed_over: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-  in_use: 'bg-green-50 text-green-800 border-green-200',
-  waiting_return_confirmation: 'bg-orange-50 text-orange-800 border-orange-200',
+const TAB_CONFIG = [
+  { key: 'all', label: 'Tất cả' },
+  { key: 'upcoming', label: 'Sắp tới' },
+  { key: 'active', label: 'Đang thuê' },
+  { key: 'completed', label: 'Hoàn thành' },
+  { key: 'cancelled', label: 'Đã hủy' },
+];
+
+const UPCOMING_STATUSES = ['pending', 'confirmed', 'waiting_payment', 'paid', 'waiting_handover'];
+const ACTIVE_STATUSES = ['handed_over', 'in_use', 'waiting_return_confirmation'];
+const CANCELLABLE_STATUSES = ['pending', 'confirmed', 'waiting_payment'];
+const RENTAL_FLOW_STATUSES = ['waiting_handover', 'handed_over', 'in_use', 'waiting_return_confirmation', 'completed'];
+
+const PAYMENT_LABELS = {
+  pending: 'Chờ thanh toán',
+  successful: 'Thành công',
+  declined: 'Bị từ chối',
+  failed: 'Thất bại',
 };
 
-const renterStatusDisplay = (status) => {
-  const text = BOOKING_STATUS_LABELS[status] || status;
-  const cls = STATUS_STYLES[status] || 'bg-gray-100 text-gray-600 border-gray-200';
-  return { text, cls };
+const formatDateTime = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleString('vi-VN');
 };
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const formatMoney = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+
+const getDurationDays = (start, end) => {
+  const diff = new Date(end) - new Date(start);
+  return Math.max(1, Math.ceil(diff / 86400000));
 };
 
-const formatCurrency = (amount) => formatVnd(amount);
+const getLocationLabel = (note) => {
+  const rawNote = String(note || '').trim();
+  if (!rawNote) return 'Tự đến lấy';
+  return rawNote;
+};
 
-const BookingCard = ({ booking, onClick }) => {
-  const status = renterStatusDisplay(booking.status);
-  return (
-    <button
-      type="button"
-      className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] p-5 flex gap-4 items-start"
-      onClick={onClick}
-    >
-      <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-        {(booking.vehicle_id?.vehicle_images_paths?.[0] || booking.vehicle?.image_url) ? (
-          <img
-            src={booking.vehicle_id?.vehicle_images_paths?.[0] || booking.vehicle?.image_url}
-            alt=""
-            className="w-full h-full object-cover"
-            aria-hidden="true"
-          />
-        ) : (
-          <FaCar className="text-gray-300 text-2xl" aria-hidden="true" />
-        )}
-      </div>
+const matchTab = (booking, tabKey) => {
+  if (tabKey === 'all') return booking.status !== 'cancelled';
+  if (tabKey === 'upcoming') return UPCOMING_STATUSES.includes(booking.status);
+  if (tabKey === 'active') return ACTIVE_STATUSES.includes(booking.status);
+  if (tabKey === 'completed') return booking.status === 'completed';
+  if (tabKey === 'cancelled') return booking.status === 'cancelled';
+  return false;
+};
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="font-bold text-gray-900 text-[0.95rem] truncate">
-            {booking.vehicle_id?.vehicle_name ||
-             [booking.vehicle_id?.vehicle_brand, booking.vehicle_id?.vehicle_model].filter(Boolean).join(' ') ||
-             (booking.vehicle?.brand && booking.vehicle?.model ? `${booking.vehicle.brand} ${booking.vehicle.model}` : '') ||
-             'Xe không xác định'}
-          </span>
-          <FaChevronRight className="text-gray-300 shrink-0" size={13} aria-hidden="true" />
-        </div>
+const mapBooking = (booking) => {
+  const images = sanitizeImageList([
+    ...(booking.vehicle?.images || []),
+    ...(booking.vehicle_id?.vehicle_images_paths || []),
+    ...(booking.vehicle_id?.images || []),
+  ]);
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[0.8rem] text-gray-500 mb-2">
-          <span className="flex items-center gap-1">
-            <FaCalendarAlt aria-hidden="true" />
-            {formatDate(booking.start_date)} – {formatDate(booking.end_date)}
-          </span>
-          {(booking.vehicle_id?.address || booking.vehicle?.location) && (
-            <span className="flex items-center gap-1">
-              <FaMapMarkerAlt aria-hidden="true" />
-              {booking.vehicle_id?.address || booking.vehicle?.location}
-            </span>
-          )}
-        </div>
+  const paymentStatus =
+    booking.payment?.payment_status ||
+    booking.paymentState?.paymentStatus ||
+    (booking.status === 'paid' ? 'successful' : 'pending');
 
-        <div className="flex items-center justify-between">
-          <span className={`inline-block px-2.5 py-0.5 rounded-full border text-[0.75rem] font-semibold ${status.cls}`}>
-            {status.text}
-          </span>
-          <span className="font-bold text-gray-900 text-[0.9rem]">{formatCurrency(booking.total_price)}</span>
-        </div>
-      </div>
-    </button>
-  );
+  return {
+    id: booking._id,
+    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe không tên',
+    showroomName: booking.showroom?.name || booking.showroom_id?.name || 'SmartRent',
+    showroomEmail: booking.showroom?.email || booking.showroom_id?.email || '',
+    startDate: booking.start_date,
+    endDate: booking.end_date,
+    durationDays: getDurationDays(booking.start_date, booking.end_date),
+    locationLabel: getLocationLabel(booking.note),
+    status: booking.status,
+    totalPrice: booking.total_price,
+    note: booking.note || '',
+    image: images[0] || '',
+    paymentStatus,
+    paymentMethod: booking.payment?.payment_method || 'Chưa có',
+    paymentRecord: booking.payment || null,
+    canCancel: CANCELLABLE_STATUSES.includes(booking.status),
+    canOpenRentalFlow: RENTAL_FLOW_STATUSES.includes(booking.status),
+    workflow: getRentalWorkflow(booking._id),
+    raw: booking,
+  };
 };
 
 const MyBookings = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('all');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [detail, setDetail] = useState(null);
-  const [cancelling, setCancelling] = useState(false);
+  const [detailModal, setDetailModal] = useState(null);
+  const [cancellingId, setCancellingId] = useState('');
+  const [rentalModalBooking, setRentalModalBooking] = useState(null);
 
-  const fetchBookings = useCallback(async () => {
+  const loadBookings = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
-      const { items } = await bookingService.getListBookings({ limit: 100, page: 1 });
-      setBookings(items);
+      const data = await bookingService.getMyBookingsDetailed();
+      setBookings((data || []).map(mapBooking));
+      setError('');
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu.');
+      setBookings([]);
+      setError(err.response?.data?.message || err.message || 'Không thể tải lịch sử Booking');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    loadBookings();
+  }, [loadBookings]);
 
-  const canCancel = (b) =>
-    b && ['pending', 'confirmed', 'waiting_payment'].includes(b.status);
+  const displayedBookings = useMemo(
+    () => bookings.filter((booking) => matchTab(booking, activeTab)),
+    [activeTab, bookings]
+  );
 
-  const handleCancel = async () => {
-    if (!detail?._id && !detail?.id) return;
-    const id = detail._id || detail.id;
-    setCancelling(true);
+  const summary = useMemo(
+    () => ({
+      total: bookings.filter((booking) => booking.status !== 'cancelled').length,
+      pending: bookings.filter((booking) => UPCOMING_STATUSES.includes(booking.status)).length,
+      active: bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length,
+      completed: bookings.filter((booking) => booking.status === 'completed').length,
+    }),
+    [bookings]
+  );
+
+  const handleCancelBooking = async (booking) => {
+    const confirmed = window.confirm(`Hủy booking ${booking.id} cho xe ${booking.vehicleName}?`);
+    if (!confirmed) return;
+
+    setCancellingId(booking.id);
     try {
-      await bookingService.updateBookingStatus(id, 'cancelled');
-      setBookings((prev) => prev.map((x) => ((x._id || x.id) === id ? { ...x, status: 'cancelled' } : x)));
-      setDetail((d) => (d ? { ...d, status: 'cancelled' } : null));
-    } catch {
-      fetchBookings();
+      await bookingService.cancelBooking(booking.id);
+      await loadBookings();
+      if (detailModal?.id === booking.id) {
+        setDetailModal(null);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Không thể hủy booking này');
     } finally {
-      setCancelling(false);
+      setCancellingId('');
     }
   };
 
+  const handleWorkflowSaved = (savedWorkflow) => {
+    if (!rentalModalBooking?.id) {
+      return;
+    }
+
+    setBookings((current) =>
+      current.map((b) => (b.id === rentalModalBooking.id ? { ...b, workflow: savedWorkflow } : b))
+    );
+
+    setDetailModal((current) =>
+      current && current.id === rentalModalBooking.id ? { ...current, workflow: savedWorkflow } : current
+    );
+  };
+
+  const getPaymentResultUrl = (booking) =>
+    `/renter/payment-result?bookingId=${booking.id}&status=${
+      booking.paymentStatus === 'successful' ? 'success' : booking.paymentStatus === 'pending' ? 'pending' : 'error'
+    }`;
+
+  const renderEmptyState = () => (
+    <div
+      style={{
+        textAlign: 'center',
+        padding: '48px 0',
+        color: '#9ca3af',
+        background: '#fff',
+        borderRadius: 14,
+      }}
+    >
+      <MdDirectionsCar style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }} />
+      <div>Không tìm thấy booking</div>
+    </div>
+  );
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">Chuyến đi của tôi</h1>
-        <p className="text-[0.875rem] text-gray-500 mt-1">Lịch sử và trạng thái các chuyến thuê xe của bạn</p>
-      </div>
-
-      {loading && (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <span className="text-sm text-gray-400">Đang tải chuyến đi…</span>
+    <div className="my-bookings">
+      <div className="page-header" style={{ marginBottom: 20 }}>
+        <div>
+          <h1 className="page-title">Chuyến đi của tôi</h1>
         </div>
-      )}
-
-      {!loading && error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-[0.875rem]" role="alert">
+        <button type="button" className="btn-primary" onClick={() => navigate('/')}>
+          Hành trình mới
+        </button>
+      </div>
+      {error && (
+        <div
+          style={{
+            marginBottom: 16,
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+            borderRadius: 12,
+            padding: '12px 14px',
+            fontSize: '0.84rem',
+          }}
+        >
           {error}
         </div>
       )}
 
-      {!loading && !error && bookings.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <div className="w-20 h-20 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
-            <MdDirectionsCar className="text-gray-300 text-4xl" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="font-semibold text-gray-700 mb-1">Chưa có chuyến đi nào</p>
-            <p className="text-[0.85rem] text-gray-400">Hãy tìm và đặt xe để bắt đầu hành trình của bạn.</p>
-          </div>
-          <button
-            type="button"
-            className="mt-2 px-6 py-2.5 bg-primary text-white font-semibold rounded-xl text-[0.875rem] hover:bg-primary-dark transition-colors"
-            onClick={() => navigate('/')}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        {[
+          { label: 'Tổng chuyến', val: summary.total, color: '#374151' },
+          { label: 'Sắp tới', val: summary.pending, color: '#d97706' },
+          { label: 'Đang thuê', val: summary.active, color: '#2563eb' },
+          { label: 'Hoàn thành', val: summary.completed, color: '#059669' },
+        ].map((item) => (
+          <div
+            key={item.label}
+            style={{
+              background: '#fff',
+              borderRadius: 10,
+              padding: '10px 18px',
+              border: '1px solid #f0f0f0',
+              textAlign: 'center',
+              minWidth: 100,
+            }}
           >
-            Tìm xe ngay
-          </button>
-        </div>
-      )}
+            <div style={{ fontWeight: 800, fontSize: '1.3rem', color: item.color }}>{item.val}</div>
+            <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
 
-      {!loading && !error && bookings.length > 0 && (
-        <div className="flex flex-col gap-3">
-          {bookings.map((booking) => (
-            <BookingCard
-              key={booking._id || booking.id}
-              booking={booking}
-              onClick={() => setDetail(booking)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="booking-tabs">
+        {TAB_CONFIG.map((tab) => {
+          const count = bookings.filter((b) => matchTab(b, tab.key)).length;
 
-      <Modal isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết chuyến đi" width={480}>
-        {detail && (
-          <div className="flex flex-col gap-3 text-[0.875rem]">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <span className="text-gray-500">Trạng thái</span>
-              <span className={`px-2.5 py-0.5 rounded-full border text-[0.75rem] font-semibold ${renterStatusDisplay(detail.status).cls}`}>
-                {renterStatusDisplay(detail.status).text}
-              </span>
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              className={`booking-tab ${activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+              {count > 0 && <span className="booking-tab-count">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="booking-list">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>Đang tải dữ liệu...</div>
+        ) : displayedBookings.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          displayedBookings.map((booking) => (
+            <div key={booking.id} className="booking-card-item">
+              <div className="booking-card-left">
+                <div className="booking-card-img" style={{ overflow: 'hidden', background: '#f3f4f6' }}>
+                  {booking.image ? (
+                    <img
+                      src={booking.image}
+                      alt={booking.vehicleName}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <MdDirectionsCar style={{ fontSize: '2.5rem', color: '#00b14f' }} />
+                  )}
+                </div>
+                <div className="booking-card-info">
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>{booking.vehicleName}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: 3 }}>{booking.showroomName}</div>
+                  <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.78rem',
+                        color: '#6b7280',
+                      }}
+                    >
+                      <FaCalendarAlt size={11} /> {formatDateTime(booking.startDate)} - {formatDateTime(booking.endDate)}
+                    </span>
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.78rem',
+                        color: '#6b7280',
+                      }}
+                    >
+                      <FaClock size={11} /> {booking.durationDays} ngày
+                    </span>
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.78rem',
+                        color: '#6b7280',
+                      }}
+                    >
+                      <FaMapMarkerAlt size={11} /> {booking.locationLabel}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="booking-card-right">
+                <div style={{ textAlign: 'right' }}>
+                  <StatusBadge status={booking.status} />
+                  <div style={{ marginTop: 6 }}>
+                    <StatusBadge
+                      status={booking.paymentStatus}
+                      customLabel={PAYMENT_LABELS[booking.paymentStatus] || booking.paymentStatus}
+                    />
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#00b14f', marginTop: 8 }}>
+                    {formatMoney(booking.totalPrice)}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Mã: {booking.id}</div>
+                  {(booking.workflow.receiveImages.length > 0 || booking.workflow.returnImages.length > 0) && (
+                    <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: 6 }}>
+                      Đã lưu: {booking.workflow.receiveImages.length} ảnh nhận xe, {booking.workflow.returnImages.length}{' '}
+                      ảnh trả xe
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button type="button" className="btn-icon" onClick={() => setDetailModal(booking)} title="Chi tiết">
+                    <FaEye />
+                  </button>
+
+                  {booking.showroomEmail && (
+                    <a className="btn-icon" href={`mailto:${booking.showroomEmail}`} title="Liên hệ showroom">
+                      <FaEnvelope />
+                    </a>
+                  )}
+
+                  {ACTIVE_STATUSES.includes(booking.status) && (
+                    <button
+                      type="button"
+                      style={{
+                        background: '#dc2626',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => navigate('/renter/sos')}
+                    >
+                      Báo cáo sự cố
+                    </button>
+                  )}
+
+                  {booking.canOpenRentalFlow && (
+                    <button
+                      type="button"
+                      style={{
+                        background: '#00b14f',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setRentalModalBooking(booking)}
+                    >
+                      Nhận / Trả xe
+                    </button>
+                  )}
+
+                  {booking.canCancel && (
+                    <button
+                      type="button"
+                      style={{
+                        background: '#111827',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: cancellingId === booking.id ? 'wait' : 'pointer',
+                        opacity: cancellingId === booking.id ? 0.65 : 1,
+                      }}
+                      onClick={() => handleCancelBooking(booking)}
+                      disabled={cancellingId === booking.id}
+                    >
+                      {cancellingId === booking.id ? 'Đang hủy...' : 'Hủy booking'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Nhận xe</span>
-              <span className="font-medium text-gray-900">{formatDate(detail.start_date)}</span>
+          ))
+        )}
+      </div>
+
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết" width={520}>
+        {detailModal && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{detailModal.vehicleName}</div>
+              <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>{detailModal.showroomName}</div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Trả xe</span>
-              <span className="font-medium text-gray-900">{formatDate(detail.end_date)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Tổng tiền</span>
-              <span className="font-bold text-primary">{formatCurrency(detail.total_price)}</span>
-            </div>
-            {canCancel(detail) && (
+
+            {[
+              ['Mã booking', detailModal.id],
+              ['Ngày nhận xe', formatDateTime(detailModal.startDate)],
+              ['Ngày trả xe', formatDateTime(detailModal.endDate)],
+              ['Số ngày thuê', `${detailModal.durationDays} ngày`],
+              ['Tổng tiền', formatMoney(detailModal.totalPrice)],
+              ['Trạng thái booking', detailModal.status],
+              ['Trạng thái thanh toán', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
+              ['Phương thức thanh toán', detailModal.paymentMethod],
+              ['Ghi chú / nhận xe', detailModal.locationLabel],
+              ['Ảnh nhận xe (FE)', detailModal.workflow?.receiveImages?.length || 0],
+              ['Ảnh trả xe (FE)', detailModal.workflow?.returnImages?.length || 0],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  borderBottom: '1px solid #f3f4f6',
+                  paddingBottom: 10,
+                }}
+              >
+                <span style={{ fontSize: '0.82rem', color: '#6b7280' }}>{label}</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#111827', textAlign: 'right' }}>
+                  {value}
+                </span>
+              </div>
+            ))}
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className="mt-2 w-full py-2.5 rounded-xl border border-red-200 text-red-600 font-semibold text-[0.85rem] hover:bg-red-50 flex items-center justify-center gap-2"
-                disabled={cancelling}
-                onClick={handleCancel}
+                className="btn-primary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => navigate(getPaymentResultUrl(detailModal))}
               >
-                {cancelling ? <FaSpinner className="animate-spin" aria-hidden="true" /> : null}
-                Hủy đặt xe
+                <FaMoneyBillWave /> Xem kết quả thanh toán
               </button>
-            )}
+
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => navigate('/renter/transactions')}
+              >
+                <FaExchangeAlt /> Lịch sử giao dịch
+              </button>
+
+              {detailModal.canOpenRentalFlow && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setRentalModalBooking(detailModal)}
+                >
+                  <FaCamera /> Quy trình nhận / trả
+                </button>
+              )}
+
+              {detailModal.canCancel && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => handleCancelBooking(detailModal)}
+                >
+                  <FaTimesCircle /> Hủy booking
+                </button>
+              )}
+            </div>
           </div>
         )}
       </Modal>
+
+      <RentalFlowModal
+        isOpen={!!rentalModalBooking}
+        onClose={() => setRentalModalBooking(null)}
+        booking={rentalModalBooking}
+        onSaved={handleWorkflowSaved}
+      />
     </div>
   );
 };

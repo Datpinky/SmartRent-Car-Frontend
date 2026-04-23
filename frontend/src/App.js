@@ -32,6 +32,7 @@ import ShowroomProfile from './pages/showroom/ShowroomProfile/ShowroomProfile';
 // Renter pages
 import Profile from './pages/renter/Profile/Profile';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
+import Transactions from './pages/renter/Transactions/Transactions';
 import Checkout from './pages/renter/Checkout/Checkout';
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
@@ -116,6 +117,7 @@ const App = () => {
           {/* Renter portal */}
           <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
+          <Route path="/renter/transactions"    element={<RenterPage><Transactions /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
           <Route path="/renter/checkout"        element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
           <Route path="/renter/payment-result"  element={<PaymentResult />} />

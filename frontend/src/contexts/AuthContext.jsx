@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -8,17 +8,52 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('smartrent_user');
-      if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim().startsWith('{')) {
-        setUser(JSON.parse(saved));
-      } else if (saved && (saved === 'undefined' || saved === 'null')) {
-        localStorage.removeItem('smartrent_user');
+    let cancelled = false;
+    (async () => {
+      const token = localStorage.getItem('smartrent_token');
+      if (!token) {
+        try {
+          const saved = localStorage.getItem('smartrent_user');
+          if (saved) localStorage.removeItem('smartrent_user');
+        } catch {
+          /* ignore */
+        }
+        if (!cancelled) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
       }
-    } catch {
-      localStorage.removeItem('smartrent_user');
-    }
-    setLoading(false);
+
+      try {
+        const u = await authService.getMe();
+        if (!cancelled && u) {
+          setUser(u);
+          localStorage.setItem('smartrent_user', JSON.stringify(u));
+        }
+      } catch (e) {
+        if (cancelled) return;
+        if (e?.status === 401) {
+          authService.logout();
+          setUser(null);
+        } else {
+          try {
+            const saved = localStorage.getItem('smartrent_user');
+            if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim().startsWith('{')) {
+              setUser(JSON.parse(saved));
+            }
+          } catch {
+            authService.logout();
+            setUser(null);
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (email, password) => {
@@ -55,11 +90,14 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const updateUser = (updates) => {
-    const updated = { ...user, ...updates };
-    setUser(updated);
-    localStorage.setItem('smartrent_user', JSON.stringify(updated));
-  };
+  /** Cố định tham chiếu để tránh useEffect (vd. Profile) phụ thuộc chạy lại vô hạn. */
+  const updateUser = useCallback((updates) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('smartrent_user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, loading, updateUser }}>

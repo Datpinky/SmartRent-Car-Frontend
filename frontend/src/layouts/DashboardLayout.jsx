@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatWidget } from '../contexts/ChatWidgetContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
 import NotificationBell from '../components/common/NotificationBell';
 import { Sidebar, SidebarBody, SidebarLink, useSidebar } from '../components/ui/sidebar';
 import { cn } from '../lib/utils';
@@ -60,6 +59,7 @@ const MENUS = {
   renter: [
     { key: 'profile', label: 'Hồ sơ cá nhân', path: '/renter/profile', Icon: IconUser },
     { key: 'bookings', label: 'Chuyến đi của tôi', path: '/renter/bookings', Icon: IconCalendarEvent },
+    { key: 'transactions', label: 'Lịch sử giao dịch', path: '/renter/transactions', Icon: IconReceipt },
     { key: 'sos', label: 'Hỗ trợ khẩn cấp', path: '/renter/sos', Icon: IconAmbulance },
   ],
 };
@@ -88,14 +88,9 @@ function Logo() {
       <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-700">
         <img src="/logo_transparent.png" alt="" className="h-full w-full object-contain p-0.5" />
       </div>
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="whitespace-pre font-semibold text-neutral-900 dark:text-white"
-      >
+      <span className="whitespace-pre font-semibold text-neutral-900 dark:text-white">
         SmartRent
-      </motion.span>
+      </span>
     </Link>
   );
 }
@@ -348,13 +343,15 @@ function SidebarNavContent({ navLinks, roleCfg, profilePath, user, initials, onL
       <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
         <div className="flex shrink-0 items-center px-1">{showFullBrand ? <Logo /> : <LogoIcon />}</div>
 
-        <div
-          aria-hidden
-          className="mx-1 mt-3 flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[0.72rem] font-bold"
-          style={{ background: roleCfg.bg, color: roleCfg.color }}
-        >
-          <span className="max-w-[200px] truncate">{roleCfg.label}</span>
-        </div>
+        {showFullBrand && (
+          <div
+            aria-hidden
+            className="mx-1 mt-3 flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[0.72rem] font-bold"
+            style={{ background: roleCfg.bg, color: roleCfg.color }}
+          >
+            <span className="max-w-[200px] truncate">{roleCfg.label}</span>
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col gap-0.5 px-0.5">
           {navLinks.map((link, idx) => (
