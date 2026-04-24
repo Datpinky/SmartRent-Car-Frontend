@@ -1,186 +1,233 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  FaCheckCircle, FaTimesCircle, FaSpinner,
-  FaCalendarAlt, FaCar, FaReceipt,
+  FaCheckCircle,
+  FaHome,
+  FaList,
+  FaMoneyBillWave,
+  FaSpinner,
+  FaTimesCircle,
 } from 'react-icons/fa';
 import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
-import { formatVnd } from '../../../utils/currencyFormat';
 
-const fmt = (d) =>
-  d ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(d)) : '—';
+const formatDate = (value) => {
+  if (!value) return 'N/A';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'N/A';
+  }
+
+  return date.toLocaleString('vi-VN');
+};
+
+const deriveResultStatus = (booking, fallbackStatus) => {
+  const paymentStatus = booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || '';
+  const bookingStatus = booking?.paymentState?.bookingStatus || booking?.status || '';
+
+  if (paymentStatus === 'successful' || bookingStatus === 'paid') {
+    return 'success';
+  }
+
+  if (paymentStatus === 'pending' || bookingStatus === 'waiting_payment') {
+    return 'pending';
+  }
+
+  if (paymentStatus === 'failed' || paymentStatus === 'declined') {
+    return 'error';
+  }
+
+  return fallbackStatus || 'pending';
+};
 
 const PaymentResult = () => {
-  const [searchParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const routeParams = useParams();
   const navigate = useNavigate();
 
-  const paymentIntentId = searchParams.get('payment_intent');
-  const bookingId       = searchParams.get('booking_id');
-  const demoMode        = searchParams.get('demo') === '1';
-  const redirectStatus  = searchParams.get('redirect_status'); // 'succeeded' | 'requires_payment_method'
-
-  const [status, setStatus]   = useState('loading'); // 'loading' | 'success' | 'failed'
+  const bookingId = params.get('bookingId') || params.get('booking_id') || routeParams.bookingId || '';
+  const paymentIntentId = params.get('payment_intent') || '';
+  const redirectStatus = params.get('redirect_status') || '';
+  const fallbackStatus = params.get('status')
+    || (redirectStatus === 'succeeded'
+      ? 'success'
+      : (redirectStatus === 'processing'
+        ? 'pending'
+        : (redirectStatus === 'failed' ? 'error' : 'pending')));
+  const [status, setStatus] = useState('loading');
   const [booking, setBooking] = useState(null);
-  const [error, setError]     = useState('');
+
+  const isSuccess = status === 'success';
+  const isPending = status === 'pending';
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
-    const run = async () => {
+    const init = async () => {
       try {
-        // Demo mode: không có Stripe key thật
-        if (demoMode) {
-          if (bookingId) {
-            try {
-              const b = await bookingService.getBookingById(bookingId);
-              if (!cancelled) setBooking(b);
-            } catch { /* optional */ }
+        if (!bookingId) {
+          if (mounted) {
+            setStatus('error');
           }
-          if (!cancelled) setStatus('success');
           return;
         }
 
-        // Nếu Stripe gửi redirect_status = failed
-        if (redirectStatus && redirectStatus !== 'succeeded') {
-          if (!cancelled) { setStatus('failed'); setError('Thanh toán không thành công. Vui lòng thử lại.'); }
-          return;
-        }
-
-        // Sync intent với backend để cập nhật trạng thái booking
         if (paymentIntentId) {
-          await paymentService.syncIntent(paymentIntentId);
+          try {
+            const syncResult = await paymentService.confirmPayment(paymentIntentId);
+            if (mounted && syncResult?.paymentStatus) {
+              if (syncResult.paymentStatus === 'successful') {
+                setStatus('success');
+              } else if (syncResult.paymentStatus === 'pending') {
+                setStatus('pending');
+              } else if (['failed', 'declined'].includes(syncResult.paymentStatus)) {
+                setStatus('error');
+              }
+            }
+          } catch {
+            // Keep loading booking/payment state below as the main source of truth.
+          }
         }
 
-        // Fetch thông tin booking để hiển thị
-        if (bookingId) {
-          const b = await bookingService.getBookingById(bookingId);
-          if (!cancelled) setBooking(b);
+        const data = await bookingService.getBookingById(bookingId);
+        if (!mounted) {
+          return;
         }
 
-        if (!cancelled) setStatus('success');
+        setBooking(data || null);
+        setStatus(deriveResultStatus(data, fallbackStatus));
       } catch (err) {
-        if (!cancelled) {
-          setError(err?.response?.data?.message || err?.message || 'Có lỗi xảy ra.');
-          setStatus('failed');
+        if (!mounted) {
+          return;
         }
+
+        console.error('Payment result load error:', err);
+        setStatus('error');
+      } finally {
+        // no-op: status is set from booking/payment resolution paths above
       }
     };
 
-    run();
-    return () => { cancelled = true; };
-  }, [paymentIntentId, bookingId, demoMode, redirectStatus]);
+    init();
+    return () => {
+      mounted = false;
+    };
+  }, [bookingId, fallbackStatus, paymentIntentId]);
 
   const bookingCode = booking?._id
-    ? `BK${booking._id.toString().slice(-6).toUpperCase()}`
+    ? `BK${String(booking._id).slice(-6).toUpperCase()}`
     : bookingId
-    ? `BK${bookingId.slice(-6).toUpperCase()}`
-    : '—';
+      ? `BK${String(bookingId).slice(-6).toUpperCase()}`
+      : 'N/A';
+  const totalPrice = booking?.total_price != null
+    ? `${Number(booking.total_price).toLocaleString('vi-VN')}d`
+    : 'N/A';
 
-  const totalPrice = booking?.total_price != null ? formatVnd(booking.total_price) : '—';
-
-  // ─── Loading ───────────────────────────────────────────────────────────────
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
-        <FaSpinner aria-hidden="true" className="text-primary text-4xl animate-spin" />
-        <p className="text-gray-600 text-sm">Đang xác nhận thanh toán…</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}>
+        <FaSpinner className="animate-spin" style={{ fontSize: '3rem', color: '#00b14f' }} />
+        <p style={{ marginTop: 16, color: '#6b7280' }}>Dang tai thong tin giao dich...</p>
       </div>
     );
   }
 
-  // ─── Failed ────────────────────────────────────────────────────────────────
-  if (status === 'failed') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-5">
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md w-full text-center">
-          <FaTimesCircle aria-hidden="true" className="text-red-500 text-5xl mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Thanh toán thất bại</h1>
-          <p className="text-gray-500 text-sm mb-6">{error || 'Giao dịch không được hoàn tất. Vui lòng thử lại.'}</p>
-          <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              className="btn-primary w-full justify-center"
-              onClick={() => navigate(-1)}
-            >
-              Thử lại
-            </button>
-            <Link to="/" className="btn-outline w-full text-center">Về trang chủ</Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Success ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-5 py-10">
-      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md w-full text-center">
-        {/* Icon + Title */}
-        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-          <FaCheckCircle aria-hidden="true" className="text-green-500 text-3xl" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Đặt xe thành công!</h1>
-        <p className="text-gray-500 text-sm mb-6">Cảm ơn bạn đã đặt xe tại SmartRent Car.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', padding: 24 }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', boxShadow: '0 4px 32px rgba(0,0,0,0.10)', border: '1px solid #f0f0f0' }}>
+        {isSuccess ? (
+          <>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', animation: 'popIn 0.4s ease' }}>
+              <FaCheckCircle style={{ fontSize: '3rem', color: '#059669' }} />
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan thanh cong</h2>
+            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
+              Booking cua ban da duoc ghi nhan thanh toan thanh cong tren he thong.
+            </p>
+          </>
+        ) : isPending ? (
+          <>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <FaSpinner className="animate-spin" style={{ fontSize: '2.4rem', color: '#d97706' }} />
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan dang cho xu ly</h2>
+            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
+              Backend da tao booking va payment record, nhung giao dich chua o trang thai thanh cong.
+            </p>
+          </>
+        ) : (
+          <>
+            <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} />
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan that bai</h2>
+            <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
+              Giao dich khong the thuc hien hoac chua duoc ghi nhan thanh cong.
+            </p>
+          </>
+        )}
 
-        {/* Booking info */}
-        <div className="bg-slate-50 rounded-xl p-4 mb-6 text-left flex flex-col gap-3">
-          <div className="flex items-center gap-3 text-sm">
-            <FaReceipt aria-hidden="true" className="text-primary shrink-0" />
-            <div>
-              <div className="text-xs text-gray-400">Mã đơn đặt xe</div>
-              <div className="font-bold text-gray-900 tabular-nums">{bookingCode}</div>
+        <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'left' }}>
+          {[
+            ['Ma booking', bookingCode],
+            ['Xe', booking?.vehicle?.name || booking?.vehicle_id?.vehicle_name || 'Dang tai...'],
+            ['Thoi gian thue', booking ? `${formatDate(booking.start_date)} -> ${formatDate(booking.end_date)}` : 'N/A'],
+            ['Tong tien', totalPrice],
+            ['Payment method', booking?.payment?.payment_method || 'Chua co'],
+            ['Payment status', booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || 'pending'],
+            ['Booking status', booking?.paymentState?.bookingStatus || booking?.status || 'N/A'],
+            ['Paid at', formatDate(booking?.payment?.paid_at)],
+            ['Transaction code', booking?.payment?.transaction_code || booking?.payment?.stripe_payment_intent_id || 'Chua co'],
+          ].map(([label, value]) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8, fontSize: '0.82rem' }}>
+              <span style={{ color: '#9ca3af' }}>{label}</span>
+              <span style={{ fontWeight: 600, color: '#111827', textAlign: 'right' }}>{value}</span>
             </div>
-          </div>
-          {booking?.start_date && (
-            <div className="flex items-center gap-3 text-sm">
-              <FaCalendarAlt aria-hidden="true" className="text-primary shrink-0" />
-              <div>
-                <div className="text-xs text-gray-400">Nhận xe</div>
-                <div className="font-medium text-gray-800">{fmt(booking.start_date)}</div>
-              </div>
-            </div>
-          )}
-          {booking?.end_date && (
-            <div className="flex items-center gap-3 text-sm">
-              <FaCalendarAlt aria-hidden="true" className="text-primary shrink-0" />
-              <div>
-                <div className="text-xs text-gray-400">Trả xe</div>
-                <div className="font-medium text-gray-800">{fmt(booking.end_date)}</div>
-              </div>
-            </div>
-          )}
-          {booking?.vehicle_id && (
-            <div className="flex items-center gap-3 text-sm">
-              <FaCar aria-hidden="true" className="text-primary shrink-0" />
-              <div>
-                <div className="text-xs text-gray-400">Xe</div>
-                <div className="font-medium text-gray-800">
-                  {booking.vehicle_id?.vehicle_name ||
-                   [booking.vehicle_id?.vehicle_brand, booking.vehicle_id?.vehicle_model].filter(Boolean).join(' ') ||
-                   'Xe đặt thuê'}
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="border-t border-dashed border-gray-200 pt-3 flex justify-between font-bold text-gray-900 text-sm">
-            <span>Tổng thanh toán</span>
-            <span className="text-primary tabular-nums">{totalPrice}</span>
-          </div>
+          ))}
         </div>
 
-        <div className="flex flex-col gap-3">
-          <Link
-            to="/renter/bookings"
-            className="btn-primary w-full text-center justify-center"
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => navigate('/')}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
           >
-            Xem lịch sử đặt xe
-          </Link>
-          <Link to="/" className="btn-outline w-full text-center justify-center">
-            Về trang chủ
-          </Link>
+            <FaHome /> Trang chu
+          </button>
+
+          {isSuccess ? (
+            <button
+              onClick={() => navigate('/renter/pending-pickups')}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              <FaList /> Cho nhan xe
+            </button>
+          ) : isPending ? (
+            <button
+              onClick={() => navigate('/renter/pending-pickups')}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#d97706', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              <FaList /> Theo doi nhan xe
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(-1)}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Thu lai
+            </button>
+          )}
         </div>
+
+        <button
+          className="renter-btn-soft"
+          onClick={() => navigate('/renter/transactions')}
+          style={{ width: '100%', marginTop: 10 }}
+        >
+          <FaMoneyBillWave /> Lich su giao dich
+        </button>
       </div>
+      <style>{`@keyframes popIn { from { transform: scale(0.5); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>
     </div>
   );
 };

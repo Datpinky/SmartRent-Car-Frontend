@@ -1,5 +1,7 @@
 import apiClient from './apiClient';
 
+const AUTH_CLEARED_EVENT = 'smartrent:auth-cleared';
+
 /**
  * Maps backend role to frontend role used in routing/UI.
  * Backend:  user | owner | showroom | admin
@@ -10,15 +12,29 @@ export const mapBackendRole = (backendRole) => {
   return backendRole;
 };
 
+const mapFrontendConsumerRoleToBackend = (frontendRole) => {
+  if (frontendRole === 'owner') return 'owner';
+  return 'user';
+};
+
+const readStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('smartrent_user') || 'null');
+  } catch {
+    return null;
+  }
+};
+
 export const authService = {
   async login(email, password) {
     const res = await apiClient.post('/api/auth/login', { email, password });
     const payload = res.data?.data;
-    if (!payload?.user || !payload?.token) {
-      throw new Error('Phản hồi đăng nhập không hợp lệ.');
-    }
-    const { user, token } = payload;
 
+    if (!payload?.user || !payload?.token) {
+      throw new Error('Phan hoi dang nhap khong hop le.');
+    }
+
+    const { user, token } = payload;
     const frontendUser = {
       id: user._id,
       _id: user._id,
@@ -26,98 +42,114 @@ export const authService = {
       email: user.email,
       role: mapBackendRole(user.role),
       backendRole: user.role,
-      phone: user.phone,
+      phone: user.phone || '',
       showroom_status: user.showroom_status,
       business_name: user.business_name,
-      tax_code: user.tax_code,
-      public_address: user.public_address,
-      opening_hours: user.opening_hours,
-      policy_text: user.policy_text,
-      logo_url: user.logo_url,
-      showroom_description: user.showroom_description,
-      showroom_representative_name: user.showroom_representative_name,
-      showroom_license_public: user.showroom_license_public,
-      license_document_urls: user.license_document_urls,
+      address: user.userLocation?.address || '',
+      tax_code: user.tax_code || '',
+      public_address: user.public_address || '',
+      opening_hours: user.opening_hours || '',
+      policy_text: user.policy_text || '',
+      logo_url: user.logo_url || '',
+      showroom_description: user.showroom_description || '',
+      showroom_representative_name: user.showroom_representative_name || '',
+      showroom_license_public: user.showroom_license_public || '',
+      license_document_urls: user.license_document_urls || [],
     };
 
     localStorage.setItem('smartrent_token', token);
     return { user: frontendUser, token };
   },
 
-  /**
-   * Đăng ký consumer: renter (account_type renter) hoặc owner (account_type owner).
-   */
   async registerConsumer({ name, email, password, phone, account_type = 'renter' }) {
     const body = {
       name,
       email,
       password,
       account_type,
+      role: mapFrontendConsumerRoleToBackend(account_type),
     };
-    if (phone && String(phone).length === 10) body.phone = phone;
+
+    if (phone && String(phone).length === 10) {
+      body.phone = phone;
+    }
+
     const res = await apiClient.post('/api/auth/register', body);
-    return res.data.data;
+    return res.data?.data;
   },
 
-  /**
-   * Đăng ký đối tác showroom (form riêng).
-   */
   async registerShowroom(payload) {
     const res = await apiClient.post('/api/auth/register-showroom', payload);
-    return res.data.data;
+    return res.data?.data;
   },
 
   logout() {
     localStorage.removeItem('smartrent_token');
     localStorage.removeItem('smartrent_user');
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(AUTH_CLEARED_EVENT));
+    }
   },
 
-  mapUser(u) {
-    if (!u) return null;
+  mapUser(user) {
+    if (!user) return null;
+
     return {
-      id: u._id,
-      _id: u._id,
-      name: u.name,
-      email: u.email,
-      role: mapBackendRole(u.role),
-      backendRole: u.role,
-      phone: u.phone || '',
-      showroom_status: u.showroom_status,
-      business_name: u.business_name || '',
-      tax_code: u.tax_code || '',
-      public_address: u.public_address || '',
-      opening_hours: u.opening_hours || '',
-      policy_text: u.policy_text || '',
-      logo_url: u.logo_url || '',
-      showroom_description: u.showroom_description || '',
-      showroom_representative_name: u.showroom_representative_name || '',
-      showroom_license_public: u.showroom_license_public || '',
-      license_document_urls: u.license_document_urls || [],
+      id: user._id || user.id,
+      _id: user._id || user.id,
+      name: user.name,
+      email: user.email,
+      role: mapBackendRole(user.role || user.backendRole),
+      backendRole: user.backendRole || user.role,
+      phone: user.phone || '',
+      showroom_status: user.showroom_status,
+      business_name: user.business_name || '',
+      address: user.userLocation?.address || '',
+      tax_code: user.tax_code || '',
+      public_address: user.public_address || '',
+      opening_hours: user.opening_hours || '',
+      policy_text: user.policy_text || '',
+      logo_url: user.logo_url || '',
+      showroom_description: user.showroom_description || '',
+      showroom_representative_name: user.showroom_representative_name || '',
+      showroom_license_public: user.showroom_license_public || '',
+      license_document_urls: user.license_document_urls || [],
     };
+  },
+
+  async getCurrentUser() {
+    const storedUser = readStoredUser();
+    if (!storedUser) {
+      throw new Error('Khong tim thay thong tin nguoi dung da dang nhap.');
+    }
+    return this.mapUser(storedUser);
   },
 
   async getMe() {
     const res = await apiClient.get('/api/auth/me');
-    const u = res.data?.data;
-    return this.mapUser(u);
+    return this.mapUser(res.data?.data);
   },
 
   async updateProfile(payload) {
     const res = await apiClient.patch('/api/auth/me', payload);
-    const u = res.data?.data;
-    return this.mapUser(u);
+    return this.mapUser(res.data?.data);
   },
 
   async changePassword({ currentPassword, newPassword }) {
-    const res = await apiClient.post('/api/auth/change-password', { currentPassword, newPassword });
+    const res = await apiClient.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+
     const token = res.data?.data?.token;
     if (token) {
       localStorage.setItem('smartrent_token', token);
     }
+
     return res.data?.data;
   },
 
-  /** Danh sách phiên đăng nhập đã lưu (theo JWT phiên bản mới). */
   async listSessions() {
     const res = await apiClient.get('/api/auth/sessions');
     return res.data?.data;

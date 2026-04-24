@@ -25,18 +25,7 @@ class VeHicleController {
         try {
             const vehicleId = req.params.vehicleId;
             const result = await vehicleService.getVehicleById(vehicleId);
-            return res.status(201).json({ message: " Vehicle  received successfully", data: result });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async updateVehicle(req, res, next) {
-        try {
-            const vehicleId = req.params.vehicleId;
-            const userId = req.user.userId;
-            const result = await vehicleService.updateVehicle(vehicleId, userId, req.body);
-            return res.status(200).json({ message: "Vehicle updated successfully", data: result });
+            return res.status(200).json({ message: "Vehicle received successfully", data: result });
         } catch (error) {
             next(error);
         }

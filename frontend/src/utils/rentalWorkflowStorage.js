@@ -17,6 +17,7 @@ const DEFAULT_WORKFLOW = {
     },
     returnNote: '',
     returnImages: [],
+    aiInspection: null,
     updatedAt: '',
 };
 
@@ -54,6 +55,9 @@ export const getRentalWorkflow = (bookingId) => {
         },
         receiveImages: Array.isArray(stored.receiveImages) ? stored.receiveImages : [],
         returnImages: Array.isArray(stored.returnImages) ? stored.returnImages : [],
+        aiInspection: stored.aiInspection && typeof stored.aiInspection === 'object'
+            ? stored.aiInspection
+            : null,
     };
 };
 

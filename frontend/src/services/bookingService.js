@@ -2,18 +2,6 @@ import apiClient from './apiClient';
 import vehicleService from './vehicleService';
 import paymentService from './paymentService';
 
-/**
- * Backend trả { data: [...], pagination } hoặc (legacy) mảng trực tiếp.
- * @returns {{ items: array, pagination: object|null }}
- */
-function normalizeListPayload(raw) {
-  if (Array.isArray(raw)) return { items: raw, pagination: null };
-  if (raw && Array.isArray(raw.data)) {
-    return { items: raw.data, pagination: raw.pagination ?? null };
-  }
-  return { items: [], pagination: null };
-}
-
 const readStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('smartrent_user') || 'null');
@@ -28,23 +16,41 @@ const resolveId = (value) => {
   return value._id || value.id || '';
 };
 
-/** Trích mảng booking từ nhiều dạng response API (dùng cho getMyBookings). */
+function normalizeListPayload(raw) {
+  if (Array.isArray(raw)) return { items: raw, pagination: null };
+  if (raw && Array.isArray(raw.data)) {
+    return { items: raw.data, pagination: raw.pagination ?? null };
+  }
+  return { items: [], pagination: null };
+}
+
 const extractBookingList = (payload) => {
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.data?.data)) return payload.data.data;
-  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  if (Array.isArray(payload?.data?.data)) {
+    return payload.data.data;
+  }
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
   return [];
 };
 
 const toLegacyVehicleShape = (vehicle) => {
-  if (!vehicle) return null;
+  if (!vehicle) {
+    return null;
+  }
+
   return {
     ...(vehicle.raw || {}),
     _id: vehicle._id || vehicle.id,
     id: vehicle.id || vehicle._id,
     vehicle_name: vehicle.name,
-    vehicle_images_paths:
-      vehicle.raw?.vehicle_image_path || vehicle.raw?.vehicle_images_paths || vehicle.images || [],
+    vehicle_images_paths: vehicle.raw?.vehicle_image_path || vehicle.raw?.vehicle_images_paths || vehicle.images || [],
     images: vehicle.images || [],
     address: vehicle.address || '',
     location: vehicle.address || vehicle.location || '',
@@ -52,7 +58,10 @@ const toLegacyVehicleShape = (vehicle) => {
 };
 
 const toLegacyShowroomShape = (showroom) => {
-  if (!showroom) return null;
+  if (!showroom) {
+    return null;
+  }
+
   return {
     _id: showroom._id || showroom.id,
     id: showroom.id || showroom._id,
@@ -65,7 +74,10 @@ const toLegacyShowroomShape = (showroom) => {
 
 const deriveShowroomFromVehicle = (vehicle) => {
   const addedBy = vehicle?.addedBy;
-  if (!addedBy || typeof addedBy !== 'object') return null;
+  if (!addedBy || typeof addedBy !== 'object') {
+    return null;
+  }
+
   return {
     _id: addedBy._id || '',
     id: addedBy._id || '',
@@ -76,7 +88,13 @@ const deriveShowroomFromVehicle = (vehicle) => {
   };
 };
 
-const normalizeBooking = ({ booking, vehicle = null, showroom = null, payment = null, paymentState = null }) => ({
+const normalizeBooking = ({
+  booking,
+  vehicle = null,
+  showroom = null,
+  payment = null,
+  paymentState = null,
+}) => ({
   ...booking,
   id: booking?._id || booking?.id || '',
   _id: booking?._id || booking?.id || '',
@@ -117,16 +135,94 @@ const enrichBooking = async (booking) => {
   });
 };
 
-const bookingService = {
-  async createBooking(data) {
-    const res = await apiClient.post('/api/booking/createBooking', data);
-    return res.data?.data ?? res.data;
+const runStatusTransitions = async (bookingId, transitions = []) => {
+  let latestBooking = null;
+
+  for (const status of transitions) {
+    const res = await apiClient.patch(`/api/booking/updateBookingStatus/${bookingId}`, { status });
+    latestBooking = res.data?.data ?? null;
+  }
+
+  return latestBooking;
+};
+
+const PICKUP_CONFIRMATION_PATHS = {
+  pending: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
+  waiting_payment: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
+  paid: ['confirmed', 'waiting_handover', 'handed_over'],
+  confirmed: ['waiting_handover', 'handed_over'],
+  waiting_handover: ['handed_over'],
+  handed_over: [],
+};
+
+const RETURN_REQUEST_PATHS = {
+  handed_over: ['in_use', 'waiting_return_confirmation'],
+  in_use: ['waiting_return_confirmation'],
+  waiting_return_confirmation: [],
+  completed: [],
+};
+
+export const bookingService = {
+  async createBooking(payload = {}) {
+    const currentUser = readStoredUser();
+    const userId = resolveId(payload.user_id) || resolveId(currentUser);
+    const vehicleId = resolveId(payload.vehicle_id) || resolveId(payload.vehicleId);
+    const showroomId =
+      resolveId(payload.showroom_id)
+      || resolveId(payload.showroomId)
+      || resolveId(payload.showroom)
+      || resolveId(payload.car?.addedBy)
+      || resolveId(payload.vehicle?.addedBy);
+
+    if (!userId || !vehicleId || !showroomId) {
+      throw new Error('Thieu user_id, vehicle_id hoac showroom_id de tao booking.');
+    }
+
+    const note = String(
+      payload.note
+      || (payload.delivery_type === 'delivery'
+        ? `Giao xe: ${payload.delivery_address || ''}`.trim()
+        : 'Tu den lay')
+    ).slice(0, 500);
+
+    const body = {
+      user_id: userId,
+      vehicle_id: vehicleId,
+      showroom_id: showroomId,
+      start_date: payload.start_date,
+      end_date: payload.end_date,
+      total_price: Number(payload.total_price || 0),
+      note,
+    };
+
+    const res = await apiClient.post('/api/booking/createBooking', body);
+    return res.data.data;
   },
 
-  /**
-   * @param {object} filters — showroom_id, user_id, status, page, limit, …
-   * @returns {Promise<{ items: array, pagination: object|null }>}
-   */
+  async getMyBookings(filters = {}) {
+    const currentUser = readStoredUser();
+    const userId = resolveId(filters.user_id) || resolveId(currentUser);
+
+    if (!userId) {
+      throw new Error('Khong tim thay user id de tai bookings.');
+    }
+
+    const res = await apiClient.post('/api/booking/getListBookings', {
+      page: 1,
+      limit: 100,
+      sort_by: -1,
+      user_id: userId,
+      ...filters,
+    });
+
+    return extractBookingList(res.data);
+  },
+
+  async getCurrentRoleBookings() {
+    const res = await apiClient.get('/api/booking/getMyBooking');
+    return extractBookingList(res.data);
+  },
+
   async getListBookings(filters = {}) {
     const res = await apiClient.post('/api/booking/getListBookings', {
       limit: 100,
@@ -136,40 +232,43 @@ const bookingService = {
     return normalizeListPayload(res.data?.data ?? res.data);
   },
 
-  async getBookingById(bookingId) {
-    const res = await apiClient.get(`/api/booking/getBookingById/${bookingId}`);
-    return res.data?.data ?? res.data;
-  },
-
-  async updateBookingStatus(bookingId, status) {
-    const res = await apiClient.patch(`/api/booking/updateBookingStatus/${bookingId}`, { status });
-    return res.data?.data ?? res.data;
-  },
-
-  async getMyBookings(filters = {}) {
-    const currentUser = readStoredUser();
-    const userId = resolveId(filters.user_id) || resolveId(currentUser);
-    if (!userId) {
-      throw new Error('Khong tim thay user id de tai bookings.');
-    }
-    const res = await apiClient.post('/api/booking/getListBookings', {
-      page: 1,
-      limit: 100,
-      sort_by: -1,
-      user_id: userId,
-      ...filters,
-    });
-    return extractBookingList(res.data);
-  },
-
   async getMyBookingsDetailed(filters = {}) {
     const bookings = await this.getMyBookings(filters);
     const detailResults = await Promise.allSettled(bookings.map((booking) => enrichBooking(booking)));
-    return detailResults.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+
+    return detailResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
+  },
+
+  async getBookingById(id) {
+    const res = await apiClient.get(`/api/booking/getBookingById/${id}`);
+    const booking = res.data.data;
+    if (!booking) {
+      return null;
+    }
+
+    return enrichBooking(booking);
+  },
+
+  async checkAvailability({ vehicleId, pickupDate, returnDate, excludeBookingId } = {}) {
+    if (!vehicleId || !pickupDate || !returnDate) {
+      throw new Error('Thieu vehicleId, pickupDate hoac returnDate de kiem tra lich thue.');
+    }
+
+    const res = await apiClient.post('/api/booking/checkAvailability', {
+      vehicleId,
+      pickupDate,
+      returnDate,
+      excludeBookingId,
+    });
+
+    return res.data;
   },
 
   async cancelBooking(id) {
-    return this.updateBookingStatus(id, 'cancelled');
+    const res = await apiClient.post(`/api/booking/cancelBooking/${id}`);
+    return res.data.data;
   },
 
   async getShowroomBookings(filters = {}) {
@@ -182,7 +281,41 @@ const bookingService = {
       showroom_id: showroomId,
       ...filters,
     });
+
     return extractBookingList(res.data);
+  },
+
+  async updateBookingStatus(id, status) {
+    const res = await apiClient.patch(`/api/booking/updateBookingStatus/${id}`, { status });
+    return res.data.data;
+  },
+
+  async confirmPickupForRenter(id, currentStatus) {
+    const transitions = PICKUP_CONFIRMATION_PATHS[currentStatus];
+
+    if (!transitions) {
+      throw new Error(`Khong the xac nhan nhan xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
+    }
+
+    if (transitions.length === 0) {
+      return null;
+    }
+
+    return runStatusTransitions(id, transitions);
+  },
+
+  async requestReturnForRenter(id, currentStatus) {
+    const transitions = RETURN_REQUEST_PATHS[currentStatus];
+
+    if (!transitions) {
+      throw new Error(`Khong the gui yeu cau tra xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
+    }
+
+    if (transitions.length === 0) {
+      return null;
+    }
+
+    return runStatusTransitions(id, transitions);
   },
 };
 

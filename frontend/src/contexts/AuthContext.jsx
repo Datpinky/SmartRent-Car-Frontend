@@ -2,10 +2,47 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
+const AUTH_CLEARED_EVENT = 'smartrent:auth-cleared';
+
+const readStoredUser = () => {
+  const token = localStorage.getItem('smartrent_token');
+  const savedUser = localStorage.getItem('smartrent_user');
+
+  if (!token || !savedUser) {
+    localStorage.removeItem('smartrent_token');
+    localStorage.removeItem('smartrent_user');
+    return null;
+  }
+
+  try {
+    return JSON.parse(savedUser);
+  } catch {
+    localStorage.removeItem('smartrent_token');
+    localStorage.removeItem('smartrent_user');
+    return null;
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const persistUser = useCallback((nextUser) => {
+    localStorage.setItem('smartrent_user', JSON.stringify(nextUser));
+    setUser(nextUser);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem('smartrent_token');
+    if (!token) {
+      setUser(null);
+      return null;
+    }
+
+    const apiUser = await authService.getCurrentUser();
+    persistUser(apiUser);
+    return apiUser;
+  }, [persistUser]);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,29 +96,31 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const { user: apiUser } = await authService.login(email, password);
-      setUser(apiUser);
-      localStorage.setItem('smartrent_user', JSON.stringify(apiUser));
+      persistUser(apiUser);
       return { success: true, user: apiUser };
     } catch (err) {
-      return { success: false, error: err.message || 'Email hoặc mật khẩu không đúng' };
+      const message = err.status === 401
+        ? 'Email hoac mat khau khong dung.'
+        : (err.message || 'Dang nhap that bai.');
+      return { success: false, error: message };
     }
   };
 
-  /**
-   * Register consumer: account_type 'renter' | 'owner' → backend user | owner.
-   */
-  const register = async (name, email, password, phone, account_type = 'renter') => {
+  const register = async (name, email, password, phone, accountType = 'renter') => {
     try {
       await authService.registerConsumer({
         name,
         email,
         password,
         phone,
-        account_type,
+        account_type: accountType,
       });
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.message };
+      const message = err.status === 409
+        ? 'Email nay da ton tai. Hay dang nhap bang tai khoan hien co.'
+        : err.message;
+      return { success: false, error: message };
     }
   };
 
@@ -99,8 +138,18 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    updateUser,
+    refreshUser,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, updateUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

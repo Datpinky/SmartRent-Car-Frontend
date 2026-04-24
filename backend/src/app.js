@@ -7,12 +7,16 @@ const authRoutes = require('./routes/auth.route');
 const uploadRoutes = require('./routes/upload.route');
 const vehicleRoutes = require('./routes/vehicle.route');
 const vehicleLocationRoutes = require('./routes/vehicleLocation.routes');
-const reviewRoutes = require('./routes/review.route');
-const favoriteRoutes = require('./routes/favorite.route');
-const adminRoutes = require('./routes/admin.route');
-const notificationRoutes = require('./routes/notification.route');
+const userLocationRoutes = require('./routes/userLocation.route');
+const contactUsRoutes = require('./routes/contactUs.route');
 const bookingRoutes = require('./routes/booking.route');
 const paymentRoutes = require('./routes/payment.route');
+const mapRoutes = require('./routes/map.route');
+const reviewRoutes = require('./routes/review.route');
+const favoriteRoutes = require('./routes/favorite.route');
+const profileRoutes = require('./routes/profile.route');
+const adminRoutes = require('./routes/admin.route');
+const notificationRoutes = require('./routes/notification.route');
 const showroomRoutes = require('./routes/showroom.route');
 const contractRoutes = require('./routes/contract.route');
 const vehicleDamageInspectionRoutes = require('./routes/vehicleDamageInspection.route');
@@ -59,18 +63,21 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/vehicle_location', vehicleLocationRoutes);
+app.use('/api/user_location', userLocationRoutes);
+app.use('/api/contact_us', contactUsRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/map', mapRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/booking', bookingRoutes);
-app.use('/api/payment', paymentRoutes);
 app.use('/api/showrooms', showroomRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/vehicle-damage-inspections', vehicleDamageInspectionRoutes);
 app.use(errorHandler);
-
 
 module.exports = app;

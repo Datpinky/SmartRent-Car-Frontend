@@ -64,6 +64,24 @@ const MENUS = {
   ],
 };
 
+if (!MENUS.renter.some((item) => item.key === 'dashboard')) {
+  MENUS.renter.splice(0, 0, {
+    key: 'dashboard',
+    label: 'Tổng quan tài chính',
+    Icon: IconLayoutDashboard,
+    path: '/renter/dashboard',
+  });
+}
+
+if (!MENUS.renter.some((item) => item.key === 'pending-pickups')) {
+  MENUS.renter.splice(1, 0, {
+    key: 'pending-pickups',
+    label: 'Chờ nhận xe',
+    Icon: IconCar,
+    path: '/renter/pending-pickups',
+  });
+}
+
 const ROLE_CONFIG = {
   admin: { label: 'Quản trị viên', color: '#6d28d9', bg: '#f5f3ff' },
   showroom: { label: 'Showroom', color: '#00b14f', bg: '#f0fdf4' },
@@ -77,6 +95,11 @@ const PROFILE_PATHS = {
   owner: '/owner/profile',
   renter: '/renter/profile',
 };
+
+const FALLBACK_TITLES = [
+  { prefix: '/renter/checkout', label: 'Thanh toán' },
+  { prefix: '/renter/payment-result', label: 'Kết quả thanh toán' },
+];
 
 function Logo() {
   return (
@@ -114,11 +137,12 @@ const DashboardLayout = ({ children }) => {
   const chatWidget = useChatWidget();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const menus = MENUS[user?.role] || [];
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  const menus = MENUS[user?.role] || MENUS.renter;
   const roleCfg = ROLE_CONFIG[user?.role] || ROLE_CONFIG.renter;
 
   const handleLogout = () => {
@@ -135,10 +159,12 @@ const DashboardLayout = ({ children }) => {
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const headerTitle = (() => {
-    const fromMenu = menus.find((m) => isActive(m.path))?.label;
-    if (fromMenu) return fromMenu;
-    if (location.pathname.startsWith('/renter/checkout')) return 'Thanh toán đặt xe';
-    return 'Dashboard';
+    const fromMenu = menus.find((item) => isActive(item.path));
+    if (fromMenu) {
+      return fromMenu.label;
+    }
+
+    return FALLBACK_TITLES.find((item) => location.pathname.startsWith(item.prefix))?.label || 'Dashboard';
   })();
 
   const initials =
@@ -162,11 +188,12 @@ const DashboardLayout = ({ children }) => {
   );
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setUserDropdownOpen(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -234,6 +261,7 @@ const DashboardLayout = ({ children }) => {
               {headerTitle}
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             <Link
               to="/"
@@ -252,12 +280,14 @@ const DashboardLayout = ({ children }) => {
                 <IconMessageCircle size={18} stroke={stroke} aria-hidden />
               </button>
             )}
+
             <NotificationBell />
+
             {user?.role !== 'renter' && (
               <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
-                  aria-label={`${user?.name} — mở menu tài khoản`}
+                  aria-label={`${user?.name} - mở menu tài khoản`}
                   aria-expanded={userDropdownOpen}
                   aria-haspopup="menu"
                   className="flex cursor-pointer select-none items-center gap-1.5 rounded-[10px] py-1 pl-1 pr-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -280,6 +310,7 @@ const DashboardLayout = ({ children }) => {
                     aria-hidden
                   />
                 </button>
+
                 {userDropdownOpen && (
                   <div
                     role="menu"

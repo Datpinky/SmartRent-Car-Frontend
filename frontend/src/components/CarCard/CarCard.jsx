@@ -1,20 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaStar, FaMapMarkerAlt, FaGasPump, FaStore } from 'react-icons/fa';
-import { MdPeople, MdSettings, MdDirectionsCar } from 'react-icons/md';
 import { BsLightningChargeFill } from 'react-icons/bs';
-import favoriteService from '../../services/favoriteService';
+import { FaGasPump, FaHeart, FaMapMarkerAlt, FaRegHeart, FaStar, FaStore } from 'react-icons/fa';
+import { MdDirectionsCar, MdPeople, MdSettings } from 'react-icons/md';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatVndPerDay } from '../../utils/currencyFormat';
+import favoriteService from '../../services/favoriteService';
+import { buildRentalWindowQuery } from '../../utils/rentalWindow';
+
+const isMongoId = (value) => /^[a-f\d]{24}$/i.test(String(value || ''));
+
+const normalizeText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const sanitizeRentalWindow = (pickupDate, returnDate) => ({
+  pickupDate: String(pickupDate || ''),
+  returnDate: String(returnDate || ''),
+});
 
 const CarColorBg = ({ color, name }) => {
-  const hue = Math.abs(
-    name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  ) % 360;
+  const hue = Math.abs(name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 360;
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center"
+      className="flex h-full w-full items-center justify-center"
       style={{ background: `linear-gradient(135deg, hsl(${hue},30%,88%) 0%, hsl(${hue},20%,95%) 100%)` }}
     >
       <MdDirectionsCar
@@ -30,104 +42,110 @@ const CarColorBg = ({ color, name }) => {
 };
 
 const StarRating = ({ rating }) => (
-  <div className="flex items-center gap-px text-[0.8rem]" aria-hidden="true">
-    {[1, 2, 3, 4, 5].map(i => (
-      <FaStar key={i} style={{ color: i <= Math.round(rating) ? '#f59e0b' : '#e5e7eb' }} />
+  <div className="flex items-center gap-px text-[0.8rem]">
+    {[1, 2, 3, 4, 5].map((index) => (
+      <FaStar key={index} style={{ color: index <= Math.round(rating) ? '#f59e0b' : '#e5e7eb' }} />
     ))}
   </div>
 );
 
-const isMongoId = (str) => /^[a-f\d]{24}$/i.test(String(str || ''));
-
-const CarCard = ({ car }) => {
+const CarCard = ({ car, rentalSearch = null }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [imgFailed, setImgFailed] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
-  useEffect(() => {
-    setImgFailed(false);
-  }, [car.id, car.image]);
+  const carId = car.id || car._id;
+  const imageUrl = useMemo(() => car.image || (Array.isArray(car.images) ? car.images[0] : ''), [car.image, car.images]);
+  const locationText = car.address || car.pickupAddress || car.location || '';
+  const hasReviewData = Number(car.rating || 0) > 0 || Number(car.trips || 0) > 0;
+  const fuelIcon =
+    normalizeText(car.fuel) === 'dien' ? (
+      <BsLightningChargeFill style={{ color: '#2196f3' }} />
+    ) : (
+      <FaGasPump style={{ color: '#f59e0b' }} />
+    );
+  const rentalWindow = sanitizeRentalWindow(rentalSearch?.pickupDate, rentalSearch?.returnDate);
 
-  const handleLike = async (e) => {
-    e.stopPropagation();
-    if (!user) { navigate('/login'); return; }
-    if (!isMongoId(car.id)) { setLiked(p => !p); return; }
+  const handleLike = async (event) => {
+    event.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (!isMongoId(carId)) {
+      setLiked((current) => !current);
+      return;
+    }
+
     setLikeLoading(true);
     try {
-      const res = await favoriteService.toggle(car.id);
-      setLiked(res.favorited);
+      const result = await favoriteService.toggle(carId);
+      setLiked(result.favorited);
     } catch {
-      setLiked(p => !p);
+      setLiked((current) => !current);
     } finally {
       setLikeLoading(false);
     }
   };
 
-  const handleClick = () => { navigate(`/xe/${car.id}`); };
-
-  const isOwner = car.type === 'Gặp chủ xe';
-  const fuelIcon = car.fuel === 'Điện'
-    ? <BsLightningChargeFill style={{ color: '#2196f3' }} />
-    : <FaGasPump style={{ color: '#f59e0b' }} />;
-
   return (
     <article
-      role="button"
-      tabIndex={0}
-      aria-label={`Xem chi tiết ${car.name}`}
-      className="bg-white rounded-2xl overflow-hidden shadow-sm transition-[box-shadow,transform,border-color] duration-[250ms] cursor-pointer border border-gray-100 flex flex-col group hover:shadow-[0_8px_32px_rgba(0,0,0,0.14)] hover:-translate-y-1 hover:border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      onClick={handleClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-[250ms] hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_8px_32px_rgba(0,0,0,0.14)]"
+      onClick={() =>
+        navigate(`/xe/${carId}${buildRentalWindowQuery(rentalWindow.pickupDate, rentalWindow.returnDate)}`, {
+          state: {
+            rentalSearch: rentalWindow,
+          },
+        })
+      }
     >
-      {/* Image */}
       <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16/10' }}>
-        {car.image && !imgFailed ? (
+        {imageUrl && !imgError ? (
           <img
-            src={car.image}
+            src={imageUrl}
             alt={car.name}
             loading="lazy"
-            width={320}
-            height={200}
-            className="w-full h-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
-            onError={() => setImgFailed(true)}
+            className="h-full w-full object-cover transition-transform duration-[400ms] group-hover:scale-105"
+            onError={() => setImgError(true)}
           />
         ) : (
           <CarColorBg color={car.color} name={car.name} />
         )}
-        <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
 
-        {/* Favorite */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-t from-black/30 to-transparent" />
+
         <button
           type="button"
-          className={`absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform z-[2] hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${liked ? 'text-red-500' : 'text-gray-400'} ${likeLoading ? 'opacity-50 cursor-wait' : ''}`}
+          className={`absolute right-3 top-3 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform hover:scale-110 ${
+            liked ? 'text-red-500' : 'text-gray-400'
+          } ${likeLoading ? 'cursor-wait opacity-50' : ''}`}
           onClick={handleLike}
           disabled={likeLoading}
-          aria-label={liked ? `Bỏ yêu thích ${car.name}` : `Yêu thích ${car.name}`}
-          aria-pressed={liked}
+          aria-label="Yêu thích"
         >
-          {liked ? <FaHeart aria-hidden="true" size={14} /> : <FaRegHeart aria-hidden="true" size={14} />}
+          {liked ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
         </button>
 
-        {/* Type badge */}
-        <span
-          aria-hidden="true"
-          className={`absolute bottom-2.5 right-2.5 flex items-center gap-1 px-2.5 py-[5px] rounded-full text-[0.7rem] font-medium text-white backdrop-blur-sm border border-white/15 z-[2]
-            ${isOwner ? 'bg-purple-800/85' : 'bg-black/65'}`}
-        >
-          <MdDirectionsCar aria-hidden="true" size={12} />
-          {car.type}
-        </span>
+        {(car.category || car.type) && (
+          <span className="absolute bottom-2.5 right-2.5 z-[2] flex items-center gap-1 rounded-full border border-white/15 bg-black/65 px-2.5 py-[5px] text-[0.7rem] font-medium text-white backdrop-blur-sm">
+            <MdDirectionsCar size={12} />
+            {car.category || car.type}
+          </span>
+        )}
       </div>
 
-      {/* Body */}
-      <div className="px-4 py-3.5 flex-1 flex flex-col gap-1.5">
-        <h3 className="text-base font-bold text-gray-900 leading-snug whitespace-nowrap overflow-hidden text-ellipsis">{car.name}</h3>
+      <div className="flex flex-1 flex-col gap-1.5 px-4 py-3.5">
+        <h3 className="overflow-hidden text-ellipsis whitespace-nowrap text-base font-bold leading-snug text-gray-900">
+          {car.name}
+        </h3>
 
         {car.showroom && (
-          <div className="flex items-center gap-1 text-[0.72rem] text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
-            <FaStore aria-hidden="true" size={10} />
+          <div className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.72rem] text-gray-500">
+            <FaStore size={10} />
             {car.showroom}
           </div>
         )}
@@ -143,22 +161,25 @@ const CarCard = ({ car }) => {
           <span className="text-[0.75rem] text-gray-500">({car.trips} chuyến)</span>
         </div>
 
-        <div className="mt-1">
-          <span className="text-[1.05rem] font-extrabold text-primary tabular-nums">{formatVndPerDay(car.price)}</span>
+        <div className="flex items-baseline gap-2 mt-1">
+          <span className="text-[1.2rem] font-extrabold text-primary">{car.price.toLocaleString()}K</span>
+          <span className="text-[0.8rem] font-medium text-gray-500">/ngày</span>
         </div>
+        <div className="text-[0.75rem] text-gray-500 -mt-0.5">2 ngày 4 giờ</div>
         <div className="text-[0.68rem] text-primary italic -mt-0.5">Giá tạm tính chưa bao gồm VAT</div>
 
         {/* Specs */}
         <div className="flex items-center border-t border-gray-100 mt-2 pt-2.5">
           {[
-            { icon: <MdPeople size={18} />, label: `${car.seats} chỗ` },
-            { icon: <MdSettings size={18} />, label: car.transmission === 'Số tự động' ? 'Số tự động' : 'Số sàn' },
-            { icon: fuelIcon, label: car.fuel },
-          ].map(({ icon, label }, i, arr) => (
+            { icon: <MdPeople size={18} />, label: `${car.seats || 0} chỗ` },
+            { icon: <MdSettings size={18} />, label: car.transmission || 'Đang cập nhật' },
+            { icon: fuelIcon, label: car.fuel || 'Đang cập nhật' },
+          ].map(({ icon, label }, index, all) => (
             <div
-              key={i}
-              className={`flex-1 flex flex-col items-center gap-[3px] text-[0.72rem] text-gray-500 font-medium text-center [&>svg]:text-primary
-                ${i < arr.length - 1 ? 'border-r border-gray-100' : ''}`}
+              key={`${label}-${index}`}
+              className={`flex flex-1 flex-col items-center gap-[3px] text-center text-[0.72rem] font-medium text-gray-500 ${
+                index < all.length - 1 ? 'border-r border-gray-100' : ''
+              }`}
             >
               <span className="text-primary">{icon}</span>
               <span>{label}</span>

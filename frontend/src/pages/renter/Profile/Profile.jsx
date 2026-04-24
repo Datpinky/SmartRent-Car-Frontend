@@ -86,11 +86,11 @@ const Profile = () => {
       setMapLocation(
         bestMatch
           ? {
-              address: bestMatch.address || trimmedAddress,
-              latitude: bestMatch.lat,
-              longitude: bestMatch.lng,
-              plusCode: bestMatch.plusCode || '',
-            }
+            address: bestMatch.address || trimmedAddress,
+            latitude: bestMatch.lat,
+            longitude: bestMatch.lng,
+            plusCode: bestMatch.plusCode || '',
+          }
           : null
       );
     } catch {
@@ -117,23 +117,20 @@ const Profile = () => {
     return true;
   }, []);
 
-  const hydrateProfileLocation = useCallback(
-    async (profileData) => {
-      if (applyStoredLocation(profileData?.userLocation)) {
-        return;
-      }
+  const hydrateProfileLocation = useCallback(async (profileData) => {
+    if (applyStoredLocation(profileData?.userLocation)) {
+      return;
+    }
 
-      const nextAddress = String(profileData?.address || '').trim();
-      if (!nextAddress) {
-        setLoadingLocation(false);
-        setMapLocation(null);
-        return;
-      }
+    const nextAddress = String(profileData?.address || '').trim();
+    if (!nextAddress) {
+      setLoadingLocation(false);
+      setMapLocation(null);
+      return;
+    }
 
-      await loadMapPreview(nextAddress);
-    },
-    [applyStoredLocation, loadMapPreview]
-  );
+    await loadMapPreview(nextAddress);
+  }, [applyStoredLocation, loadMapPreview]);
 
   useEffect(() => {
     fallbackProfileRef.current = profileService.mapProfileUser(user);
@@ -151,8 +148,7 @@ const Profile = () => {
     let mounted = true;
     setLoadingProfile(true);
 
-    profileService
-      .getProfileById(authUserId)
+    profileService.getProfileById(authUserId)
       .then(async (nextProfile) => {
         if (!mounted) {
           return;
@@ -237,7 +233,7 @@ const Profile = () => {
     });
     setNotice({ type: '', message: '' });
     setIsEditing(false);
-    hydrateProfileLocation(activeUser).catch(() => {});
+    hydrateProfileLocation(activeUser).catch(() => { });
   };
 
   const validateForm = () => {
@@ -276,13 +272,21 @@ const Profile = () => {
       const currentPhone = String(activeUser?.phone || '').replace(/\D/g, '');
       const currentAddress = String(activeUser?.address || '').trim();
       const fallbackLatitude =
-        trimmedAddress && trimmedAddress === currentAddress ? activeUser?.userLocation?.latitude : undefined;
+        trimmedAddress && trimmedAddress === currentAddress
+          ? activeUser?.userLocation?.latitude
+          : undefined;
       const fallbackLongitude =
-        trimmedAddress && trimmedAddress === currentAddress ? activeUser?.userLocation?.longitude : undefined;
+        trimmedAddress && trimmedAddress === currentAddress
+          ? activeUser?.userLocation?.longitude
+          : undefined;
       const fallbackPlusCode =
-        trimmedAddress && trimmedAddress === currentAddress ? activeUser?.userLocation?.plusCode : '';
+        trimmedAddress && trimmedAddress === currentAddress
+          ? activeUser?.userLocation?.plusCode
+          : '';
       const hasSupportedChanges =
-        trimmedName !== currentName || normalizedPhone !== currentPhone || trimmedAddress !== currentAddress;
+        trimmedName !== currentName
+        || normalizedPhone !== currentPhone
+        || trimmedAddress !== currentAddress;
 
       if (!hasSupportedChanges) {
         setNotice({
@@ -300,12 +304,15 @@ const Profile = () => {
         longitude: mapLocation?.longitude ?? fallbackLongitude,
         plusCode: mapLocation?.plusCode || fallbackPlusCode || '',
       });
+      const hasResolvedCoordinates =
+        Number.isFinite(Number(updatedProfile?.userLocation?.latitude))
+        && Number.isFinite(Number(updatedProfile?.userLocation?.longitude));
 
       setProfile(updatedProfile);
       updateUser(updatedProfile);
       setSavedAddress(updatedProfile.address || '');
 
-      if (updatedProfile.userLocation) {
+      if (hasResolvedCoordinates && updatedProfile.userLocation) {
         applyStoredLocation(updatedProfile.userLocation);
       } else if (trimmedAddress) {
         await loadMapPreview(trimmedAddress);
@@ -316,11 +323,10 @@ const Profile = () => {
       setIsEditing(false);
 
       setNotice({
-        type: trimmedAddress && !updatedProfile.userLocation ? 'warning' : 'success',
-        message:
-          trimmedAddress && !updatedProfile.userLocation
-            ? 'Đã cập nhật hồ sơ. Địa chỉ đã được lưu, nhưng hệ thống chưa xác định được toạ độ chính xác để đồng bộ'
-            : 'Đã cập nhật hồ sơ thành công.',
+        type: trimmedAddress && !hasResolvedCoordinates ? 'warning' : 'success',
+        message: trimmedAddress && !hasResolvedCoordinates
+          ? 'Đã cập nhật hồ sơ. Địa chỉ đã được lưu, nhưng hệ thống chưa xác định được toạ độ chính xác để đồng bộ'
+          : 'Đã cập nhật hồ sơ thành công.',
       });
     } catch (error) {
       setNotice({
@@ -420,14 +426,10 @@ const Profile = () => {
                 color: mapLocation ? '#1d4ed8' : '#6b7280',
               }}
             >
-              {loadingProfile || loadingLocation ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
+              {(loadingProfile || loadingLocation) ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
               {loadingProfile
                 ? 'Đang cập nhật hồ sơ'
-                : loadingLocation
-                  ? 'Đang xác định vị trí'
-                  : mapLocation
-                    ? 'Đã xác định vị trí'
-                    : 'Chưa xác định được vị trí'}
+                : (loadingLocation ? 'Đang xác định vị trí' : (mapLocation ? 'Đã xác định vị trí' : 'Chưa xác định được vị trí'))}
             </div>
           </div>
         </div>
@@ -436,9 +438,7 @@ const Profile = () => {
           <div>
             <label className="form-label">Họ và tên</label>
             <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ color: '#6b7280' }}>
-                <FaUser />
-              </span>
+              <span style={{ color: '#6b7280' }}><FaUser /></span>
               <input
                 type="text"
                 value={form.name}
@@ -457,9 +457,7 @@ const Profile = () => {
           <div>
             <label className="form-label">Số điện thoại</label>
             <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ color: '#6b7280' }}>
-                <MdPhoneIphone />
-              </span>
+              <span style={{ color: '#6b7280' }}><MdPhoneIphone /></span>
               <input
                 type="text"
                 value={form.phone}
@@ -479,9 +477,7 @@ const Profile = () => {
         <div style={{ marginTop: 16 }}>
           <label className="form-label">Địa chỉ</label>
           <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: '#6b7280' }}>
-              <FaMapMarkerAlt />
-            </span>
+            <span style={{ color: '#6b7280' }}><FaMapMarkerAlt /></span>
             <input
               type="text"
               value={form.address}
@@ -494,9 +490,7 @@ const Profile = () => {
         </div>
 
         <div style={{ marginTop: 24 }}>
-          <h3 className="profile-section-title" style={{ marginBottom: 12 }}>
-            Vị trí của bạn
-          </h3>
+          <h3 className="profile-section-title" style={{ marginBottom: 12 }}>Vị trí của bạn</h3>
           {loadingLocation ? (
             <div
               style={{
@@ -512,13 +506,15 @@ const Profile = () => {
               }}
             >
               <FaSpinner className="animate-spin" />
-              Đang lấy địa chỉ…
+              Đang lấy địa chỉ.....
             </div>
           ) : mapLocation ? (
             <CarLocationMap
               locationText={mapLocation.address || form.address}
               lat={mapLocation.latitude}
               lng={mapLocation.longitude}
+              openMapLabel="Mở trong map"
+              mapHeight={360}
             />
           ) : (
             <div

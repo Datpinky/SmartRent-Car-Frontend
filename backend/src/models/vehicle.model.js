@@ -3,11 +3,10 @@ const mongoose = require('mongoose');
 const vehicleSchema = new mongoose.Schema(
     {
         vehicle_name: { type: String, trim: true },
-        /** Chỉ xe ô tô 4 bánh (không xe máy / xe đạp). */
         vehicle_type: {
             type: String,
             required: true,
-            enum: ['Sedan', 'SUV', 'MPV', 'Hatchback', 'Wagon', 'Truck', 'others'],
+            enum: ['Sedan', 'Bike', 'Bicycle', 'SUV', 'Wagon', 'Truck', 'others'],
             default: 'Sedan'
         },
         brand: { type: String },
@@ -39,8 +38,6 @@ const vehicleSchema = new mongoose.Schema(
             default: 'day'
         },
         maximum_allowable_distance: String,
-        /** Tiện nghi đã chọn (nhãn tiếng Việt, đồng bộ validation). */
-        amenities: { type: [String], default: [] },
         status: {
             type: String,
             required: true,

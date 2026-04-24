@@ -169,7 +169,8 @@ const MapView = ({ cars = [], height = '600px', embed = false }) => {
     setRadiusKm(val === 'all' ? null : Number(val));
   };
 
-  const isApiKeyMissing = LOCATIONIQ_API_KEY.startsWith('pk.your_');
+  const isApiKeyMissing =
+    process.env.REACT_APP_MAP_TILE_PROVIDER === 'locationiq' && !LOCATIONIQ_API_KEY;
 
   return (
     <div className={`mapview-root ${embed ? 'mapview-root--embed' : ''}`}>

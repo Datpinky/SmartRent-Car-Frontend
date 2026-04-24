@@ -1,50 +1,63 @@
 import apiClient from './apiClient';
 
+// Backend hien tai da mount /api/notifications.
+// FE giu luong request binh thuong, va NotificationBell se tu xu ly neu request loi.
+const BACKEND_NOTIFICATIONS_SUPPORTED = true;
+
+const EMPTY_RESULT = Object.freeze({ data: [], unread: 0 });
+
 const notificationService = {
-  /**
-   * Lấy danh sách thông báo của user hiện tại.
-   * @param {{ limit?: number, skip?: number }} opts
-   * @returns {{ data: Notification[], unread: number }}
-   */
+  isSupported() {
+    return BACKEND_NOTIFICATIONS_SUPPORTED;
+  },
+
   async list({ limit = 50, skip = 0 } = {}) {
+    if (!BACKEND_NOTIFICATIONS_SUPPORTED) {
+      return EMPTY_RESULT;
+    }
+
     const res = await apiClient.get('/api/notifications', { params: { limit, skip } });
     return { data: res.data.data || [], unread: res.data.unread || 0 };
   },
 
-  /**
-   * Đếm số thông báo chưa đọc (dùng cho badge polling).
-   * @returns {number}
-   */
   async countUnread() {
+    if (!BACKEND_NOTIFICATIONS_SUPPORTED) {
+      return 0;
+    }
+
     const res = await apiClient.get('/api/notifications/unread-count');
     return res.data.data?.count ?? 0;
   },
 
-  /**
-   * Đánh dấu một thông báo đã đọc.
-   */
   async markRead(id) {
+    if (!BACKEND_NOTIFICATIONS_SUPPORTED) {
+      return;
+    }
+
     await apiClient.patch(`/api/notifications/${id}/read`);
   },
 
-  /**
-   * Đánh dấu tất cả thông báo đã đọc.
-   */
   async markAllRead() {
+    if (!BACKEND_NOTIFICATIONS_SUPPORTED) {
+      return;
+    }
+
     await apiClient.patch('/api/notifications/read-all');
   },
 
-  /**
-   * Xóa một thông báo.
-   */
   async deleteOne(id) {
+    if (!BACKEND_NOTIFICATIONS_SUPPORTED) {
+      return;
+    }
+
     await apiClient.delete(`/api/notifications/${id}`);
   },
 
-  /**
-   * Xóa tất cả thông báo đã đọc.
-   */
   async deleteAllRead() {
+    if (!BACKEND_NOTIFICATIONS_SUPPORTED) {
+      return;
+    }
+
     await apiClient.delete('/api/notifications/read');
   },
 };

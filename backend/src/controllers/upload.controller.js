@@ -17,7 +17,7 @@ class UploadController {
     }
 
     /**
-     * POST multipart: before_rental + after_return (multer memory).
+     * POST multipart: before_rental + after_return (cùng cơ chế multer memory như /image/files).
      */
     async compareVehicleDamage(req, res, next) {
         try {

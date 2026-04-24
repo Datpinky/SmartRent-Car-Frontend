@@ -1,134 +1,286 @@
-import React, { useState, useEffect, useRef } from 'react';
-import SearchBar from '../../SearchBar/SearchBar';
-import FilterBar from '../../FilterBar/FilterBar';
+import React, { useEffect, useRef, useState } from 'react';
 import CarGrid from '../../CarGrid/CarGrid';
+import FilterBar from '../../FilterBar/FilterBar';
+import SearchBar from '../../SearchBar/SearchBar';
+import bookingService from '../../../services/bookingService';
 import vehicleService from '../../../services/vehicleService';
-import { cars as staticCarCatalog } from '../../data/cars';
 
-/** Đồng bộ `components/data/cars.js` với shape CarCard/CarGrid (giá VNĐ/ngày). */
-const mapStaticCarToGrid = (m) => {
-  const raw = Number(m.price) || 0;
-  const priceVnd = raw > 0 && raw < 100000 ? raw * 1000 : raw;
-  return {
-    id: `demo-${m.id}`,
-    name: m.name,
-    showroom: m.showroom,
-    location: m.address || '',
-    address: m.address,
-    type: m.type,
-    seats: m.seats,
-    transmission: m.transmission,
-    fuel: m.fuel,
-    rating: m.rating,
-    trips: m.trips,
-    image: m.image,
-    brand: m.brand,
-    category: m.category,
-    color: m.color,
-    price: priceVnd,
-  };
+const DEFAULT_FILTERS = {
+  seats: 'all',
+  model: 'all',
+  brand: 'all',
+  category: 'all',
+  fuel: 'all',
+  priceMin: '',
+  priceMax: '',
 };
 
-const Home = () => {
-    const [allCars, setAllCars] = useState([]);
-    const [filteredCars, setFilteredCars] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [apiError, setApiError] = useState(null);
-    const currentFilters = useRef({
-        type: 'all', fuel: 'all', seats: 'all', model: 'all',
-        brand: 'all', category: 'all', area: 'all',
-    });
-    const currentSearch = useRef({ location: '', carName: '' });
+const normalizeText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
-    useEffect(() => {
-        let cancelled = false;
+const toNumber = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return null;
+  }
 
-        const loadVehicles = async () => {
-            setLoading(true);
-            try {
-                const { data } = await vehicleService.getList({ limit: 100 });
-                if (cancelled) return;
-                setAllCars(data);
-                setFilteredCars(data);
-                setApiError(null);
-            } catch (err) {
-                if (cancelled) return;
-                console.warn('[Home] API vehicles:', err.message);
-                const fallback = staticCarCatalog.map(mapStaticCarToGrid);
-                setAllCars(fallback);
-                setFilteredCars(applyFilters(fallback, currentFilters.current, currentSearch.current));
-                const baseMsg = err?.response?.data?.message || err.message || 'Không tải được danh sách xe.';
-                setApiError(`${baseMsg} Đang hiển thị danh sách xe mẫu (offline/demo).`);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
 
-        loadVehicles();
-        return () => { cancelled = true; };
-    }, []);
+const matchesExact = (actualValue, selectedValue) => {
+  if (!selectedValue || selectedValue === 'all') {
+    return true;
+  }
 
-    const applyFilters = (base, filters, search) => {
-        const { type, fuel, seats, model, brand, category, area } = filters;
-        const { location, carName } = search;
-        return base.filter(c => {
-            const matchType = type === 'all' || c.type === type;
-            const matchFuel = fuel === 'all' || c.fuel === fuel;
-            const matchSeats = seats === 'all' || c.seats === parseInt(seats, 10);
-            const matchModel = model === 'all' || c.transmission === model;
-            const matchBrand = !brand || brand === 'all' || c.brand === brand;
-            const matchCategory = !category || category === 'all' || c.category === category;
-            const matchArea = !area || area === 'all' || (c.location || '').includes(area);
-            const matchLoc = !location || (c.location || '').toLowerCase().includes(location.toLowerCase()) || (c.address || '').toLowerCase().includes(location.toLowerCase());
-            const matchName = !carName || (c.name || '').toLowerCase().includes(carName.toLowerCase());
-            return matchType && matchFuel && matchSeats && matchModel && matchBrand && matchCategory && matchArea && matchLoc && matchName;
-        });
-    };
+  return normalizeText(actualValue) === normalizeText(selectedValue);
+};
 
-    const handleFilter = (payload) => {
-        if (typeof payload === 'object' && payload !== null) {
-            currentFilters.current = { ...currentFilters.current, ...payload };
-            setFilteredCars(applyFilters(allCars, currentFilters.current, currentSearch.current));
-            return;
-        }
-        if (payload === 'all') {
-            const reset = { type: 'all', fuel: 'all', seats: 'all', model: 'all', brand: 'all', category: 'all', area: 'all' };
-            currentFilters.current = reset;
-            setFilteredCars(applyFilters(allCars, reset, currentSearch.current));
-        } else if (payload === 'premium') {
-            setFilteredCars(allCars.filter(c => c.price >= 900_000));
-        }
-    };
+const matchesContains = (source, keyword) => {
+  if (!keyword) {
+    return true;
+  }
 
-    const handleSearch = ({ location, carName }) => {
-        currentSearch.current = { location, carName };
-        setFilteredCars(applyFilters(allCars, currentFilters.current, { location, carName }));
-    };
+  return normalizeText(source).includes(normalizeText(keyword));
+};
 
-    const handleSort = (sortValue) => {
-        setFilteredCars(prev => {
-            const sorted = [...prev];
-            if (sortValue === 'price_asc') sorted.sort((a, b) => a.price - b.price);
-            else if (sortValue === 'price_desc') sorted.sort((a, b) => b.price - a.price);
-            return sorted;
-        });
-    };
+const sortVehicles = (vehicles, sortValue) => {
+  if (!sortValue || sortValue === 'all') {
+    return vehicles;
+  }
+
+  const sorted = [...vehicles];
+  if (sortValue === 'price_asc') {
+    sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+  }
+  if (sortValue === 'price_desc') {
+    sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+  }
+  return sorted;
+};
+
+const applyFilters = (baseVehicles, filters, search, sortValue) => {
+  const filtered = baseVehicles.filter((vehicle) => {
+    const price = Number(vehicle.price || 0);
+    const minPrice = toNumber(filters.priceMin);
+    const maxPrice = toNumber(filters.priceMax);
+    const vehicleLocation = vehicle.address || vehicle.pickupAddress || vehicle.location || '';
+
+    const matchSeats = filters.seats === 'all' || Number(vehicle.seats || 0) === Number(filters.seats);
+    const matchModel = matchesExact(vehicle.transmission, filters.model);
+    const matchBrand = matchesExact(vehicle.brand, filters.brand);
+    const matchCategory = matchesExact(vehicle.category || vehicle.type, filters.category);
+    const matchFuel = matchesExact(vehicle.fuel, filters.fuel);
+    const matchPriceMin = minPrice == null || price >= minPrice;
+    const matchPriceMax = maxPrice == null || price <= maxPrice;
+    const matchLocation = matchesContains(vehicleLocation, search.location);
+    const matchCarName = matchesContains(vehicle.name, search.carName);
 
     return (
-        <main>
-            {apiError && (
-                <div className="max-w-[1280px] mx-auto px-5 pt-3">
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-amber-700 text-[0.82rem] flex items-center gap-2">
-                        <span className="font-semibold">Thông báo:</span>
-                        {apiError}
-                    </div>
-                </div>
-            )}
-            <SearchBar onSearch={handleSearch} />
-            <FilterBar onFilter={handleFilter} onSort={handleSort} />
-            <CarGrid cars={filteredCars} loading={loading} />
-        </main>
+      matchSeats &&
+      matchModel &&
+      matchBrand &&
+      matchCategory &&
+      matchFuel &&
+      matchPriceMin &&
+      matchPriceMax &&
+      matchLocation &&
+      matchCarName
     );
+  });
+
+  return sortVehicles(filtered, sortValue);
+};
+
+const hasAvailabilityRange = (search) => Boolean(search?.pickupDate && search?.returnDate);
+
+const Home = () => {
+  const [allCars, setAllCars] = useState([]);
+  const [filteredCars, setFilteredCars] = useState([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(true);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilityNotice, setAvailabilityNotice] = useState('');
+
+  const currentFilters = useRef(DEFAULT_FILTERS);
+  const currentSearch = useRef({ location: '', carName: '', pickupDate: '', returnDate: '' });
+  const currentSort = useRef('all');
+  const availabilityRequestRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  const syncVisibleCars = async (
+    baseVehicles,
+    nextFilters = currentFilters.current,
+    nextSearch = currentSearch.current,
+    nextSort = currentSort.current
+  ) => {
+    const requestId = ++availabilityRequestRef.current;
+    const locallyFiltered = applyFilters(baseVehicles, nextFilters, nextSearch, nextSort);
+
+    if (!hasAvailabilityRange(nextSearch) || locallyFiltered.length === 0) {
+      if (!isMountedRef.current || requestId !== availabilityRequestRef.current) {
+        return;
+      }
+
+      setFilteredCars(locallyFiltered);
+      setAvailabilityError('');
+      setAvailabilityNotice('');
+      setCheckingAvailability(false);
+      return;
+    }
+
+    setCheckingAvailability(true);
+
+    const availabilityResults = await Promise.allSettled(
+      locallyFiltered.map((vehicle) =>
+        bookingService.checkAvailability({
+          vehicleId: vehicle.id,
+          pickupDate: nextSearch.pickupDate,
+          returnDate: nextSearch.returnDate,
+        })
+      )
+    );
+
+    if (!isMountedRef.current || requestId !== availabilityRequestRef.current) {
+      return;
+    }
+
+    let hiddenCount = 0;
+    let failedCount = 0;
+
+    const availableCars = locallyFiltered.filter((vehicle, index) => {
+      const result = availabilityResults[index];
+
+      if (result?.status !== 'fulfilled') {
+        failedCount += 1;
+        return true;
+      }
+
+      if (result.value?.isAvailable === false) {
+        hiddenCount += 1;
+        return false;
+      }
+
+      return true;
+    });
+
+    setFilteredCars(availableCars);
+    setAvailabilityError(
+      failedCount > 0
+        ? 'Khong the kiem tra lich thue cua mot so xe. Danh sach dang hien thi theo ket qua du phong.'
+        : ''
+    );
+    setAvailabilityNotice(
+      hiddenCount > 0
+        ? `Da an ${hiddenCount} xe da co booking trung lich trong khung thoi gian ban chon.`
+        : ''
+    );
+    setCheckingAvailability(false);
+  };
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      availabilityRequestRef.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadVehicles = async () => {
+      setLoadingVehicles(true);
+      try {
+        const { data } = await vehicleService.getList({ limit: 100 });
+        if (cancelled) {
+          return;
+        }
+
+        setAllCars(data);
+        await syncVisibleCars(data);
+        setApiError('');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setAllCars([]);
+        setFilteredCars([]);
+        setApiError(error.message || 'Khong the tai du lieu xe tu backend.');
+      } finally {
+        if (!cancelled) {
+          setLoadingVehicles(false);
+        }
+      }
+    };
+
+    loadVehicles();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleFilter = (payload) => {
+    if (payload === 'all') {
+      currentFilters.current = DEFAULT_FILTERS;
+      void syncVisibleCars(allCars, DEFAULT_FILTERS, currentSearch.current, currentSort.current);
+      return;
+    }
+
+    if (typeof payload === 'object' && payload !== null) {
+      currentFilters.current = { ...currentFilters.current, ...payload };
+      void syncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
+    }
+  };
+
+  const handleSearch = ({ location, carName, pickupDate = '', returnDate = '' }) => {
+    currentSearch.current = { location, carName, pickupDate, returnDate };
+    void syncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
+  };
+
+  const handleSort = (sortValue) => {
+    currentSort.current = sortValue;
+    void syncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
+  };
+
+  const loading = loadingVehicles || checkingAvailability;
+
+  return (
+    <main>
+      {apiError && (
+        <div className="mx-auto max-w-[1280px] px-5 pt-3">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-[0.82rem] text-red-700">
+            <span className="font-semibold">Khong the tai danh sach xe tu he thong.</span> {apiError}
+          </div>
+        </div>
+      )}
+
+      {availabilityError && (
+        <div className="mx-auto max-w-[1280px] px-5 pt-3">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[0.82rem] text-amber-800">
+            <span className="font-semibold">Khong the kiem tra trung lich cho mot so xe.</span> {availabilityError}
+          </div>
+        </div>
+      )}
+
+      {availabilityNotice && (
+        <div className="mx-auto max-w-[1280px] px-5 pt-3">
+          <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-[0.82rem] text-blue-800">
+            {availabilityNotice}
+          </div>
+        </div>
+      )}
+
+      <SearchBar onSearch={handleSearch} />
+      <FilterBar onFilter={handleFilter} onSort={handleSort} />
+      <CarGrid cars={filteredCars} loading={loading} rentalSearch={currentSearch.current} />
+    </main>
+  );
 };
 
 export default Home;
