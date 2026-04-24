@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 // import routes
 const authRoutes = require('./routes/auth.route');
 const uploadRoutes = require('./routes/upload.route');
@@ -56,6 +58,8 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'tiny' : 'dev'));
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'smartrent-api' });
 });
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/auth', authRoutes);
