@@ -1,133 +1,84 @@
-const Stripe = require('stripe');
-const PaymentModel = require('../models/payment.model');
+require('dotenv').config();
+//https://wise.com/gb/blog/stripe-payments-test-cards
 
-// Lazy-init: chỉ tạo Stripe instance khi cần, đảm bảo dotenv đã chạy
-let _stripe = null;
-const getStripe = () => {
-  if (!_stripe) {
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) throw new Error('STRIPE_SECRET_KEY chưa được cấu hình trong .env');
-    _stripe = Stripe(key);
-  }
-  return _stripe;
-};
+
+const mongoose = require('mongoose');
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const PaymentModel = require('../models/payment.model');
+const BookingModel = require('../models/booking.model');
 const throwError = require('../utils/throwError');
 const BookingService = require('./booking.service');
 const BaseService = require('./base.service');
+const QueryBuilder = require('../utils/queryBuilder');
 
 /** Cho phép thanh toán khi chờ showroom (pending), đã xác nhận (confirmed), hoặc đang chờ intent (waiting_payment). */
 const ALLOWED_PAYMENT_STATUSES = ['pending', 'confirmed', 'waiting_payment'];
-
-class QueryBuilder {
-  static buildExactFieldFilter(filters = {}) {
-    const filter = {};
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null && value !== '') {
-        filter[key] = value;
-      }
-    }
-    return filter;
-  }
-
-  static buildSearchFilter(search, fieldsObj = {}) {
-    if (search && String(search).trim()) {
-      const regex = new RegExp(String(search).trim(), 'i');
-      const fields = Object.keys(fieldsObj);
-      if (fields.length > 0) {
-        return { $or: fields.map((field) => ({ [field]: regex })) };
-      }
-    }
-    return {};
-  }
-
-  static buildSortOptions(sorts = []) {
-    const sort = {};
-    for (const { field, value } of sorts) {
-      const direction = BaseService.parseSortDirection(value);
-      if (direction !== null) {
-        sort[field] = direction;
-      }
-    }
-    return sort;
-  }
-}
+const PAYMENTDB_VALID_TRANSITIONS = {
+  'pending': ['successful', 'declined', 'failed'],
+  'failed': ['pending', 'declined'],
+  'successful': ['refunded'],
+  'declined': [],    // Trạng thái cuối
+  'refunded': []     // Trạng thái cuối
+};
 
 class PaymentService {
-  async createPaymentForBooking(bookingId) {
-    const booking = await BookingService.getBookingById(bookingId);
-    if (!booking) throwError('Không tìm thấy booking', 404);
+  async ensureAmount(payment) {
+    const booking = await BookingModel.findById(payment.booking_id);
+    if (!booking) throwError('Không tìm thấy booking cho payment này', 404);
 
-    if (booking.status === 'paid') {
-      throwError('Booking đã thanh toán', 400);
+    if (payment.amount !== booking.total_price) {
+      // Log lỗi để điều tra, có thể do lỗi code hoặc gian lận
+      console.error(`Lệch số tiền giữa Payment DB (amount: ${payment.amount}) và Booking (total_price: ${booking.total_price}) cho paymentId: ${payment._id}, bookingId: ${booking._id}`);
+      throwError('Lệch số tiền giữa Payment DB và Booking', 400);
     }
-
-    if (!ALLOWED_PAYMENT_STATUSES.includes(booking.status)) {
-      throwError(
-        `Booking ở trạng thái "${booking.status}" không thể thanh toán. Chỉ các trạng thái được phép: ${ALLOWED_PAYMENT_STATUSES.join(', ')}`,
-        400
-      );
-    }
-
-    let payment = await PaymentModel.findOne({
-      booking_id: bookingId,
-      payment_status: 'pending'
-    });
-
-    // Bug fix: check null before accessing payment_status, then check status
-    if (payment && payment.payment_status !== 'pending') {
-      throwError('Chỉ có thanh toán pending mới được tạo intent', 400);
-    }
-
-    if (!payment) {
-      payment = await this.createPaymentDB({
-        booking_id: bookingId,
-        amount: booking.total_price,
-        payment_status: 'pending'
-      });
-      await BookingService.updateBookingStatus(bookingId, 'waiting_payment');
-    }
-
-    let intent;
-    if (payment.stripe_payment_intent_id) {
-      intent = await this.getPaymentIntentById(payment.stripe_payment_intent_id);
-    } else {
-      intent = await this.createPaymentIntent({ paymentId: payment._id });
-      await PaymentModel.findByIdAndUpdate(payment._id, {
-        stripe_payment_intent_id: intent.id
-      });
-    }
-
-    return { ...payment, stripe_payment_intent_id: intent.id, client_secret: intent.client_secret };
+    // Trả về giá trị chính xác và đồng bộ luôn nếu cần
+    return booking.total_price;
   }
 
-  async getPaymentState(bookingId) {
-    const booking = await BookingService.getBookingById(bookingId);
-    if (!booking) throwError('Không tìm thấy booking', 404);
 
-    const payment = await PaymentModel.findOne({ booking_id: bookingId }).sort({ createdAt: -1 });
+
+
+
+
+  async getPaymentState(bookingId) {
+    const booking = await BookingModel.findById(bookingId);
+    if (!booking) throwError("Không tìm thấy booking", 404);
+
+    const payment = await PaymentModel.findOne({
+      booking_id: bookingId,
+    }).sort({ createdAt: -1 });
+
 
     let intent = null;
+
     if (payment?.stripe_payment_intent_id) {
-      intent = await this.getPaymentIntentById(payment.stripe_payment_intent_id);
+      intent = await this.getPaymentIntentById(
+        payment.stripe_payment_intent_id
+      );
     }
 
     return {
       bookingStatus: booking.status,
       paymentStatus: payment?.payment_status || null,
-      intentStatus: intent?.status || null
+      intentStatus: intent?.status || null,
     };
   }
 
   async createPaymentIntent(body = {}) {
     const { paymentId } = body;
+
     const payment = await this.getPaymentDBById(paymentId);
 
     if (!payment) {
       throwError('Payment không tồn tại', 404);
     }
 
-    const intent = await getStripe().paymentIntents.create({
-      amount: payment.amount,
+    const finalAmount = await this.ensureAmount(payment);
+
+
+    const intent = await stripe.paymentIntents.create({
+      amount: finalAmount,
       currency: payment.currency,
       metadata: {
         booking_id: payment.booking_id.toString(),
@@ -138,84 +89,108 @@ class PaymentService {
     return intent;
   }
 
+
+
   async createPaymentDB(body) {
     const transactionCode = `TXN-${Date.now()}`;
+
     const payment = await PaymentModel.create({
       transaction_code: transactionCode,
       ...body
     });
+
     return payment.toObject();
   }
 
   async getPaymentIntentById(intentId) {
-    return await getStripe().paymentIntents.retrieve(intentId);
+    return await stripe.paymentIntents.retrieve(intentId);
   }
+
+
 
   async getPaymentDBById(paymentId) {
     const payment = await PaymentModel.findById(paymentId);
     if (!payment) {
       throwError('Không tìm thấy dữ liệu thanh toán', 404);
     }
-    return payment;
+    return payment
   }
 
   async getListPaymentDB(body = {}) {
-    const { search, page, limit, sort_by, sort_by_amount, transaction_code, booking_id } = body;
+    const {
+      search,
+      page,
+      limit,
+      sort_by,
+      sort_by_amount,
+      transaction_code,
+      booking_id
+    } = body;
 
+    // Pagination
     const pagination = BaseService.parsePagination({ page, limit });
+
     const searchFilter = QueryBuilder.buildSearchFilter(search, { transaction_code });
+
     const fieldFilter = QueryBuilder.buildExactFieldFilter({ booking_id });
     const filter = { $and: [searchFilter, fieldFilter] };
-    const sortObj = QueryBuilder.buildSortOptions([
-      { field: 'amount', value: sort_by_amount },
-      { field: 'createdAt', value: sort_by }
-    ]);
+    const sortObj = QueryBuilder.buildSortOptions([{ field: 'amount', value: sort_by_amount }
+      , { field: 'createdAt', value: sort_by }
+    ]
 
+    );
     return BaseService.findPaginated(PaymentModel, filter, sortObj, pagination);
   }
 
-  async updatePaymentDBStatus(paymentId, newStatus) {
+
+
+  async updatePaymentDBStatus(paymentId, newStatus, options = {}) {
     const payment = await PaymentModel.findById(paymentId);
     if (!payment) throwError('Không tìm thấy dữ liệu thanh toán', 404);
 
+    const oldStatus = payment.payment_status;
+
+    const allowedTransitions = PAYMENTDB_VALID_TRANSITIONS[oldStatus] || [];
+
+    if (oldStatus !== newStatus && !allowedTransitions.includes(newStatus)) {
+      const allowedText = allowedTransitions.length
+        ? `[${allowedTransitions.join(', ')}]`
+        : 'KHÔNG CÓ (trạng thái cuối, không thể chuyển tiếp)';
+
+      throwError(`Không thể chuyển Payment Record từ "${oldStatus}" → "${newStatus}". ` +
+        `Các trạng thái hợp lệ: ${allowedText}`
+        , 400);
+    }
     payment.payment_status = newStatus;
-    await payment.save();
+
+    await payment.save(options);
     return payment.toObject();
   }
 
-  async syncPaymentIntentWithDB(paymentIntentId) {
-    const intent = await getStripe().paymentIntents.retrieve(paymentIntentId);
-
-    const updatePaymentAndBooking = async (intent, paymentStatus, bookingStatus) => {
-      const paymentId = intent.metadata.payment_id;
-      const bookingId = intent.metadata.booking_id;
-
-      const payment = await this.getPaymentDBById(paymentId);
-      await this.updatePaymentDBStatus(paymentId, paymentStatus);
-      await BookingService.updateBookingStatus(bookingId, bookingStatus);
-
-      if (paymentStatus === 'successful') {
-        await PaymentModel.findByIdAndUpdate(payment._id, { paid_at: new Date() });
-      }
-    };
-
-    let paymentStatus = null;
-    let bookingStatus = null;
-
-    if (intent.status === 'succeeded') {
-      paymentStatus = 'successful';
-      bookingStatus = 'paid';
-    } else if (['requires_payment_method', 'canceled'].includes(intent.status)) {
-      paymentStatus = 'failed';
-      bookingStatus = 'waiting_payment';
+  async processRefundOnly(payment, reason = 'requested_by_customer') {
+    if (!payment || payment.payment_status !== 'successful') {
+      throwError("Giao dịch không hợp lệ để hoàn tiền");
     }
 
-    if (paymentStatus && bookingStatus) {
-      await updatePaymentAndBooking(intent, paymentStatus, bookingStatus);
+    if (!payment.stripe_payment_intent_id) {
+      throwError("Không có Payment Intent ID");
     }
 
-    return { intent, paymentStatus, bookingStatus };
+    // 👇 gọi Stripe (KHÔNG có transaction)
+    const refund = await stripe.refunds.create({
+      payment_intent: payment.stripe_payment_intent_id,
+      reason,
+    });
+
+    if (refund.status !== 'succeeded') {
+      throwError("Stripe từ chối hoàn tiền");
+    }
+
+    return refund;
   }
 }
+
+
+
 
 module.exports = new PaymentService();

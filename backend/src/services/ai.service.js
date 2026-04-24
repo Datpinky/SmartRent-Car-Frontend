@@ -31,11 +31,12 @@ class AiService {
     }
 
     getGeminiModel() {
-        if (!process.env.GEMINI_API_KEY) {
-            throwError("GEMINI_API_KEY chưa được cấu hình", 503);
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        if (!apiKey) {
+            throwError("GEMINI_API_KEY (hoặc GOOGLE_API_KEY) chưa được cấu hình", 503);
         }
         if (!this._gemini) {
-            this._gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            this._gemini = new GoogleGenerativeAI(apiKey);
         }
         const name = process.env.GEMINI_MODEL || "gemini-2.0-flash";
         return this._gemini.getGenerativeModel({
@@ -66,7 +67,7 @@ class AiService {
         if (process.env.OPENAI_API_KEY) {
             return this._compareWithOpenAI(before, after);
         }
-        if (process.env.GEMINI_API_KEY) {
+        if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
             return this._compareWithGemini(before, after);
         }
         throwError("Chưa cấu hình OPENAI_API_KEY hoặc GEMINI_API_KEY cho so sánh ảnh", 503);
@@ -117,7 +118,11 @@ class AiService {
 
         const raw = res.response.text()?.trim();
         if (!raw) {
-            throwError("Gemini không trả về nội dung", 502);
+            const blockReason = res.response?.promptFeedback?.blockReason;
+            throwError(
+                blockReason ? `Gemini từ chối yêu cầu (${blockReason})` : "Gemini không trả về nội dung",
+                502
+            );
         }
         return this._parseJsonResponse(raw);
     }

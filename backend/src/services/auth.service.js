@@ -1,10 +1,49 @@
 const crypto = require("crypto");
+const { pick } = require("lodash");
 const userModel = require("../models/user.model");
 const sessionModel = require("../models/session.model");
 const { signAccessToken } = require("../utils/jwt");
 const throwError = require("../utils/throwError");
 const { buildSessionSummaryLine } = require("../utils/sessionDisplay");
-const { pick } = require("lodash");
+
+const normalizeConsumerRole = (payload = {}) => {
+    const rawRole = String(payload.role || payload.account_type || "user").trim().toLowerCase();
+
+    if (rawRole === "owner") {
+        return "owner";
+    }
+
+    return "user";
+};
+
+const buildSafeUser = (user) => pick(user?.toObject ? user.toObject() : user, [
+    "_id",
+    "email",
+    "name",
+    "role",
+    "phone",
+    "showroom_status",
+    "business_name",
+    "is_active",
+]);
+
+const ensureLoginAllowed = (user) => {
+    if (user.role === "showroom") {
+        const showroomStatus = String(user.showroom_status || "pending").toLowerCase();
+
+        if (showroomStatus === "pending") {
+            throwError("Tai khoan showroom dang cho admin phe duyet.", 403);
+        }
+
+        if (showroomStatus === "rejected") {
+            throwError("Tai khoan showroom da bi tu choi. Vui long lien he admin de duoc ho tro.", 403);
+        }
+    }
+
+    if (!user.is_active) {
+        throwError("Tai khoan cua ban dang bi khoa. Vui long lien he admin de duoc ho tro.", 403);
+    }
+};
 
 const SAFE_USER_KEYS_BASE = [
     "_id",
@@ -35,18 +74,40 @@ class AuthService {
         if (userExists) {
             throwError("Email already in use", 400);
         }
-        return userModel.create(userData);
+
+        const phone = String(userData.phone || "").replace(/\D/g, "");
+        const payload = {
+            name: String(userData.name || "").trim(),
+            email: userData.email,
+            password: userData.password,
+            role: normalizeConsumerRole(userData),
+            is_active: true,
+        };
+
+        if (phone) {
+            payload.phone = phone;
+        }
+
+        if (userData.age !== undefined) {
+            payload.age = userData.age;
+        }
+
+        return userModel.create(payload);
     }
 
-    /**
-     * Đăng ký tài khoản showroom — role cố định là "showroom",
-     * showroom_status = "pending", is_active = false (chờ admin duyệt).
-     */
     async registerShowroom(payload) {
-        const { name, email, password, phone, business_name, tax_code, license_document_urls } = payload;
+        const {
+            name,
+            email,
+            password,
+            phone,
+            business_name,
+            tax_code,
+            license_document_urls,
+        } = payload;
 
         const exists = await userModel.findOne({ email });
-        if (exists) throwError("Email đã được sử dụng", 400);
+        if (exists) throwError("Email da duoc su dung", 400);
 
         const doc = await userModel.create({
             name,
@@ -62,20 +123,29 @@ class AuthService {
         });
 
         return pick(doc.toObject(), [
-            "_id", "name", "email", "phone",
-            "business_name", "tax_code", "showroom_status", "createdAt",
+            "_id",
+            "name",
+            "email",
+            "phone",
+            "business_name",
+            "tax_code",
+            "showroom_status",
+            "createdAt",
         ]);
     }
+
     async login(userData, meta = {}) {
         const user = await userModel.findOne({ email: userData.email }).select("+password");
         if (!user) {
-            throwError("Email hoặc mật khẩu không đúng.", 401);
+            throwError("Email hoac mat khau khong dung.", 401);
         }
 
         const isMatch = await user.comparePassword(userData.password);
         if (!isMatch) {
-            throwError("Email hoặc mật khẩu không đúng.", 401);
+            throwError("Email hoac mat khau khong dung.", 401);
         }
+
+        ensureLoginAllowed(user);
 
         const jti = crypto.randomUUID();
         await sessionModel.create({
@@ -86,7 +156,6 @@ class AuthService {
         });
 
         const token = signAccessToken({ userId: user._id, role: user.role, jti });
-
         const safeUser = this.toSafeUser(user);
 
         return { user: safeUser, token };
@@ -111,11 +180,11 @@ class AuthService {
             .limit(20)
             .lean();
 
-        const sessions = rows.map((r) => ({
-            jti: r.jti,
-            summary: buildSessionSummaryLine(r.user_agent, r.ip, r.last_active_at),
-            lastActiveAt: r.last_active_at,
-            isCurrent: !!currentJti && r.jti === currentJti,
+        const sessions = rows.map((row) => ({
+            jti: row.jti,
+            summary: buildSessionSummaryLine(row.user_agent, row.ip, row.last_active_at),
+            lastActiveAt: row.last_active_at,
+            isCurrent: !!currentJti && row.jti === currentJti,
         }));
 
         return { sessions, legacyToken: !currentJti };
@@ -123,7 +192,7 @@ class AuthService {
 
     async updateProfile(userId, payload) {
         const user = await userModel.findById(userId);
-        if (!user) throwError("Không tìm thấy người dùng", 404);
+        if (!user) throwError("Khong tim thay nguoi dung", 404);
 
         const showroomKeys = [
             "business_name",
@@ -144,7 +213,7 @@ class AuthService {
         if (payload.name != null) user.name = String(payload.name).trim();
         if (payload.phone != null) {
             const digits = String(payload.phone).replace(/\D/g, "");
-            if (digits.length !== 10) throwError("Số điện thoại phải có đúng 10 chữ số", 400);
+            if (digits.length !== 10) throwError("So dien thoai phai co dung 10 chu so", 400);
             user.phone = digits;
         }
 
@@ -183,10 +252,10 @@ class AuthService {
 
     async changePassword(userId, currentPassword, newPassword, meta = {}) {
         const user = await userModel.findById(userId).select("+password");
-        if (!user) throwError("Không tìm thấy người dùng", 404);
+        if (!user) throwError("Khong tim thay nguoi dung", 404);
 
         const ok = await user.comparePassword(currentPassword);
-        if (!ok) throwError("Mật khẩu hiện tại không đúng", 400);
+        if (!ok) throwError("Mat khau hien tai khong dung", 400);
 
         user.password = newPassword;
         await user.save();
@@ -200,8 +269,8 @@ class AuthService {
             user_agent: meta.userAgent || "",
             ip: meta.ip || "",
         });
-        const token = signAccessToken({ userId: user._id, role: user.role, jti });
 
+        const token = signAccessToken({ userId: user._id, role: user.role, jti });
         return { ok: true, token };
     }
 }

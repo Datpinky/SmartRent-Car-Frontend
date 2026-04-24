@@ -16,16 +16,15 @@ import { sanitizeImageList } from '../../../utils/media';
 const FILTERS = [
     { key: 'all', label: 'Tat ca' },
     { key: 'successful', label: 'Thanh cong' },
+    { key: 'refunded', label: 'Hoan tra' },
     { key: 'pending', label: 'Cho xu ly' },
     { key: 'failed', label: 'That bai / tu choi' },
 ];
 
-/** Trạng thái booking không hiển thị trong lịch sử giao dịch. */
-const EXCLUDED_BOOKING_STATUSES = ['pending', 'waiting_payment', 'cancelled'];
-
 const PAYMENT_LABELS = {
     pending: 'Cho thanh toan',
     successful: 'Thanh cong',
+    refunded: 'Da hoan tra',
     failed: 'That bai',
     declined: 'Bi tu choi',
 };
@@ -45,6 +44,20 @@ const formatDateTime = (value) => {
 
 const formatMoney = (value) => `${Number(value || 0).toLocaleString('vi-VN')}d`;
 
+const resolvePaymentStatus = (booking) =>
+    booking?.payment?.payment_status
+    || booking?.paymentState?.paymentStatus
+    || (booking?.status === 'paid' ? 'successful' : 'pending');
+
+const hasPaymentRecord = (booking) =>
+    Boolean(
+        booking?.payment?._id
+        || booking?.payment?.transaction_code
+        || booking?.payment?.stripe_payment_intent_id
+        || booking?.paymentState?.paymentStatus
+        || Number(booking?.payment?.amount || 0) > 0
+    );
+
 const mapTransaction = (booking) => {
     const payment = booking.payment || null;
     const images = sanitizeImageList([
@@ -53,10 +66,7 @@ const mapTransaction = (booking) => {
         ...(booking.vehicle_id?.images || []),
     ]);
 
-    const paymentStatus =
-        payment?.payment_status
-        || booking.paymentState?.paymentStatus
-        || (booking.status === 'paid' ? 'successful' : 'pending');
+    const paymentStatus = resolvePaymentStatus(booking);
 
     return {
         id: payment?._id || booking._id,
@@ -95,6 +105,9 @@ const Transactions = () => {
     const [activeFilter, setActiveFilter] = useState('all');
     const [detailModal, setDetailModal] = useState(null);
 
+    // Các trạng thái booking bị loại khỏi lịch sử giao dịch
+    const EXCLUDED_BOOKING_STATUSES = ['pending', 'waiting_payment'];
+
     useEffect(() => {
         let mounted = true;
 
@@ -106,9 +119,13 @@ const Transactions = () => {
                     return;
                 }
 
-                const validBookings = (bookings || []).filter(
-                    (b) => !EXCLUDED_BOOKING_STATUSES.includes(b.status)
-                );
+                const validBookings = (bookings || []).filter((booking) => {
+                    if (booking.status === 'cancelled') {
+                        return hasPaymentRecord(booking);
+                    }
+
+                    return !EXCLUDED_BOOKING_STATUSES.includes(booking.status);
+                });
                 setTransactions(validBookings.map(mapTransaction));
                 setError('');
             } catch (err) {
@@ -142,7 +159,7 @@ const Transactions = () => {
             successful: transactions.filter((transaction) => transaction.status === 'successful').length,
             pending: transactions.filter((transaction) => transaction.status === 'pending').length,
             totalPaid: transactions
-                .filter((transaction) => transaction.status === 'successful')
+                .filter((transaction) => ['successful', 'refunded'].includes(transaction.status))
                 .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
         }),
         [transactions]
@@ -168,13 +185,13 @@ const Transactions = () => {
 
             <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
                 {[
-                    { label: 'Tong giao dich', value: summary.total, color: '#111827' },
-                    { label: 'Thanh cong', value: summary.successful, color: '#059669' },
-                    { label: 'Cho xu ly', value: summary.pending, color: '#d97706' },
-                    { label: 'Da thu', value: formatMoney(summary.totalPaid), color: '#2563eb' },
+                    { label: 'Tổng giao dịch', value: summary.total, color: '#111827' },
+                    { label: 'Thành công', value: summary.successful, color: '#059669' },
+                    { label: 'Chờ xử lý', value: summary.pending, color: '#d97706' },
+                    { label: 'Đã chi', value: formatMoney(summary.totalPaid), color: '#2563eb' },
                 ].map((item) => (
                     <div key={item.label} style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', padding: '12px 18px', minWidth: 140 }}>
-                        <div style={{ fontSize: item.label === 'Da thu' ? '1.1rem' : '1.35rem', fontWeight: 800, color: item.color }}>
+                        <div style={{ fontSize: item.label === 'Đã chi' ? '1.1rem' : '1.35rem', fontWeight: 800, color: item.color }}>
                             {item.value}
                         </div>
                         <div style={{ fontSize: '0.74rem', color: '#9ca3af', marginTop: 2 }}>{item.label}</div>
@@ -252,7 +269,7 @@ const Transactions = () => {
                                         customLabel={PAYMENT_LABELS[transaction.status] || transaction.status}
                                     />
                                 </div>
-                                <div style={{ fontWeight: 800, color: '#00b14f', fontSize: '1rem' }}>
+                                <div style={{ fontWeight: 800, color: transaction.status === 'refunded' ? '#2563eb' : '#00b14f', fontSize: '1rem' }}>
                                     {formatMoney(transaction.amount)}
                                 </div>
                                 <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 4 }}>Booking: {transaction.bookingId}</div>
@@ -301,7 +318,7 @@ const Transactions = () => {
                                 style={{ flex: 1, justifyContent: 'center' }}
                                 onClick={() =>
                                     navigate(
-                                        `/renter/payment-result?bookingId=${detailModal.bookingId}&status=${detailModal.status === 'successful'
+                                        `/renter/payment-result?bookingId=${detailModal.bookingId}&status=${['successful', 'refunded'].includes(detailModal.status)
                                             ? 'success'
                                             : detailModal.status === 'pending'
                                                 ? 'pending'
@@ -313,7 +330,7 @@ const Transactions = () => {
                                 <FaCheckCircle /> Xem payment result
                             </button>
                             <button
-                                className="btn-secondary"
+                                className="renter-btn-soft"
                                 style={{ flex: 1, justifyContent: 'center' }}
                                 onClick={() => navigate('/renter/bookings')}
                             >

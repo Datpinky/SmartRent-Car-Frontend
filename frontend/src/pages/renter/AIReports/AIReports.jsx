@@ -1,0 +1,254 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FaArrowRight, FaRobot } from 'react-icons/fa';
+import AIInspectionReportView from '../../../components/common/AIInspectionReportView';
+import StatusBadge from '../../../components/common/StatusBadge';
+import bookingService from '../../../services/bookingService';
+import { hasAiInspectionReport, getAiInspectionSummaryMeta } from '../../../utils/aiInspectionReport';
+import { getRentalWorkflow } from '../../../utils/rentalWorkflowStorage';
+
+const formatDateTime = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'N/A';
+  }
+
+  return date.toLocaleString('vi-VN');
+};
+
+const mapReportBooking = (booking) => {
+  const workflow = getRentalWorkflow(booking._id);
+
+  return {
+    id: booking._id,
+    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe khong ten',
+    showroomName: booking.showroom?.name || booking.showroom_id?.name || 'SmartRent',
+    startDate: booking.start_date,
+    endDate: booking.end_date,
+    status: booking.status,
+    report: workflow.aiInspection || null,
+    workflowUpdatedAt: workflow.updatedAt || booking.updatedAt || booking.end_date,
+  };
+};
+
+const AIReports = () => {
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const presetBookingId = params.get('bookingId') || '';
+
+  const [reports, setReports] = useState([]);
+  const [selectedBookingId, setSelectedBookingId] = useState(presetBookingId);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadReports = async () => {
+      setLoading(true);
+      try {
+        const bookings = await bookingService.getMyBookingsDetailed();
+        if (!mounted) {
+          return;
+        }
+
+        const mapped = (bookings || [])
+          .map(mapReportBooking)
+          .filter((booking) => hasAiInspectionReport({ aiInspection: booking.report }))
+          .sort(
+            (left, right) =>
+              new Date(right.workflowUpdatedAt || 0).getTime() - new Date(left.workflowUpdatedAt || 0).getTime()
+          );
+
+        setReports(mapped);
+        setError('');
+      } catch (err) {
+        if (!mounted) {
+          return;
+        }
+
+        setReports([]);
+        setError(err.message || 'Khong the tai bao cao AI luc nay.');
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadReports();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (reports.length === 0) {
+      setSelectedBookingId('');
+      return;
+    }
+
+    const matchedReport = reports.find((report) => report.id === presetBookingId);
+    if (matchedReport) {
+      setSelectedBookingId(matchedReport.id);
+      return;
+    }
+
+    setSelectedBookingId((current) => (
+      current && reports.some((report) => report.id === current) ? current : reports[0].id
+    ));
+  }, [presetBookingId, reports]);
+
+  const selectedReport = useMemo(
+    () => reports.find((report) => report.id === selectedBookingId) || null,
+    [reports, selectedBookingId]
+  );
+
+  const summary = useMemo(
+    () => ({
+      total: reports.length,
+      clean: reports.filter((report) => !report.report?.result?.damage_detected).length,
+      warning: reports.filter((report) => report.report?.result?.damage_detected).length,
+    }),
+    [reports]
+  );
+
+  return (
+    <div className="ai-inspection">
+      <div className="page-header" style={{ marginBottom: 20 }}>
+        <div>
+          <h1 className="page-title">Bao cao AI thiet hai phat sinh</h1>
+          <p className="page-subtitle">Danh sach ket qua doi chieu anh truoc va sau thue tren trinh duyet hien tai</p>
+        </div>
+        <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
+          Ve Chuyen di cua toi
+        </button>
+      </div>
+
+      <div
+        style={{
+          marginBottom: 16,
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          color: '#1d4ed8',
+          borderRadius: 14,
+          padding: '12px 14px',
+          fontSize: '0.82rem',
+          lineHeight: 1.65,
+        }}
+      >
+        Bao cao trong muc nay duoc tao tu anh doi chieu renter da luu trong quy trinh nhan / tra xe tren trinh duyet hien tai.
+        Neu doi trinh duyet hoac xoa du lieu local, bao cao co the khong con hien thi day du.
+      </div>
+
+      {error && (
+        <div style={{ marginBottom: 16, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 12, padding: '12px 14px', fontSize: '0.84rem' }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        {[
+          { label: 'Tong bao cao', value: summary.total, color: '#111827' },
+          { label: 'Khong thay hu hong moi', value: summary.clean, color: '#059669' },
+          { label: 'Can doi chieu them', value: summary.warning, color: '#d97706' },
+        ].map((item) => (
+          <div key={item.label} style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', padding: '12px 18px', minWidth: 150 }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: item.color }}>{item.value}</div>
+            <div style={{ fontSize: '0.74rem', color: '#9ca3af', marginTop: 2 }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '64px 0', color: '#6b7280' }}>Dang tai bao cao AI...</div>
+      ) : reports.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', padding: 28, textAlign: 'center' }}>
+          <div style={{ width: 70, height: 70, borderRadius: '50%', margin: '0 auto 14px', display: 'grid', placeItems: 'center', background: '#eff6ff', color: '#2563eb', fontSize: '1.6rem' }}>
+            <FaRobot />
+          </div>
+          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Chua co bao cao AI nao tren trinh duyet nay</div>
+          <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, maxWidth: 580, margin: '0 auto 16px' }}>
+            Bao cao AI se duoc tao sau khi ban gui bo anh tra xe co anh doi chieu truoc thue trong quy trinh nhan / tra xe, va duoc luu tren trinh duyet hien tai.
+          </div>
+          <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
+            Mo quy trinh tra xe
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '330px minmax(0, 1fr)', gap: 18, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {reports.map((reportItem) => {
+              const meta = getAiInspectionSummaryMeta(reportItem.report);
+              const selected = reportItem.id === selectedBookingId;
+
+              return (
+                <button
+                  key={reportItem.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedBookingId(reportItem.id);
+                    setParams({ bookingId: reportItem.id });
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    background: selected ? '#eff6ff' : '#fff',
+                    border: `1px solid ${selected ? '#bfdbfe' : '#e5e7eb'}`,
+                    borderRadius: 18,
+                    padding: 16,
+                    cursor: 'pointer',
+                    boxShadow: selected ? '0 12px 26px rgba(37, 99, 235, 0.08)' : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                    <StatusBadge status={reportItem.status} />
+                    <div
+                      style={{
+                        borderRadius: 999,
+                        padding: '5px 10px',
+                        background: meta.bg,
+                        border: `1px solid ${meta.border}`,
+                        color: meta.color,
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {meta.badgeLabel}
+                    </div>
+                  </div>
+
+                  <div style={{ fontWeight: 800, color: '#111827', fontSize: '0.95rem', marginBottom: 4 }}>
+                    {reportItem.vehicleName}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#6b7280', marginBottom: 10 }}>{reportItem.showroomName}</div>
+                  <div style={{ fontSize: '0.76rem', color: '#64748b', lineHeight: 1.6 }}>
+                    {formatDateTime(reportItem.startDate)} - {formatDateTime(reportItem.endDate)}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 6 }}>
+                    Cap nhat tren trinh duyet nay: {formatDateTime(reportItem.workflowUpdatedAt)}
+                  </div>
+                  <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, color: selected ? '#2563eb' : '#6b7280', fontSize: '0.76rem', fontWeight: 700 }}>
+                    Xem chi tiet <FaArrowRight />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            {selectedReport && (
+              <AIInspectionReportView
+                report={selectedReport.report}
+                bookingCode={selectedReport.id}
+                vehicleName={selectedReport.vehicleName}
+                showroomName={selectedReport.showroomName}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AIReports;

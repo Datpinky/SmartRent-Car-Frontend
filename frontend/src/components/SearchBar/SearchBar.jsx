@@ -1,34 +1,45 @@
-import React, { useState, useEffect, useId } from 'react';
-import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar, FaCalendarAlt } from 'react-icons/fa';
 import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
-const CITIES = ['Hà Nội', 'Đà Nẵng', 'Hồ Chí Minh'];
+const CITIES = ['Ha Noi', 'Da Nang', 'Ho Chi Minh'];
 
 const CITY_DISTRICTS = {
-  'Đà Nẵng': {
-    'Quận': ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'],
-    'Huyện': ['Hòa Vang'],
+  'Da Nang': {
+    Quan: ['Hai Chau', 'Thanh Khe', 'Son Tra', 'Ngu Hanh Son', 'Lien Chieu', 'Cam Le'],
+    Huyen: ['Hoa Vang'],
   },
-  'Hồ Chí Minh': {
-    'Quận': ['Quận 1', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7',
-      'Quận 8', 'Quận 10', 'Quận 11', 'Quận 12', 'Bình Thạnh',
-      'Gò Vấp', 'Tân Bình', 'Tân Phú', 'Phú Nhuận', 'Bình Tân'],
-    'Huyện': ['Bình Chánh', 'Củ Chi', 'Hóc Môn', 'Nhà Bè', 'Cần Giờ'],
+  'Ho Chi Minh': {
+    Quan: ['Quan 1', 'Quan 3', 'Quan 4', 'Quan 5', 'Quan 6', 'Quan 7', 'Quan 8', 'Quan 10', 'Quan 11', 'Quan 12', 'Binh Thanh', 'Go Vap', 'Tan Binh', 'Tan Phu', 'Phu Nhuan', 'Binh Tan'],
+    Huyen: ['Binh Chanh', 'Cu Chi', 'Hoc Mon', 'Nha Be', 'Can Gio'],
   },
-  'Hà Nội': {
-    'Quận': ['Ba Đình', 'Hoàn Kiếm', 'Hai Bà Trưng', 'Đống Đa', 'Cầu Giấy',
-      'Thanh Xuân', 'Hoàng Mai', 'Long Biên', 'Nam Từ Liêm', 'Bắc Từ Liêm', 'Tây Hồ', 'Hà Đông'],
-    'Huyện': ['Đông Anh', 'Gia Lâm', 'Sóc Sơn', 'Thanh Trì', 'Hoài Đức'],
+  'Ha Noi': {
+    Quan: ['Ba Dinh', 'Hoan Kiem', 'Hai Ba Trung', 'Dong Da', 'Cau Giay', 'Thanh Xuan', 'Hoang Mai', 'Long Bien', 'Nam Tu Liem', 'Bac Tu Liem', 'Tay Ho', 'Ha Dong'],
+    Huyen: ['Dong Anh', 'Gia Lam', 'Soc Son', 'Thanh Tri', 'Hoai Duc'],
   },
 };
 
+const formatDateLabel = (value, fallback) => {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback;
+  }
+
+  return parsed.toLocaleString('vi-VN');
+};
+
 const SearchBar = ({ onSearch }) => {
-  const titleId = useId();
-  const carNameId = useId();
   const [showModal, setShowModal] = useState(false);
   const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedDist, setDist] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
   const [carName, setCarName] = useState('');
+  const [pickupDate, setPickupDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     if (!showModal) {
@@ -45,212 +56,302 @@ const SearchBar = ({ onSearch }) => {
     };
   }, [showModal]);
 
-  const handleCityClick = (city) => { setSelectedCity(city); setDist(''); };
-  const handleDistClick = (d) => setDist(prev => prev === d ? '' : d);
+  const districts = selectedCity ? CITY_DISTRICTS[selectedCity] : null;
+
+  const locationLabel = useMemo(() => {
+    if (selectedCity && selectedDistrict) {
+      return `${selectedDistrict}, ${selectedCity}`;
+    }
+
+    return selectedCity || '';
+  }, [selectedCity, selectedDistrict]);
 
   const handleSearch = () => {
-    const location = selectedDist || selectedCity || '';
-    if (onSearch) onSearch({ location, carName });
+    if ((pickupDate && !returnDate) || (!pickupDate && returnDate)) {
+      setValidationError('Can chon day du ngay nhan xe va ngay tra xe.');
+      return;
+    }
+
+    if (pickupDate && returnDate && new Date(pickupDate) >= new Date(returnDate)) {
+      setValidationError('Ngay tra xe phai sau ngay nhan xe.');
+      return;
+    }
+
+    onSearch?.({
+      location: locationLabel,
+      carName,
+      pickupDate,
+      returnDate,
+    });
+    setValidationError('');
     setShowModal(false);
   };
 
-  const districts = selectedCity ? CITY_DISTRICTS[selectedCity] : null;
-  const locLabel = selectedCity && selectedDist
-    ? `${selectedCity} - ${selectedDist}`
-    : selectedCity || '';
+  const handleReset = () => {
+    setSelectedCity(null);
+    setSelectedDistrict('');
+    setCarName('');
+    setPickupDate('');
+    setReturnDate('');
+    setValidationError('');
+  };
 
   return (
     <>
-      {/* Search bar */}
-      <section className="py-10 px-5 bg-gradient-to-br from-[#f0fdf4] to-[#e8f8ef]">
-        <h1 className="text-center text-[2rem] font-extrabold text-gray-900 mb-6 max-[600px]:text-[1.4rem] text-balance">
-          Tìm xe tự lái
+      <section className="bg-gradient-to-br from-[#f0fdf4] to-[#e8f8ef] px-5 py-10">
+        <h1 className="mb-6 text-center text-[2rem] font-extrabold text-gray-900 max-[600px]:text-[1.4rem]">
+          Tim xe tu lai
         </h1>
-        <div className="max-w-[820px] mx-auto flex items-stretch bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden max-[640px]:flex-col max-[640px]:rounded-xl">
-          {/* Location field — opens modal */}
-          <button
-            type="button"
-            aria-label={locLabel ? `Địa điểm: ${locLabel} — thay đổi` : 'Chọn địa điểm tìm xe'}
-            className="flex items-center gap-3 px-5 py-3.5 flex-1 border-r border-gray-100 max-[640px]:border-r-0 max-[640px]:border-b text-left transition-[background-color] hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-            onClick={() => setShowModal(true)}
-          >
-            <FaMapMarkerAlt aria-hidden="true" className="text-primary text-base shrink-0" />
-            <div className="flex flex-col min-w-0">
-              <span className="text-[0.68rem] text-gray-400 font-semibold uppercase tracking-wide">Địa điểm</span>
-              <span className={`text-[0.9rem] font-medium truncate ${locLabel ? 'text-gray-800' : 'text-gray-400'}`}>
-                {locLabel || 'Chọn địa điểm tìm xe'}
-              </span>
-            </div>
-          </button>
 
-          {/* Car name field */}
-          <div className="flex items-center gap-3 px-5 py-3.5 flex-1 border-r border-gray-100 max-[640px]:border-r-0 max-[640px]:border-b">
-            <FaCar aria-hidden="true" className="text-gray-400 text-base shrink-0" />
-            <div className="flex flex-col min-w-0 w-full">
-              <label htmlFor={carNameId} className="text-[0.68rem] text-gray-400 font-semibold uppercase tracking-wide">Tìm kiếm xe</label>
-              <input
-                id={carNameId}
-                type="search"
-                name="car-name"
-                autoComplete="off"
-                className="text-[0.9rem] font-medium text-gray-800 bg-transparent border-none focus:outline-none placeholder:text-gray-400"
-                placeholder="VD: Mazda, Vios…"
-                value={carName}
-                onChange={(e) => setCarName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
+        <button
+          type="button"
+          className="mx-auto flex w-full max-w-[820px] items-stretch overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-md transition-shadow hover:shadow-lg max-[640px]:flex-col max-[640px]:rounded-xl"
+          onClick={() => setShowModal(true)}
+        >
+          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
+            <FaMapMarkerAlt className="shrink-0 text-base text-primary" />
+            <div className="min-w-0">
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Dia diem</div>
+              <div className={`truncate text-[0.92rem] font-medium ${locationLabel ? 'text-gray-800' : 'text-gray-400'}`}>
+                {locationLabel || 'Chon dia diem tim xe'}
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 px-7 py-3.5 bg-primary text-white font-bold text-[0.85rem] tracking-wide uppercase transition-colors hover:bg-primary-dark shrink-0 max-[640px]:py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
-            onClick={handleSearch}
-          >
-            <FaSearch aria-hidden="true" />TÌM KIẾM
-          </button>
-        </div>
+          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
+            <FaCalendarAlt className="shrink-0 text-base text-primary" />
+            <div className="min-w-0">
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Nhan xe</div>
+              <div className={`truncate text-[0.92rem] font-medium ${pickupDate ? 'text-gray-800' : 'text-gray-400'}`}>
+                {formatDateLabel(pickupDate, 'Chon ngay nhan xe')}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
+            <FaCalendarAlt className="shrink-0 text-base text-primary" />
+            <div className="min-w-0">
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Tra xe</div>
+              <div className={`truncate text-[0.92rem] font-medium ${returnDate ? 'text-gray-800' : 'text-gray-400'}`}>
+                {formatDateLabel(returnDate, 'Chon ngay tra xe')}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
+            <FaCar className="shrink-0 text-base text-gray-400" />
+            <div className="min-w-0">
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Tim theo ten xe</div>
+              <div className={`truncate text-[0.92rem] font-medium ${carName ? 'text-gray-800' : 'text-gray-400'}`}>
+                {carName || 'Mazda, Vios, VF e34...'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center justify-center gap-2 bg-primary px-7 py-3.5 text-[0.85rem] font-bold uppercase tracking-wide text-white max-[640px]:py-4">
+            <FaSearch />
+            Tim kiem
+          </div>
+        </button>
       </section>
 
-      {/* Modal */}
       {showModal && (
         <div
-          role="presentation"
-          className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
           onClick={() => setShowModal(false)}
         >
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="bg-white w-full sm:max-w-[480px] sm:rounded-2xl rounded-t-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] flex flex-col max-h-[90vh] overscroll-contain"
-            onClick={e => e.stopPropagation()}
+            className="flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.25)] sm:max-w-[520px] sm:rounded-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-              <h2 id={titleId} className="text-base font-bold text-gray-900">Tìm xe</h2>
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+              <span className="text-base font-bold text-gray-900">Tim xe</span>
               <button
                 type="button"
-                aria-label="Đóng"
-                className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
                 onClick={() => setShowModal(false)}
               >
-                <FaTimes aria-hidden="true" />
+                <FaTimes />
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4 overscroll-contain">
-              {/* Location display */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
               <div>
-                <p className="text-[0.78rem] font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Địa điểm đã chọn</p>
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5">
-                  <FaMapMarkerAlt aria-hidden="true" className="text-primary shrink-0" />
-                  <span className={`text-[0.9rem] ${locLabel ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
-                    {locLabel || 'Chọn địa điểm'}
+                <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
+                  Dia diem
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+                  <FaMapMarkerAlt className="shrink-0 text-primary" />
+                  <span className={`text-[0.9rem] ${locationLabel ? 'font-medium text-gray-800' : 'text-gray-400'}`}>
+                    {locationLabel || 'Chon thanh pho hoac quan huyen'}
                   </span>
                 </div>
               </div>
 
-              {/* Car name input */}
               <div>
-                <label htmlFor={`${carNameId}-modal`} className="text-[0.78rem] font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Tìm kiếm xe</label>
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
-                  <FaCar aria-hidden="true" className="text-gray-400 shrink-0" />
+                <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
+                  Ten xe
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+                  <FaCar className="shrink-0 text-gray-400" />
                   <input
-                    id={`${carNameId}-modal`}
-                    type="search"
-                    name="car-name-modal"
-                    autoComplete="off"
-                    className="flex-1 bg-transparent border-none focus:outline-none text-[0.88rem] text-gray-800 placeholder:text-gray-400"
-                    placeholder="Tìm theo tên xe…"
+                    type="text"
+                    className="flex-1 border-none bg-transparent text-[0.88rem] text-gray-800 outline-none placeholder:text-gray-400"
+                    placeholder="Tim theo ten xe..."
                     value={carName}
-                    onChange={(e) => setCarName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onChange={(event) => setCarName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
                   />
                 </div>
               </div>
 
-              {/* City selection */}
-              <fieldset className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                <legend className="sr-only">Chọn thành phố</legend>
-                <div aria-hidden="true" className="px-4 py-2.5 bg-gray-100 text-[0.75rem] font-bold text-gray-500 uppercase tracking-wide">Chọn thành phố</div>
-                {CITIES.map(city => {
-                  const isActive = selectedCity === city;
-                  return (
-                    <button
-                      key={city}
-                      type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      className={`w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-b-0 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary
-                        ${isActive ? 'bg-primary-light' : 'hover:bg-white'}`}
-                      onClick={() => handleCityClick(city)}
-                    >
-                      <FaMapMarkerAlt aria-hidden="true" className={isActive ? 'text-primary' : 'text-gray-400'} />
-                      <span className={`flex-1 text-[0.9rem] font-medium ${isActive ? 'text-primary' : 'text-gray-700'}`}>{city}</span>
-                      {isActive
-                        ? <FaCheck aria-hidden="true" className="text-primary text-[0.8rem]" />
-                        : <FaChevronRight aria-hidden="true" className="text-gray-300 text-[0.75rem]" />
-                      }
-                    </button>
-                  );
-                })}
-              </fieldset>
-
-              {/* District selection */}
-              {districts && (
-                <fieldset className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                  <legend className="sr-only">Chọn quận / huyện tại {selectedCity}</legend>
-                  <div className="px-4 py-2.5 bg-gray-100 text-[0.75rem] font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                    <FaMapMarkerAlt aria-hidden="true" className="text-primary" />
-                    Quận / Huyện — {selectedCity}
-                    {selectedDist && (
-                      <button
-                        type="button"
-                        className="ml-auto text-[0.72rem] text-primary underline font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
-                        onClick={() => setDist('')}
-                      >
-                        Bỏ chọn
-                      </button>
-                    )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
+                    Ngay nhan xe
+                  </label>
+                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+                    <FaCalendarAlt className="shrink-0 text-primary" />
+                    <input
+                      type="datetime-local"
+                      className="flex-1 border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
+                      value={pickupDate}
+                      onChange={(event) => {
+                        setPickupDate(event.target.value);
+                        setValidationError('');
+                      }}
+                    />
                   </div>
-                  {Object.entries(districts).map(([group, items]) => (
-                    <div key={group}>
-                      <div className="px-4 py-1.5 text-[0.7rem] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">{group}</div>
-                      {items.map(d => {
-                        const on = selectedDist === d;
-                        return (
-                          <button
-                            key={d}
-                            type="button"
-                            role="radio"
-                            aria-checked={on}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-b-0 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary
-                              ${on ? 'bg-primary-light' : 'hover:bg-white'}`}
-                            onClick={() => handleDistClick(d)}
-                          >
-                            <span aria-hidden="true" className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${on ? 'border-primary' : 'border-gray-300'}`}>
-                              {on && <span className="w-2 h-2 rounded-full bg-primary block" />}
-                            </span>
-                            <span className={`text-[0.88rem] ${on ? 'text-primary font-semibold' : 'text-gray-700'}`}>{d}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </fieldset>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
+                    Ngay tra xe
+                  </label>
+                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+                    <FaCalendarAlt className="shrink-0 text-primary" />
+                    <input
+                      type="datetime-local"
+                      className="flex-1 border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
+                      value={returnDate}
+                      min={pickupDate || undefined}
+                      onChange={(event) => {
+                        setReturnDate(event.target.value);
+                        setValidationError('');
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[0.75rem] font-bold uppercase tracking-wide text-gray-600">Chon thanh pho</span>
+                  {selectedCity && (
+                    <button
+                      type="button"
+                      className="text-[0.72rem] font-semibold text-primary hover:underline"
+                      onClick={() => {
+                        setSelectedCity(null);
+                        setSelectedDistrict('');
+                      }}
+                    >
+                      Bo chon
+                    </button>
+                  )}
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-gray-100">
+                  {CITIES.map((city) => {
+                    const isActive = selectedCity === city;
+                    return (
+                      <button
+                        key={city}
+                        type="button"
+                        className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-b-0 ${
+                          isActive ? 'bg-primary-light' : 'bg-white hover:bg-gray-50'
+                        }`}
+                        onClick={() => {
+                          setSelectedCity(city);
+                          setSelectedDistrict('');
+                        }}
+                      >
+                        <FaMapMarkerAlt className={isActive ? 'text-primary' : 'text-gray-400'} />
+                        <span className={`flex-1 text-[0.9rem] font-medium ${isActive ? 'text-primary' : 'text-gray-700'}`}>
+                          {city}
+                        </span>
+                        {isActive ? <FaCheck className="text-[0.8rem] text-primary" /> : <FaChevronRight className="text-[0.75rem] text-gray-300" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {districts && (
+                <div>
+                  <div className="mb-2 text-[0.75rem] font-bold uppercase tracking-wide text-gray-600">
+                    Quan / huyen - {selectedCity}
+                  </div>
+
+                  <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-gray-100">
+                    {Object.entries(districts).map(([group, items]) => (
+                      <div key={group}>
+                        <div className="border-b border-gray-100 px-4 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-gray-400">
+                          {group}
+                        </div>
+                        {items.map((district) => {
+                          const isActive = selectedDistrict === district;
+                          return (
+                            <button
+                              key={district}
+                              type="button"
+                              className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-left transition-colors last:border-b-0 ${
+                                isActive ? 'bg-primary-light' : 'bg-white hover:bg-gray-50'
+                              }`}
+                              onClick={() => setSelectedDistrict((current) => (current === district ? '' : district))}
+                            >
+                              <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${isActive ? 'border-primary' : 'border-gray-300'}`}>
+                                {isActive && <span className="block h-2 w-2 rounded-full bg-primary" />}
+                              </span>
+                              <span className={`text-[0.88rem] ${isActive ? 'font-semibold text-primary' : 'text-gray-700'}`}>
+                                {district}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-gray-100 shrink-0">
-              <button
-                type="button"
-                className="w-full py-3.5 bg-primary text-white font-bold rounded-xl text-[0.95rem] transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                onClick={handleSearch}
-              >
-                Xác nhận
-              </button>
+            <div className="flex shrink-0 flex-col gap-3 border-t border-gray-100 px-5 py-4">
+              {validationError && (
+                <div className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[0.8rem] text-red-700">
+                  {validationError}
+                </div>
+              )}
+              <div className="flex w-full items-center gap-3">
+                <button
+                  type="button"
+                  className="flex-1 rounded-xl border border-gray-200 py-3 text-[0.92rem] font-semibold text-gray-600 hover:border-gray-300"
+                  onClick={handleReset}
+                >
+                  Xoa
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 rounded-xl bg-primary py-3 text-[0.95rem] font-bold text-white transition-colors hover:bg-primary-dark"
+                  onClick={handleSearch}
+                >
+                  Xac nhan
+                </button>
+              </div>
             </div>
           </div>
         </div>

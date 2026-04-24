@@ -34,19 +34,22 @@ const STATUS_CONFIG = {
 
 const StatusBadge = ({ status, customLabel }) => {
   const cfg = STATUS_CONFIG[status] || { label: status || 'N/A', bg: '#f3f4f6', color: '#6b7280' };
+
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '3px 10px',
-      borderRadius: 50,
-      fontSize: '0.72rem',
-      fontWeight: 600,
-      background: cfg.bg,
-      color: cfg.color,
-      whiteSpace: 'nowrap',
-      letterSpacing: '0.01em',
-    }}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '3px 10px',
+        borderRadius: 50,
+        fontSize: '0.72rem',
+        fontWeight: 600,
+        background: cfg.bg,
+        color: cfg.color,
+        whiteSpace: 'nowrap',
+        letterSpacing: '0.01em',
+      }}
+    >
       {customLabel || cfg.label}
     </span>
   );

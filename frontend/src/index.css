@@ -222,6 +222,15 @@ body {
 
   /* MyBookings */
   .my-bookings { @apply flex flex-col gap-4; }
+  .renter-btn-soft {
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] border border-sky-200 bg-sky-50 px-3.5 py-[9px] text-[0.8rem] font-semibold text-sky-700 cursor-pointer transition-[background-color,border-color,color,box-shadow] hover:bg-sky-100 hover:border-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:shrink-0;
+  }
+  .renter-btn-soft-success {
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] border border-emerald-200 bg-emerald-50 px-3.5 py-[9px] text-[0.8rem] font-semibold text-emerald-700 cursor-pointer transition-[background-color,border-color,color,box-shadow] hover:bg-emerald-100 hover:border-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:shrink-0;
+  }
+  .renter-btn-soft-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] border border-rose-200 bg-rose-50 px-3.5 py-[9px] text-[0.8rem] font-semibold text-rose-700 cursor-pointer transition-[background-color,border-color,color,box-shadow] hover:bg-rose-100 hover:border-rose-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:shrink-0;
+  }
   .booking-tabs { @apply flex gap-1.5 overflow-x-auto pb-1; }
   .booking-tab { @apply flex items-center gap-1.5 px-4 py-2 rounded-full border-[1.5px] border-gray-200 bg-white text-gray-500 text-[0.82rem] font-medium cursor-pointer whitespace-nowrap transition-all; }
   .booking-tab.active { @apply border-primary bg-primary text-white font-bold; }

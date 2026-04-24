@@ -22,7 +22,6 @@
   }
 }
 
-/* ── Header ──────────────────────────────────────────────── */
 .map-page-header {
   display: flex;
   align-items: flex-start;
@@ -70,7 +69,7 @@
   white-space: nowrap;
 }
 
-.map-badge--sky {
+.map-badge--green {
   background: #f0fff4;
   color: #276749;
   border: 1px solid #9ae6b4;
@@ -82,19 +81,16 @@
   border: 1px solid #90cdf4;
 }
 
-/* ── Map container ───────────────────────────────────────── */
 .map-page-map-container {
   width: 100%;
 }
 
-/* Nhúng trong /xe/:id — cùng style khối bản đồ với trang /map */
 .car-detail-map-wrap {
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
 }
 
-/* ── Tips row ────────────────────────────────────────────── */
 .map-tips {
   display: flex;
   gap: 12px;
@@ -121,7 +117,6 @@
   flex-shrink: 0;
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 700px) {
   .map-page {
     padding: 16px 0 24px;

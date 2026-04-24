@@ -6,7 +6,7 @@ const ROLE_DEFAULT_PATHS = {
   admin: '/admin/dashboard',
   showroom: '/showroom/dashboard',
   owner: '/owner/dashboard',
-  renter: '/renter/profile',
+  renter: '/renter/dashboard',
 };
 
 const RoleRoute = ({ children, roles }) => {

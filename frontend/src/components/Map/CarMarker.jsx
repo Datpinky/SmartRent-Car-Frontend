@@ -1,38 +1,13 @@
-/**
- * CarMarker.jsx
- * ─────────────────────────────────────────────────────────────────────────────
- * A single car marker on the Leaflet map.
- * Uses a custom DivIcon – no default-icon bug possible.
- *
- * Props
- * ─────
- * car: {
- *   id        : number | string
- *   name      : string
- *   latitude  : number
- *   longitude : number
- *   image?    : string          URL for car thumbnail
- *   price?    : string | number daily rental price (VND)
- *   seats?    : number
- *   fuel?     : string
- *   category? : string
- *   distance? : number | null   pre-computed km distance (optional)
- * }
- * isSelected      : boolean   – enlarge/highlight this marker
- * onClick         : (car) => void
- */
-
 import React, { useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { formatVndPerDay } from '../../utils/currencyFormat';
 
-// ─── Icon factory ────────────────────────────────────────────────────────────
 const makeCarIcon = (isSelected) =>
   L.divIcon({
     html: `
       <div class="car-marker-icon ${isSelected ? 'car-marker-icon--selected' : ''}">
-        <span class="car-marker-emoji">🚗</span>
+        <span class="car-marker-emoji">&#128663;</span>
       </div>
     `,
     className: '',
@@ -41,8 +16,7 @@ const makeCarIcon = (isSelected) =>
     popupAnchor: [0, -38],
   });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const formatPrice = (price) => {
+const formatPrice = (price, currency = 'VND', chargeUnit = 'day') => {
   if (!price) return null;
   return formatVndPerDay(price);
 };
@@ -52,7 +26,6 @@ const formatDistance = (km) => {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 };
 
-// ─── Component ───────────────────────────────────────────────────────────────
 const CarMarker = ({ car, isSelected = false, onClick }) => {
   const markerRef = useRef(null);
 
@@ -61,59 +34,81 @@ const CarMarker = ({ car, isSelected = false, onClick }) => {
     markerRef.current?.openPopup();
   };
 
-  const icon = makeCarIcon(isSelected);
-
   return (
     <Marker
       ref={markerRef}
       position={[car.latitude, car.longitude]}
-      icon={icon}
+      icon={makeCarIcon(isSelected)}
       eventHandlers={{ click: handleClick }}
       zIndexOffset={isSelected ? 500 : 0}
     >
-      <Popup className="map-popup car-popup" minWidth={220}>
+      <Popup className="map-popup car-popup" minWidth={250}>
         <div className="car-popup-inner">
-          {/* Header */}
           <div className="car-popup-header">
             {car.image ? (
               <img src={car.image} alt={car.name} className="car-popup-img" />
             ) : (
-              <div className="car-popup-img-placeholder">🚗</div>
+              <div className="car-popup-img-placeholder">&#128663;</div>
             )}
+
             <div className="car-popup-header-info">
               <p className="car-popup-name">{car.name}</p>
-              {car.category && (
-                <span className="car-popup-badge">{car.category}</span>
-              )}
+              <div className="car-popup-subline">
+                {car.category && <span className="car-popup-badge">{car.category}</span>}
+                {car.statusLabel && <span className="car-popup-badge car-popup-badge--muted">{car.statusLabel}</span>}
+              </div>
             </div>
           </div>
 
-          {/* Details grid */}
           <div className="car-popup-details">
-            {car.seats && (
+            {car.plateNumber && (
               <div className="car-popup-detail-item">
-                <span>🪑</span>
-                <span>{car.seats} chỗ</span>
+                <span>Plate</span>
+                <span>{car.plateNumber}</span>
               </div>
             )}
-            {car.fuel && (
+
+            {car.brand || car.model ? (
               <div className="car-popup-detail-item">
-                <span>⛽</span>
-                <span>{car.fuel}</span>
+                <span>Model</span>
+                <span>{[car.brand, car.model].filter(Boolean).join(' ')}</span>
+              </div>
+            ) : null}
+
+            {(car.seats || car.fuel) && (
+              <div className="car-popup-detail-item">
+                <span>Specs</span>
+                <span>
+                  {[car.seats ? `${car.seats} cho` : '', car.fuel].filter(Boolean).join(' · ')}
+                </span>
               </div>
             )}
+
+            {car.address && (
+              <div className="car-popup-detail-item">
+                <span>Dia chi</span>
+                <span>{car.address}</span>
+              </div>
+            )}
+
+            {car.maxDistance && (
+              <div className="car-popup-detail-item">
+                <span>Gioi han</span>
+                <span>{car.maxDistance}</span>
+              </div>
+            )}
+
             {formatDistance(car.distance) && (
               <div className="car-popup-detail-item car-popup-distance">
-                <span>📍</span>
-                <span>{formatDistance(car.distance)} từ bạn</span>
+                <span>Khoang cach</span>
+                <span>{formatDistance(car.distance)} tu ban</span>
               </div>
             )}
           </div>
 
-          {/* Price + CTA */}
           <div className="car-popup-footer">
-            {formatPrice(car.price) && (
-              <span className="car-popup-price">{formatPrice(car.price)}</span>
+            {formatPrice(car.price, car.currency, car.chargeUnit) && (
+              <span className="car-popup-price">{formatPrice(car.price, car.currency, car.chargeUnit)}</span>
             )}
             <a
               href={`/xe/${car.id}`}

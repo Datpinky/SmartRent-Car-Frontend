@@ -14,13 +14,13 @@ const paymentSchema = new mongoose.Schema(
         payment_status: {
             type: String,
             required: true,
-            enum: ['pending', 'declined', 'successful', 'failed'],
+            enum: ['pending', 'declined', 'successful', 'failed', 'refunded'],
             default: 'pending'
         },
         stripe_payment_intent_id: { type: String, trim: true },
         transaction_code: { type: String, trim: true },
         paid_at: { type: Date },
-        paid_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+        paid_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true }
 );

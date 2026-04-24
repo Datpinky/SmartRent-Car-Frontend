@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import CarCard from '../CarCard/CarCard';
+import React, { useEffect, useState } from 'react';
 import { MdDirectionsCar } from 'react-icons/md';
+import CarCard from '../CarCard/CarCard';
 
-const shimmerClass = "bg-gradient-to-r from-[#f0f0f0] via-[#e0e0e0] to-[#f0f0f0] bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] motion-reduce:animate-none motion-reduce:bg-gray-100";
+const shimmerClass = "bg-gradient-to-r from-[#f0f0f0] via-[#e0e0e0] to-[#f0f0f0] bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]";
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+  <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
     <div className={`w-full ${shimmerClass}`} style={{ aspectRatio: '16/10' }} />
-    <div className="p-3.5 flex flex-col gap-2.5">
-      <div className={`h-3 rounded-md w-[70%] ${shimmerClass}`} />
-      <div className={`h-3 rounded-md w-[45%] ${shimmerClass}`} />
-      <div className={`h-3 rounded-md w-[55%] ${shimmerClass}`} />
-      <div className={`h-5 rounded-md w-[80%] ${shimmerClass}`} />
+    <div className="flex flex-col gap-2.5 p-3.5">
+      <div className={`h-3 w-[70%] rounded-md ${shimmerClass}`} />
+      <div className={`h-3 w-[45%] rounded-md ${shimmerClass}`} />
+      <div className={`h-3 w-[55%] rounded-md ${shimmerClass}`} />
+      <div className={`h-5 w-[80%] rounded-md ${shimmerClass}`} />
     </div>
   </div>
 );
 
-const CarGrid = ({ cars, loading = false, title = 'Xe tự lái' }) => {
+const CarGrid = ({ cars, loading = false, rentalSearch = null }) => {
   const [visibleCount, setVisibleCount] = useState(8);
   const [displayCars, setDisplayCars] = useState([]);
 
@@ -28,32 +28,30 @@ const CarGrid = ({ cars, loading = false, title = 'Xe tự lái' }) => {
   const hasMore = displayCars.length > visibleCount;
 
   return (
-    <section className="max-w-[1280px] mx-auto px-5 pt-7 pb-[60px]">
+    <section className="mx-auto max-w-[1280px] px-5 pb-[60px] pt-7">
       <div className="grid grid-cols-4 gap-5 max-[1100px]:grid-cols-3 max-[768px]:grid-cols-2 max-[768px]:gap-3.5 max-[480px]:grid-cols-1">
         {loading
-          ? Array(8).fill(0).map((_, i) => <SkeletonCard key={i} />)
+          ? Array(8).fill(0).map((_, index) => <SkeletonCard key={index} />)
           : visible.length > 0
-            ? visible.map(car => <CarCard key={car.id} car={car} />)
+            ? visible.map((car) => <CarCard key={car.id} car={car} rentalSearch={rentalSearch} />)
             : (
-              <div className="col-span-full text-center py-[60px] px-5">
-                <div aria-hidden="true" className="text-[4rem] mb-4 opacity-40 flex justify-center">
+              <div className="col-span-full px-5 py-[60px] text-center">
+                <div className="mb-4 flex justify-center text-[4rem] opacity-40">
                   <MdDirectionsCar />
                 </div>
-                <h3 className="text-[1.1rem] text-gray-600 mb-2">Không tìm thấy xe phù hợp</h3>
-                <p className="text-[0.85rem] text-gray-400">Hãy thử thay đổi bộ lọc hoặc địa điểm tìm kiếm</p>
+                <h3 className="mb-2 text-[1.1rem] text-gray-600">Khong tim thay xe phu hop</h3>
+                <p className="text-[0.85rem] text-gray-400">Hay thu thay doi bo loc hoac dia diem tim kiem</p>
               </div>
-            )
-        }
+            )}
       </div>
 
       {hasMore && (
-        <div className="text-center mt-8">
+        <div className="mt-8 text-center">
           <button
-            type="button"
-            className="inline-flex items-center gap-2 px-8 py-3 border-2 border-primary rounded-full text-[0.9rem] font-semibold text-primary bg-transparent transition-[background-color,color,box-shadow,transform] hover:bg-primary hover:text-white hover:shadow-[0_4px_16px_rgba(0,177,79,0.3)] hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            onClick={() => setVisibleCount(v => v + 8)}
+            className="inline-flex items-center gap-2 rounded-full border-2 border-primary bg-transparent px-8 py-3 text-[0.9rem] font-semibold text-primary transition-all hover:-translate-y-px hover:bg-primary hover:text-white hover:shadow-[0_4px_16px_rgba(0,177,79,0.3)]"
+            onClick={() => setVisibleCount((current) => current + 8)}
           >
-            Xem thêm xe
+            Xem them xe
             <span>↓</span>
           </button>
         </div>

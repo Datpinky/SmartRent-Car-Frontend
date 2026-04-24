@@ -1,23 +1,16 @@
 const { body, param } = require("express-validator");
 
-/** Đồng bộ `vehicle.model` — chỉ loại xe ô tô 4 bánh. */
-const VEHICLE_TYPES = ["Sedan", "SUV", "MPV", "Hatchback", "Wagon", "Truck", "others"];
+const VEHICLE_TYPES = ["Sedan", "Bike", "Bicyle", "SUV", "Wagon", "Truck", "others"];
 const CURRENCIES = ["VND", "USD"];
 const CHARGES = ["minutes", "seconds", "hourly", "day", "negotiable"];
 const STATUS = ['available', 'waiting_handover', 'rented', 'maintenance', 'reserved'];
-
-/** Đồng bộ frontend owner form + CarDetail */
-const ALLOWED_AMENITIES = [
-    "Điều hòa", "Camera lùi", "Cảm biến", "GPS", "Bluetooth", "USB", "Bản đồ", "Túi khí",
-];
-
 class VehicleValidation {
     createVehicle = [
         body("vehicle_type").notEmpty().isIn(VEHICLE_TYPES),
         body("vehicle_brand").notEmpty().trim(),
         body("vehicle_model").notEmpty().trim(),
-        body("vehicle_engine_number").optional().trim(),
-        body("vehicle_identification_number").optional().trim(),
+        body("vehicle_engine_number").notEmpty().trim(),
+        body("vehicle_identification_number").notEmpty().trim(),
         body("vehicle_plate_number").notEmpty().trim(),
 
         body("vehicle_images_paths").optional().isArray().withMessage("vehicle_images_paths bắt buộc array"),
@@ -33,31 +26,6 @@ class VehicleValidation {
 
         body("company_owned").optional().isBoolean(),
         body("active").optional().isBoolean(),
-        body("amenities").optional().isArray().withMessage("amenities phải là mảng"),
-        body("amenities.*").optional().isIn(ALLOWED_AMENITIES).withMessage("Tiện nghi không hợp lệ"),
-    ];
-
-    updateVehicle = [
-        param("vehicleId").isMongoId().withMessage("vehicleId không hợp lệ"),
-        body("vehicle_type").optional().isIn(VEHICLE_TYPES),
-        body("vehicle_brand").optional().trim(),
-        body("vehicle_model").optional().trim(),
-        body("vehicle_name").optional().trim(),
-        body("vehicle_engine_number").optional().trim(),
-        body("vehicle_identification_number").optional().trim(),
-        body("vehicle_plate_number").optional().trim(),
-        body("number_of_seats").optional().isInt({ min: 1, max: 20 }),
-        body("transmission").optional().isIn(["manual", "automatic", "semi-auto"]),
-        body("fuel_type").optional().isIn(["petrol", "diesel", "electric", "hybrid", "others"]),
-        body("vehicle_hire_rate_in_figures").optional().isFloat({ gt: 0 }),
-        body("vehicle_hire_rate_currency").optional().isIn(CURRENCIES),
-        body("vehicle_hire_charge_per_timing").optional().isIn(CHARGES),
-        body("vehicle_images_paths").optional().isArray(),
-        body("vehicle_images_paths.*").optional().isURL(),
-        body("description").optional().trim().isLength({ max: 500 }),
-        body("maximum_allowable_distance").optional().trim(),
-        body("amenities").optional().isArray(),
-        body("amenities.*").optional().isIn(ALLOWED_AMENITIES).withMessage("Tiện nghi không hợp lệ"),
     ];
 
     getListVehicles = [

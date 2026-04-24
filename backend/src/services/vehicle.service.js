@@ -1,5 +1,4 @@
 const vehicleModel = require("../models/vehicle.model");
-const vehicleLocationModel = require("../models/vehicleLocation.model");
 const BaseService = require("./base.service");
 
 /** Trường dùng để search theo tên (regex) */
@@ -40,47 +39,7 @@ class VehicleService {
     }
 
     async getVehicleById(vehicleId) {
-        const vehicle = await vehicleModel
-            .findById(vehicleId)
-            .populate("added_by", "name role business_name phone showroom_status email");
-        if (!vehicle) return null;
-
-        const loc = await vehicleLocationModel.findOne({ vehicle: vehicleId }).lean();
-        const o = vehicle.toObject();
-
-        o.pickup_address = loc?.address || "";
-        const latRaw = loc?.latitude;
-        const lngRaw = loc?.longitude;
-        o.pickup_latitude =
-            latRaw !== undefined && latRaw !== null && latRaw !== ""
-                ? Number(latRaw)
-                : null;
-        o.pickup_longitude =
-            lngRaw !== undefined && lngRaw !== null && lngRaw !== ""
-                ? Number(lngRaw)
-                : null;
-
-        return o;
-    }
-
-    async updateVehicle(vehicleId, userId, updates) {
-        const vehicle = await vehicleModel.findById(vehicleId);
-        if (!vehicle) {
-            const err = new Error("Không tìm thấy xe"); err.statusCode = 404; throw err;
-        }
-        if (String(vehicle.added_by) !== String(userId)) {
-            const err = new Error("Bạn không có quyền chỉnh sửa xe này"); err.statusCode = 403; throw err;
-        }
-        const UPDATABLE = [
-            "vehicle_brand", "vehicle_model", "vehicle_type",
-            "vehicle_plate_number", "vehicle_engine_number", "vehicle_identification_number",
-            "number_of_seats", "transmission", "fuel_type",
-            "vehicle_hire_rate_in_figures", "vehicle_hire_rate_currency",
-            "vehicle_hire_charge_per_timing", "vehicle_images_paths", "images",
-            "description", "maximum_allowable_distance", "vehicle_name", "amenities",
-        ];
-        UPDATABLE.forEach(k => { if (updates[k] !== undefined) vehicle[k] = updates[k]; });
-        return vehicle.save();
+        return vehicleModel.findById(vehicleId);
     }
 
     async deleteVehicleById(vehicleId) {

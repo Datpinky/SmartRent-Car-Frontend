@@ -1,57 +1,47 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar/Navbar';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
+import ChatWidget from './components/common/ChatWidget';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import RoleRoute from './components/common/RoleRoute';
 import Footer from './components/Footer/Footer';
-import Home from './components/pages/Home/Home';
+import Navbar from './components/Navbar/Navbar';
 import CarDetail from './components/pages/CarDetail/CarDetail';
+import Home from './components/pages/Home/Home';
 import Login from './components/pages/Login/Login';
 import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
-import ProtectedRoute from './components/common/ProtectedRoute';
-import RoleRoute from './components/common/RoleRoute';
 import DashboardLayout from './layouts/DashboardLayout';
-import ChatWidget from './components/common/ChatWidget';
-
-// Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard/AdminDashboard';
-import UserManagement from './pages/admin/UserManagement/UserManagement';
+import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
 import ShowroomVerification from './pages/admin/ShowroomVerification/ShowroomVerification';
 import TransactionMonitor from './pages/admin/TransactionMonitor/TransactionMonitor';
-
-// Showroom pages
-import ShowroomDashboard from './pages/showroom/ShowroomDashboard/ShowroomDashboard';
-import VehicleManagement from './pages/showroom/VehicleManagement/VehicleManagement';
+import UserManagement from './pages/admin/UserManagement/UserManagement';
+import MyVehicles from './pages/owner/MyVehicles/MyVehicles';
+import OwnerDashboard from './pages/owner/OwnerDashboard/OwnerDashboard';
+import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
+import Revenue from './pages/owner/Revenue/Revenue';
+import VehicleTracking from './pages/owner/VehicleTracking/VehicleTracking';
+import NotFound from './pages/NotFound';
+import AIReports from './pages/renter/AIReports/AIReports';
+import Checkout from './pages/renter/Checkout/Checkout';
+import MapPage from './pages/renter/Map/MapPage';
+import MyBookings from './pages/renter/MyBookings/MyBookings';
+import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
+import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
+import Profile from './pages/renter/Profile/Profile';
+import RenterDashboard from './pages/renter/RenterDashboard/RenterDashboard';
+import SOSReport from './pages/renter/SOSReport/SOSReport';
+import Transactions from './pages/renter/Transactions/Transactions';
+import AIInspection from './pages/showroom/AIInspection/AIInspection';
 import BookingManagement from './pages/showroom/BookingManagement/BookingManagement';
 import ContractManagement from './pages/showroom/ContractManagement/ContractManagement';
 import CustomerManagement from './pages/showroom/CustomerManagement/CustomerManagement';
 import RevenueReports from './pages/showroom/RevenueReports/RevenueReports';
-import AIInspection from './pages/showroom/AIInspection/AIInspection';
+import ShowroomDashboard from './pages/showroom/ShowroomDashboard/ShowroomDashboard';
 import ShowroomProfile from './pages/showroom/ShowroomProfile/ShowroomProfile';
+import VehicleManagement from './pages/showroom/VehicleManagement/VehicleManagement';
 
-// Renter pages
-import Profile from './pages/renter/Profile/Profile';
-import MyBookings from './pages/renter/MyBookings/MyBookings';
-import Transactions from './pages/renter/Transactions/Transactions';
-import Checkout from './pages/renter/Checkout/Checkout';
-import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
-import SOSReport from './pages/renter/SOSReport/SOSReport';
-import MapPage from './pages/renter/Map/MapPage';
-
-// Owner pages
-import OwnerDashboard from './pages/owner/OwnerDashboard/OwnerDashboard';
-import MyVehicles from './pages/owner/MyVehicles/MyVehicles';
-import VehicleTracking from './pages/owner/VehicleTracking/VehicleTracking';
-import Revenue from './pages/owner/Revenue/Revenue';
-import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
-
-// Admin profile
-import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
-import NotFound from './pages/NotFound';
-
-
-
-// Dashboard wrapper with Layout
 const DashboardPage = ({ children, roles }) => (
   <ProtectedRoute>
     <RoleRoute roles={roles}>
@@ -60,7 +50,6 @@ const DashboardPage = ({ children, roles }) => (
   </ProtectedRoute>
 );
 
-/** Trang chỉ dành cho khách thuê — admin không dùng chung (tránh sidebar admin + nội dung renter). */
 const RenterPage = ({ children }) => (
   <ProtectedRoute>
     <RoleRoute roles={['renter']}>
@@ -69,81 +58,75 @@ const RenterPage = ({ children }) => (
   </ProtectedRoute>
 );
 
-/** Thanh toán đặt xe: cho phép admin test flow checkout cùng layout dashboard. */
-const RenterOrAdminCheckout = ({ children }) => (
+const RenterOnlyPage = ({ children }) => (
   <ProtectedRoute>
-    <RoleRoute roles={['renter', 'admin']}>
-      <DashboardLayout>{children}</DashboardLayout>
-    </RoleRoute>
+    <RoleRoute roles={['renter']}>{children}</RoleRoute>
   </ProtectedRoute>
 );
 
-const App = () => {
-  return (
-    <AuthProvider>
-      <ChatWidgetProvider>
+const PublicSite = () => (
+  <div className="flex min-h-screen flex-col">
+    <Navbar />
+    <div className="flex-1">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/xe/:id" element={<CarDetail />} />
+        <Route path="/map" element={<MapPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+    <Footer />
+  </div>
+);
+
+const App = () => (
+  <AuthProvider>
+    <ChatWidgetProvider>
       <Router>
         <Routes>
-          {/* Login & public register */}
           <Route path="/login" element={<Login />} />
           <Route path="/partner/register" element={<PartnerRegister />} />
 
-          {/* Admin Dashboard */}
-          <Route path="/admin/dashboard"   element={<DashboardPage roles={['admin']}><AdminDashboard /></DashboardPage>} />
-          <Route path="/admin/users"       element={<DashboardPage roles={['admin']}><UserManagement /></DashboardPage>} />
-          <Route path="/admin/showrooms"   element={<DashboardPage roles={['admin']}><ShowroomVerification /></DashboardPage>} />
+          <Route path="/admin/dashboard" element={<DashboardPage roles={['admin']}><AdminDashboard /></DashboardPage>} />
+          <Route path="/admin/users" element={<DashboardPage roles={['admin']}><UserManagement /></DashboardPage>} />
+          <Route path="/admin/showrooms" element={<DashboardPage roles={['admin']}><ShowroomVerification /></DashboardPage>} />
           <Route path="/admin/transactions" element={<DashboardPage roles={['admin']}><TransactionMonitor /></DashboardPage>} />
-          <Route path="/admin/profile"    element={<DashboardPage roles={['admin']}><AdminProfile /></DashboardPage>} />
+          <Route path="/admin/profile" element={<DashboardPage roles={['admin']}><AdminProfile /></DashboardPage>} />
           <Route path="/admin/moderation" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin/reports"    element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/reports" element={<Navigate to="/admin/dashboard" replace />} />
 
-          {/* Showroom Dashboard */}
-          <Route path="/showroom/dashboard"     element={<DashboardPage roles={['showroom']}><ShowroomDashboard /></DashboardPage>} />
-          <Route path="/showroom/vehicles"      element={<DashboardPage roles={['showroom']}><VehicleManagement /></DashboardPage>} />
-          <Route path="/showroom/bookings"      element={<DashboardPage roles={['showroom']}><BookingManagement /></DashboardPage>} />
-          <Route path="/showroom/contracts"     element={<DashboardPage roles={['showroom']}><ContractManagement /></DashboardPage>} />
-          <Route path="/showroom/customers"     element={<DashboardPage roles={['showroom']}><CustomerManagement /></DashboardPage>} />
-          <Route path="/showroom/revenue"       element={<DashboardPage roles={['showroom']}><RevenueReports /></DashboardPage>} />
+          <Route path="/showroom/dashboard" element={<DashboardPage roles={['showroom']}><ShowroomDashboard /></DashboardPage>} />
+          <Route path="/showroom/vehicles" element={<DashboardPage roles={['showroom']}><VehicleManagement /></DashboardPage>} />
+          <Route path="/showroom/bookings" element={<DashboardPage roles={['showroom']}><BookingManagement /></DashboardPage>} />
+          <Route path="/showroom/contracts" element={<DashboardPage roles={['showroom']}><ContractManagement /></DashboardPage>} />
+          <Route path="/showroom/customers" element={<DashboardPage roles={['showroom']}><CustomerManagement /></DashboardPage>} />
+          <Route path="/showroom/revenue" element={<DashboardPage roles={['showroom']}><RevenueReports /></DashboardPage>} />
           <Route path="/showroom/ai-inspection" element={<DashboardPage roles={['showroom']}><AIInspection /></DashboardPage>} />
-          <Route path="/showroom/profile"       element={<DashboardPage roles={['showroom']}><ShowroomProfile /></DashboardPage>} />
+          <Route path="/showroom/profile" element={<DashboardPage roles={['showroom']}><ShowroomProfile /></DashboardPage>} />
 
-          {/* Owner Dashboard */}
           <Route path="/owner/dashboard" element={<DashboardPage roles={['owner']}><OwnerDashboard /></DashboardPage>} />
-          <Route path="/owner/vehicles"  element={<DashboardPage roles={['owner']}><MyVehicles /></DashboardPage>} />
-          <Route path="/owner/tracking"  element={<DashboardPage roles={['owner']}><VehicleTracking /></DashboardPage>} />
-          <Route path="/owner/revenue"   element={<DashboardPage roles={['owner']}><Revenue /></DashboardPage>} />
-          <Route path="/owner/profile"   element={<DashboardPage roles={['owner']}><OwnerProfile /></DashboardPage>} />
+          <Route path="/owner/vehicles" element={<DashboardPage roles={['owner']}><MyVehicles /></DashboardPage>} />
+          <Route path="/owner/tracking" element={<DashboardPage roles={['owner']}><VehicleTracking /></DashboardPage>} />
+          <Route path="/owner/revenue" element={<DashboardPage roles={['owner']}><Revenue /></DashboardPage>} />
+          <Route path="/owner/profile" element={<DashboardPage roles={['owner']}><OwnerProfile /></DashboardPage>} />
 
-          {/* Renter portal */}
-          <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
-          <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
-          <Route path="/renter/transactions"    element={<RenterPage><Transactions /></RenterPage>} />
-          <Route path="/renter/checkout/:carId" element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
-          <Route path="/renter/checkout"        element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
-          <Route path="/renter/payment-result"  element={<PaymentResult />} />
-          <Route path="/renter/sos"             element={<RenterPage><SOSReport /></RenterPage>} />
+          <Route path="/renter/dashboard" element={<RenterPage><RenterDashboard /></RenterPage>} />
+          <Route path="/renter/profile" element={<RenterPage><Profile /></RenterPage>} />
+          <Route path="/renter/pending-pickups" element={<RenterPage><PendingPickups /></RenterPage>} />
+          <Route path="/renter/bookings" element={<RenterPage><MyBookings /></RenterPage>} />
+          <Route path="/renter/ai-reports" element={<RenterPage><AIReports /></RenterPage>} />
+          <Route path="/renter/transactions" element={<RenterPage><Transactions /></RenterPage>} />
+          <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/checkout" element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/payment-result" element={<RenterOnlyPage><PaymentResult /></RenterOnlyPage>} />
+          <Route path="/renter/sos" element={<RenterPage><SOSReport /></RenterPage>} />
 
-          {/* Public pages with Navbar/Footer */}
-          <Route path="/*" element={
-            <div className="flex flex-col min-h-screen">
-              <Navbar />
-              <div className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/xe/:id" element={<CarDetail />} />
-                  <Route path="/map" element={<MapPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-              <Footer />
-            </div>
-          } />
+          <Route path="/*" element={<PublicSite />} />
         </Routes>
         <ChatWidget />
       </Router>
-      </ChatWidgetProvider>
-    </AuthProvider>
-  );
-};
+    </ChatWidgetProvider>
+  </AuthProvider>
+);
 
 export default App;
