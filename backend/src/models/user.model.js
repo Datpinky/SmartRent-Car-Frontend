@@ -41,6 +41,15 @@ const userSchema = new mongoose.Schema(
         license_document_urls: { type: [String], default: [] },
         showroom_rejection_reason: { type: String, trim: true, default: "" },
 
+        /** Hồ sơ showroom công khai (role showroom) */
+        public_address: { type: String, trim: true, default: "" },
+        opening_hours: { type: String, trim: true, default: "" },
+        policy_text: { type: String, trim: true, default: "" },
+        logo_url: { type: String, trim: true, default: "" },
+        showroom_description: { type: String, trim: true, default: "" },
+        showroom_representative_name: { type: String, trim: true, default: "" },
+        showroom_license_public: { type: String, trim: true, default: "" },
+
         is_active: {
             type: Boolean,
             default: true

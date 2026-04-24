@@ -4,24 +4,20 @@ import StatusBadge from '../../../components/common/StatusBadge';
 import Modal from '../../../components/common/Modal';
 import { FaEye, FaCheckCircle, FaTimes, FaArrowRight, FaSpinner } from 'react-icons/fa';
 import bookingService from '../../../services/bookingService';
-import { useAuth } from '../../../contexts/AuthContext';
+import {
+  BOOKING_PROGRESS_ORDER,
+  BOOKING_STATUS_LABELS,
+  SHOWROOM_CAN_ADVANCE_FROM,
+  bookingNextStatus,
+} from '../../../constants/bookingStatus';
+import { formatVnd } from '../../../utils/currencyFormat';
 
-const BOOKING_FLOW = ['pending', 'approved', 'delivering', 'renting', 'returned', 'completed'];
-const FLOW_LABELS = {
-  pending: 'Chờ xác nhận',
-  approved: 'Đã duyệt',
-  delivering: 'Đang giao xe',
-  renting: 'Đang thuê',
-  returned: 'Đã trả xe',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
-};
+const FLOW_LABELS = BOOKING_STATUS_LABELS;
 
 const fmt = (d) =>
   d ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(d)) : '—';
 
 const BookingManagement = () => {
-  const { user } = useAuth();
   const [bookings, setBookings]       = useState([]);
   const [loading, setLoading]         = useState(true);
   const [loadError, setLoadError]     = useState('');
@@ -34,15 +30,17 @@ const BookingManagement = () => {
     setLoading(true);
     setLoadError('');
     try {
-      const filters = user?.showroom_id ? { showroom_id: user.showroom_id } : {};
-      const data = await bookingService.getListBookings(filters);
-      setBookings(Array.isArray(data) ? data : []);
+      const { items } = await bookingService.getListBookings({
+        limit: 200,
+        page: 1,
+      });
+      setBookings(items);
     } catch (err) {
       setLoadError(err?.response?.data?.message || err?.message || 'Không thể tải dữ liệu đặt xe.');
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -60,18 +58,24 @@ const BookingManagement = () => {
     }
   };
 
-  const approve = (id) => updateStatus(id, 'approved');
+  const approve = (id) => updateStatus(id, 'confirmed');
   const reject  = (id) => updateStatus(id, 'cancelled');
   const advance = (b) => {
-    const id  = b._id || b.id;
-    const idx = BOOKING_FLOW.indexOf(b.status);
-    if (idx >= 0 && idx < BOOKING_FLOW.length - 1) updateStatus(id, BOOKING_FLOW[idx + 1]);
+    const id = b._id || b.id;
+    const next = bookingNextStatus(b.status);
+    if (next && SHOWROOM_CAN_ADVANCE_FROM.has(b.status)) updateStatus(id, next);
   };
 
   const normalised = bookings.map(b => ({
     ...b,
     id:      b._id || b.id,
-    renter:  b.renter_id?.full_name  || b.renter_id?.email || '—',
+    renter:
+      b.user_id?.name ||
+      b.renter_id?.full_name ||
+      b.renter_id?.name ||
+      b.user_id?.email ||
+      b.renter_id?.email ||
+      '—',
     vehicle: b.vehicle_id?.vehicle_name ||
              [b.vehicle_id?.vehicle_brand, b.vehicle_id?.vehicle_model].filter(Boolean).join(' ') || '—',
     from:    fmt(b.start_date),
@@ -80,7 +84,12 @@ const BookingManagement = () => {
     total:   b.total_price || 0,
   }));
 
-  const filtered = statusFilter === 'all' ? normalised : normalised.filter(b => b.status === statusFilter);
+  const filtered =
+    statusFilter === 'all'
+      ? normalised
+      : statusFilter === 'in_use'
+        ? normalised.filter(b => ['handed_over', 'in_use', 'waiting_return_confirmation'].includes(b.status))
+        : normalised.filter(b => b.status === statusFilter);
 
   const columns = [
     { key: 'id',      label: 'Mã đặt',     render: row => <span className="code-badge">{`BK${String(row.id).slice(-6).toUpperCase()}`}</span> },
@@ -89,7 +98,7 @@ const BookingManagement = () => {
     { key: 'from',    label: 'Nhận xe',     accessor: 'from' },
     { key: 'to',      label: 'Trả xe',      accessor: 'to' },
     { key: 'days',    label: 'Ngày',        accessor: 'days', align: 'center' },
-    { key: 'total',   label: 'Tổng tiền',   render: row => <span className="tabular-nums" style={{ fontWeight: 700, color: '#00b14f', whiteSpace: 'nowrap' }}>{Number(row.total).toLocaleString('vi-VN')}đ</span>, sortable: true, accessor: 'total' },
+    { key: 'total',   label: 'Tổng tiền',   render: row => <span className="tabular-nums" style={{ fontWeight: 700, color: '#00b14f', whiteSpace: 'nowrap' }}>{formatVnd(row.total)}</span>, sortable: true, accessor: 'total' },
     { key: 'status',  label: 'Trạng thái',  render: row => <StatusBadge status={row.status} /> },
     { key: 'actions', label: 'Hành động',   render: row => {
       const isUpdating = updating === row.id;
@@ -102,14 +111,14 @@ const BookingManagement = () => {
             </button>
             <button type="button" className="btn-icon danger" onClick={() => setRejectModal(row)} disabled={isUpdating} title="Từ chối" aria-label="Từ chối"><FaTimes aria-hidden="true" /></button>
           </>}
-          {['approved', 'delivering', 'renting', 'returned'].includes(row.status) && (
+          {SHOWROOM_CAN_ADVANCE_FROM.has(row.status) && bookingNextStatus(row.status) && (
             <button
               type="button"
               className="btn-icon"
               style={{ borderColor: '#2563eb', color: '#2563eb', fontSize: '0.72rem', whiteSpace: 'nowrap', padding: '5px 8px' }}
               onClick={() => advance(row)}
               disabled={isUpdating}
-              aria-label={`Chuyển sang: ${FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(row.status) + 1]]}`}
+              aria-label={`Chuyển sang: ${FLOW_LABELS[bookingNextStatus(row.status)] || ''}`}
             >
               {isUpdating ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaArrowRight aria-hidden="true" />}
             </button>
@@ -138,14 +147,14 @@ const BookingManagement = () => {
       {/* Booking Flow visual */}
       <div style={{ background: '#fff', borderRadius: 14, padding: 16, marginBottom: 16, border: '1px solid #f0f0f0', overflowX: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 600 }}>
-          {BOOKING_FLOW.map((s, i) => (
+          {BOOKING_PROGRESS_ORDER.map((s, i) => (
             <React.Fragment key={s}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: normalised.some(b => b.status === s) ? '#00b14f' : '#e5e7eb' }} />
                 <span style={{ fontSize: '0.68rem', color: '#6b7280', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>{FLOW_LABELS[s]}</span>
                 <span className="tabular-nums" style={{ fontSize: '0.7rem', fontWeight: 700, color: '#111827' }}>{normalised.filter(b => b.status === s).length}</span>
               </div>
-              {i < BOOKING_FLOW.length - 1 && <div style={{ height: 1, background: '#e5e7eb', flex: 2 }} />}
+              {i < BOOKING_PROGRESS_ORDER.length - 1 && <div style={{ height: 1, background: '#e5e7eb', flex: 2 }} />}
             </React.Fragment>
           ))}
         </div>
@@ -153,7 +162,7 @@ const BookingManagement = () => {
 
       {/* Filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        {['all', 'pending', 'approved', 'renting', 'completed', 'cancelled'].map(s => (
+        {['all', 'pending', 'confirmed', 'waiting_payment', 'paid', 'in_use', 'completed', 'cancelled'].map(s => (
           <button
             type="button"
             key={s}
@@ -166,8 +175,14 @@ const BookingManagement = () => {
               fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
             }}
           >
-            {s === 'all' ? 'Tất cả' : FLOW_LABELS[s] || s}
-            {s !== 'all' && <span className="tabular-nums" style={{ marginLeft: 5, opacity: 0.7 }}>({normalised.filter(b => b.status === s).length})</span>}
+            {s === 'all' ? 'Tất cả' : s === 'in_use' ? 'Đang thuê / trả' : FLOW_LABELS[s] || s}
+            {s !== 'all' && (
+              <span className="tabular-nums" style={{ marginLeft: 5, opacity: 0.7 }}>
+                ({s === 'in_use'
+                  ? normalised.filter(b => ['handed_over', 'in_use', 'waiting_return_confirmation'].includes(b.status)).length
+                  : normalised.filter(b => b.status === s).length})
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -199,7 +214,7 @@ const BookingManagement = () => {
               ['Thời gian nhận', viewModal.from],
               ['Thời gian trả', viewModal.to],
               ['Số ngày', viewModal.days],
-              ['Tổng tiền', Number(viewModal.total).toLocaleString('vi-VN') + 'đ'],
+              ['Tổng tiền', formatVnd(viewModal.total)],
             ].map(([k, v]) => (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: 10 }}>
                 <span style={{ fontSize: '0.82rem', color: '#6b7280' }}>{k}</span>
@@ -211,9 +226,9 @@ const BookingManagement = () => {
                 <button type="button" className="btn-danger" style={{ flex: 1 }} onClick={() => { reject(viewModal.id); setViewModal(null); }}>Từ chối</button>
                 <button type="button" className="btn-success" style={{ flex: 1 }} onClick={() => { approve(viewModal.id); setViewModal(null); }}>Phê duyệt</button>
               </>}
-              {['approved', 'delivering', 'renting', 'returned'].includes(viewModal.status) && (
+              {SHOWROOM_CAN_ADVANCE_FROM.has(viewModal.status) && bookingNextStatus(viewModal.status) && (
                 <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => { advance(viewModal); setViewModal(null); }}>
-                  Chuyển sang: {FLOW_LABELS[BOOKING_FLOW[BOOKING_FLOW.indexOf(viewModal.status) + 1]]} <FaArrowRight aria-hidden="true" />
+                  Chuyển sang: {FLOW_LABELS[bookingNextStatus(viewModal.status)]} <FaArrowRight aria-hidden="true" />
                 </button>
               )}
             </div>

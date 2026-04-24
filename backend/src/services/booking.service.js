@@ -33,6 +33,15 @@ class QueryBuilder {
   }
 }
 
+const populateBooking = (q) =>
+  q
+    .populate({ path: 'user_id', select: 'name email phone' })
+    .populate({
+      path: 'vehicle_id',
+      select: 'vehicle_name vehicle_brand vehicle_model vehicle_images_paths address',
+    })
+    .populate({ path: 'showroom_id', select: 'name email business_name phone' });
+
 class BookingService {
   static async createBooking(data) {
     const booking = new Booking(data);
@@ -50,12 +59,28 @@ class BookingService {
       { field: 'total_price', value: sort_by_price },
       { field: 'createdAt', value: sort_by }
     ]);
+    const sort = Object.keys(sortOptions).length ? sortOptions : { createdAt: -1 };
 
-    return BaseService.findPaginated(Booking, filter, sortOptions, pagination);
+    const [data, total] = await Promise.all([
+      populateBooking(Booking.find(filter).sort(sort).skip(pagination.skip).limit(pagination.limit)).lean(),
+      Booking.countDocuments(filter),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(total / pagination.limit) || 0,
+      },
+    };
   }
 
-  static async getBookingById(id) {
-    return Booking.findById(id);
+  static async getBookingById(id, options = {}) {
+    const q = Booking.findById(id);
+    if (options.populate) populateBooking(q);
+    return q.lean();
   }
 
   static async updateBookingStatus(id, status) {

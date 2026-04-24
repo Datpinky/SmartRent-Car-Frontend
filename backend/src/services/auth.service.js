@@ -6,6 +6,29 @@ const throwError = require("../utils/throwError");
 const { buildSessionSummaryLine } = require("../utils/sessionDisplay");
 const { pick } = require("lodash");
 
+const SAFE_USER_KEYS_BASE = [
+    "_id",
+    "email",
+    "name",
+    "role",
+    "phone",
+    "showroom_status",
+    "business_name",
+    "tax_code",
+];
+
+const SAFE_USER_KEYS_SHOWROOM = [
+    ...SAFE_USER_KEYS_BASE,
+    "license_document_urls",
+    "public_address",
+    "opening_hours",
+    "policy_text",
+    "logo_url",
+    "showroom_description",
+    "showroom_representative_name",
+    "showroom_license_public",
+];
+
 class AuthService {
     async register(userData) {
         const userExists = await userModel.findOne({ email: userData.email });
@@ -64,9 +87,21 @@ class AuthService {
 
         const token = signAccessToken({ userId: user._id, role: user.role, jti });
 
-        const safeUser = pick(user, ["_id", "email", "name", "role", "phone"]);
+        const safeUser = this.toSafeUser(user);
 
         return { user: safeUser, token };
+    }
+
+    toSafeUser(userDoc) {
+        const o = userDoc.toObject ? userDoc.toObject() : { ...userDoc };
+        const keys = o.role === "showroom" ? SAFE_USER_KEYS_SHOWROOM : SAFE_USER_KEYS_BASE;
+        return pick(o, keys);
+    }
+
+    async getProfile(userId) {
+        const user = await userModel.findById(userId);
+        if (!user) throwError("Không tìm thấy người dùng", 404);
+        return this.toSafeUser(user);
     }
 
     async listSessions(userId, currentJti) {
@@ -87,12 +122,24 @@ class AuthService {
     }
 
     async updateProfile(userId, payload) {
-        if (payload.name === undefined && payload.phone === undefined) {
-            throwError("Không có dữ liệu cập nhật", 400);
-        }
-
         const user = await userModel.findById(userId);
         if (!user) throwError("Không tìm thấy người dùng", 404);
+
+        const showroomKeys = [
+            "business_name",
+            "public_address",
+            "opening_hours",
+            "policy_text",
+            "logo_url",
+            "showroom_description",
+            "showroom_representative_name",
+            "showroom_license_public",
+        ];
+        const hasUpdate =
+            ["name", "phone"].some((k) => payload[k] !== undefined) ||
+            (user.role === "showroom" && showroomKeys.some((k) => payload[k] !== undefined));
+
+        if (!hasUpdate) throwError("Không có dữ liệu cập nhật", 400);
 
         if (payload.name != null) user.name = String(payload.name).trim();
         if (payload.phone != null) {
@@ -101,8 +148,37 @@ class AuthService {
             user.phone = digits;
         }
 
+        if (user.role === "showroom") {
+            if (payload.business_name !== undefined) {
+                user.business_name = String(payload.business_name || "").trim().slice(0, 200);
+            }
+            if (payload.public_address !== undefined) {
+                user.public_address = String(payload.public_address || "").trim().slice(0, 500);
+            }
+            if (payload.opening_hours !== undefined) {
+                user.opening_hours = String(payload.opening_hours || "").trim().slice(0, 200);
+            }
+            if (payload.policy_text !== undefined) {
+                user.policy_text = String(payload.policy_text || "").trim().slice(0, 20000);
+            }
+            if (payload.logo_url !== undefined) {
+                user.logo_url = String(payload.logo_url || "").trim().slice(0, 500);
+            }
+            if (payload.showroom_description !== undefined) {
+                user.showroom_description = String(payload.showroom_description || "").trim().slice(0, 5000);
+            }
+            if (payload.showroom_representative_name !== undefined) {
+                user.showroom_representative_name = String(payload.showroom_representative_name || "")
+                    .trim()
+                    .slice(0, 120);
+            }
+            if (payload.showroom_license_public !== undefined) {
+                user.showroom_license_public = String(payload.showroom_license_public || "").trim().slice(0, 200);
+            }
+        }
+
         await user.save();
-        return pick(user.toObject(), ["_id", "name", "email", "phone", "role"]);
+        return this.toSafeUser(user);
     }
 
     async changePassword(userId, currentPassword, newPassword, meta = {}) {

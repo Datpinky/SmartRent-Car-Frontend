@@ -5,11 +5,12 @@ import {
   FaKey, FaMoneyBillWave, FaExclamationCircle,
 } from 'react-icons/fa';
 import { MdVerifiedUser, MdDirectionsCar } from 'react-icons/md';
+import { formatVnd } from '../../../utils/currencyFormat';
 
 const OWNER_STATS = [
   { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar aria-hidden="true" />, color: '#6d28d9' },
-  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave aria-hidden="true" />, color: '#059669' },
-  { label: 'Chờ rút tiền',     value: '8,200,000₫',  icon: <FaExclamationCircle aria-hidden="true" />, color: '#d97706' },
+  { label: 'Tổng doanh thu',   value: formatVnd(52_400_000), icon: <FaMoneyBillWave aria-hidden="true" />, color: '#059669' },
+  { label: 'Chờ rút tiền',     value: formatVnd(8_200_000),  icon: <FaExclamationCircle aria-hidden="true" />, color: '#d97706' },
 ];
 
 const OwnerProfile = () => {

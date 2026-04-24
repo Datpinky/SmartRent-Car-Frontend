@@ -11,15 +11,12 @@ import {
 } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import Modal from '../../../components/common/Modal';
-import {
-  MOCK_OWNER_VEHICLES,
-  MOCK_REVENUE_BY_VEHICLE,
-  MOCK_STATS_BY_VEHICLE,
-} from '../../../components/data/mockDashboard';
+import { formatVnd } from '../../../utils/currencyFormat';
+import { useAuth } from '../../../contexts/AuthContext';
+import vehicleService from '../../../services/vehicleService';
+import { buildEmptyOwnerRevenueMonths } from '../../../utils/dashboardFromApi';
 
 /* ── Helpers ─────────────────────────────────────────────── */
-const fmtM  = (n) => (n / 1_000_000).toFixed(1) + 'M';
-const fmtVN = (n) => n.toLocaleString('vi-VN') + 'đ';
 const genId = () => 'PT' + String(Date.now()).slice(-5);
 
 const SmallChip = ({ children, tone = 'success' }) => {
@@ -36,72 +33,10 @@ const SmallChip = ({ children, tone = 'success' }) => {
   );
 };
 
-/* ── Mock bank accounts (từ hồ sơ chủ xe — thay bằng API thực) ── */
-const MOCK_BANK_ACCOUNTS = [
-  { id: 'ba1', bankName: 'Vietcombank', accountNo: '0012345678910', accountName: 'NGUYEN VAN KHOA', primary: true  },
-  { id: 'ba2', bankName: 'Techcombank', accountNo: '19034567891',   accountName: 'NGUYEN VAN KHOA', primary: false },
-  { id: 'ba3', bankName: 'MB Bank',     accountNo: '07712345678',   accountName: 'NGUYEN VAN KHOA', primary: false },
-];
+/** Ngân hàng nhận tiền — nối API hồ sơ chủ xe khi có */
+const BANK_ACCOUNTS = [];
 
-/* ── Static payout history (mock) ───────────────────────── */
-const INITIAL_PAYOUTS = [
-  {
-    id: 'PT001', month: 'T2/2026', amount: 5220000,
-    method: 'Vietcombank ****8910', date: '05/03/2026', status: 'paid',
-    detail: {
-      rentalId: 'BK-2026-02-001', vehicle: 'Honda CR-V L 2023 – 51H-23456',
-      renter: 'Nguyễn Văn An', period: '01/02/2026 → 28/02/2026',
-      gross: 5800000, platformFee: 580000, damagePenalty: 0, net: 5220000,
-      aiDamages: [],
-    },
-    contractUrl: 'https://smartrent.vn/contracts/HD-2026-02-001',
-    aiReportUrl: 'https://smartrent.vn/ai-reports/AI-RPT-2026-02-001',
-  },
-  {
-    id: 'PT002', month: 'T1/2026', amount: 5490000,
-    method: 'Vietcombank ****8910', date: '05/02/2026', status: 'paid',
-    detail: {
-      rentalId: 'BK-2026-01-003', vehicle: 'Honda CR-V L 2023 – 51H-23456',
-      renter: 'Trần Thị Bình', period: '01/01/2026 → 31/01/2026',
-      gross: 6100000, platformFee: 610000, damagePenalty: 0, net: 5490000,
-      aiDamages: [],
-    },
-    contractUrl: 'https://smartrent.vn/contracts/HD-2026-01-003',
-    aiReportUrl: 'https://smartrent.vn/ai-reports/AI-RPT-2026-01-003',
-  },
-  {
-    id: 'PT003', month: 'T12/2025', amount: 6480000,
-    method: 'Vietcombank ****8910', date: '05/01/2026', status: 'paid',
-    detail: {
-      rentalId: 'BK-2025-12-007', vehicle: 'Honda CR-V L 2023 – 51H-23456',
-      renter: 'Lê Minh Cường', period: '01/12/2025 → 31/12/2025',
-      gross: 8000000, platformFee: 800000, damagePenalty: 720000, net: 6480000,
-      aiDamages: [
-        { item: 'Trầy xước cản sau',       severity: 'Nhẹ',       cost: 350000 },
-        { item: 'Vết lõm cánh cửa sau trái', severity: 'Trung bình', cost: 370000 },
-      ],
-    },
-    contractUrl: 'https://smartrent.vn/contracts/HD-2025-12-007',
-    aiReportUrl: 'https://smartrent.vn/ai-reports/AI-RPT-2025-12-007',
-  },
-  {
-    id: 'PT004', month: 'T3/2026', amount: 1980000,
-    method: 'Vietcombank ****8910', date: 'Chờ xử lý', status: 'processing',
-    detail: {
-      rentalId: 'BK-2026-03-002', vehicle: 'Honda CR-V L 2023 – 51H-23456',
-      renter: 'Phạm Văn Đức', period: '01/03/2026 → 15/03/2026',
-      gross: 2200000, platformFee: 220000, damagePenalty: 0, net: 1980000,
-      aiDamages: [],
-    },
-    contractUrl: 'https://smartrent.vn/contracts/HD-2026-03-002',
-    aiReportUrl: 'https://smartrent.vn/ai-reports/AI-RPT-2026-03-002',
-  },
-];
-
-/* ── Simulated API calls ─────────────────────────────────── */
-const fetchVehicles  = ()  => new Promise(r => setTimeout(() => r(MOCK_OWNER_VEHICLES), 600));
-const fetchStats     = (k) => new Promise(r => setTimeout(() => r(MOCK_STATS_BY_VEHICLE[k]  ?? MOCK_STATS_BY_VEHICLE.all), 400));
-const fetchChartData = (k) => new Promise(r => setTimeout(() => r(MOCK_REVENUE_BY_VEHICLE[k] ?? MOCK_REVENUE_BY_VEHICLE.all), 500));
+const EMPTY_STATS = { total: 0, received: 0, pending: 0 };
 
 /* Simulate POST /api/withdrawals */
 const postWithdrawal = ({ amount, bankAccountId }) =>
@@ -115,27 +50,42 @@ const postWithdrawal = ({ amount, bankAccountId }) =>
 
 /* ══════════════════════════════════════════════════════════ */
 const Revenue = () => {
+  const { user } = useAuth();
   /* ── Vehicle filter state ── */
   const [vehicles, setVehicles]               = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [selectedId, setSelectedId]           = useState('all');
-  const [stats, setStats]                     = useState(MOCK_STATS_BY_VEHICLE.all);
+  const [stats, setStats]                     = useState(EMPTY_STATS);
   const [statsLoading, setStatsLoading]       = useState(false);
-  const [chartData, setChartData]             = useState(MOCK_REVENUE_BY_VEHICLE.all);
+  const [chartData, setChartData]             = useState(() => buildEmptyOwnerRevenueMonths(6));
   const [chartLoading, setChartLoading]       = useState(false);
 
   /* ── Payout table ── */
-  const [payouts, setPayouts]     = useState(INITIAL_PAYOUTS);
+  const [payouts, setPayouts]     = useState([]);
   const [detailTx, setDetailTx]   = useState(null);
 
   /* ── Withdraw dialog ── */
   const [wOpen, setWOpen]         = useState(false);
   const [wAmount, setWAmount]     = useState('');
   const [wAmtErr, setWAmtErr]     = useState('');
-  const [wBankId, setWBankId]     = useState(MOCK_BANK_ACCOUNTS[0]?.id ?? '');
+  const [wBankId, setWBankId]     = useState(BANK_ACCOUNTS[0]?.id ?? '');
   const [wLoading, setWLoading]   = useState(false);
 
   const [notice, setNotice] = useState(null);
+
+  const exportPayoutsCsv = () => {
+    const lines = [
+      ['id', 'month', 'amount', 'method', 'date', 'status'].join(','),
+      ...payouts.map((p) => [p.id, p.month, p.amount, p.method, p.date, p.status].join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'owner-payouts.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const prevId = useRef(null);
 
@@ -145,27 +95,44 @@ const Revenue = () => {
     return () => clearTimeout(t);
   }, [notice]);
 
-  /* ── Load vehicles ── */
+  /* ── Load vehicles (API) ── */
   useEffect(() => {
-    fetchVehicles().then(d => { setVehicles(d); setVehiclesLoading(false); });
-  }, []);
+    let cancelled = false;
+    (async () => {
+      setVehiclesLoading(true);
+      try {
+        if (!user?._id) {
+          setVehicles([]);
+          return;
+        }
+        const { data } = await vehicleService.getList({ added_by: user._id, limit: 100 });
+        if (!cancelled) setVehicles(data || []);
+      } catch {
+        if (!cancelled) setVehicles([]);
+      } finally {
+        if (!cancelled) setVehiclesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?._id]);
 
-  /* ── Refresh stats + chart on vehicle change ── */
+  /* ── Stats/chart: chờ API doanh thu theo chủ xe — hiện 0 + khung tháng ── */
   useEffect(() => {
     if (prevId.current === selectedId) return;
     prevId.current = selectedId;
-    const key = selectedId === 'all' ? 'all' : Number(selectedId);
     setStatsLoading(true);
-    fetchStats(key).then(d => { setStats(d); setStatsLoading(false); });
     setChartLoading(true);
-    fetchChartData(key).then(d => { setChartData(d); setChartLoading(false); });
+    setStats(EMPTY_STATS);
+    setChartData(buildEmptyOwnerRevenueMonths(6));
+    setStatsLoading(false);
+    setChartLoading(false);
   }, [selectedId]);
 
   /* ── Open withdraw dialog ── */
   const openWithdraw = () => {
     setWAmount('');
     setWAmtErr('');
-    setWBankId(MOCK_BANK_ACCOUNTS.find(b => b.primary)?.id ?? MOCK_BANK_ACCOUNTS[0]?.id ?? '');
+    setWBankId(BANK_ACCOUNTS.find((b) => b.primary)?.id ?? BANK_ACCOUNTS[0]?.id ?? '');
     setWOpen(true);
   };
 
@@ -174,8 +141,8 @@ const Revenue = () => {
     const n = Number(String(val).replace(/\D/g, ''));
     const avail = stats?.pending ?? 0;
     if (!val || isNaN(n) || n <= 0)  return 'Vui lòng nhập số tiền muốn rút.';
-    if (n < 100_000)                  return 'Số tiền tối thiểu là 100,000đ.';
-    if (n > avail)                    return `Vượt quá số dư (${fmtVN(avail)}).`;
+    if (n < 100_000)                  return 'Số tiền tối thiểu là 100.000 VNĐ.';
+    if (n > avail)                    return `Vượt quá số dư (${formatVnd(avail)}).`;
     return '';
   };
 
@@ -183,10 +150,11 @@ const Revenue = () => {
   const handleWithdraw = async () => {
     const err = validateAmt(wAmount);
     if (err) { setWAmtErr(err); return; }
+    if (!BANK_ACCOUNTS.length) { setNotice({ type: 'error', msg: 'Chưa có tài khoản ngân hàng. Cập nhật trong Hồ sơ chủ xe.' }); return; }
     if (!wBankId) { setNotice({ type: 'error', msg: 'Vui lòng chọn tài khoản ngân hàng.' }); return; }
 
     const rawAmt   = Number(String(wAmount).replace(/\D/g, ''));
-    const bankAcc  = MOCK_BANK_ACCOUNTS.find(b => b.id === wBankId);
+    const bankAcc  = BANK_ACCOUNTS.find((b) => b.id === wBankId);
 
     setWLoading(true);
     try {
@@ -199,7 +167,7 @@ const Revenue = () => {
         id: result.id,
         month: `T${today.getMonth()+1}/${today.getFullYear()}`,
         amount: rawAmt,
-        method: `${bankAcc?.bankName} ****${bankAcc?.accountNo.slice(-4)}`,
+        method: bankAcc ? `${bankAcc.bankName} ****${String(bankAcc.accountNo).slice(-4)}` : '—',
         date: dateStr,
         status: 'processing',
         detail: {
@@ -213,7 +181,7 @@ const Revenue = () => {
 
       setPayouts(prev => [newRow, ...prev]);
       setWOpen(false);
-      setNotice({ type: 'success', msg: `✅ Yêu cầu rút ${fmtVN(rawAmt)} đã được gửi thành công!` });
+      setNotice({ type: 'success', msg: `✅ Yêu cầu rút ${formatVnd(rawAmt)} đã được gửi thành công!` });
     } catch (e) {
       setNotice({ type: 'error', msg: `❌ Lỗi: ${e.message}` });
     } finally {
@@ -222,15 +190,15 @@ const Revenue = () => {
   };
 
   /* ── Derived ── */
-  const selectedVehicle = vehicles.find(v => String(v.id) === selectedId);
+  const selectedVehicle = vehicles.find((v) => String(v.id) === selectedId);
   const vehicleLabel    = selectedVehicle
-    ? `${selectedVehicle.name} – ${selectedVehicle.plate}`
+    ? `${selectedVehicle.name} – ${selectedVehicle.plateNumber || '—'}`
     : 'Tất cả phương tiện';
 
   const STAT_CARDS = [
-    { label: 'Tổng doanh thu', val: fmtM(stats?.total    ?? 0), color: '#0891b2', sub: vehicleLabel },
-    { label: 'Đã nhận',        val: fmtM(stats?.received ?? 0), color: '#059669', sub: '90% tỷ lệ chi trả' },
-    { label: 'Đang chờ rút',   val: fmtM(stats?.pending  ?? 0), color: '#d97706', sub: 'Số dư khả dụng' },
+    { label: 'Tổng doanh thu', val: formatVnd(stats?.total    ?? 0), color: '#0891b2', sub: vehicleLabel },
+    { label: 'Đã nhận',        val: formatVnd(stats?.received ?? 0), color: '#059669', sub: '90% tỷ lệ chi trả' },
+    { label: 'Đang chờ rút',   val: formatVnd(stats?.pending  ?? 0), color: '#d97706', sub: 'Số dư khả dụng' },
     { label: 'Tỷ lệ chia sẻ',  val: '90%',                       color: '#7c3aed', sub: 'Chủ xe / SmartRent' },
   ];
 
@@ -270,7 +238,17 @@ const Revenue = () => {
           <h1 className="page-title">Doanh thu &amp; Rút tiền</h1>
           <p className="page-subtitle">Theo dõi dòng tiền và yêu cầu rút tiền về tài khoản</p>
         </div>
-        <button type="button" className="btn-primary" onClick={openWithdraw}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => {
+            if (!BANK_ACCOUNTS.length) {
+              setNotice({ type: 'error', msg: 'Chưa cấu hình tài khoản ngân hàng trong hệ thống. Vui lòng cập nhật Hồ sơ chủ xe hoặc liên hệ quản trị.' });
+              return;
+            }
+            openWithdraw();
+          }}
+        >
           <FaMoneyBillWave aria-hidden="true" /> Yêu cầu rút tiền
         </button>
       </div>
@@ -295,7 +273,7 @@ const Revenue = () => {
               style={{ width: '100%', paddingLeft: 34, paddingRight: 28, paddingTop: 9, paddingBottom: 9, border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: '0.85rem', outline: 'none', background: '#fff', color: '#111827', cursor: 'pointer', boxSizing: 'border-box', appearance: 'none' }}
             >
               <option value="all">🚗 Tất cả phương tiện</option>
-              {vehicles.map(v => <option key={v.id} value={String(v.id)}>{v.name} – {v.plate}</option>)}
+              {vehicles.map((v) => <option key={v.id} value={String(v.id)}>{v.name} – {v.plateNumber || '—'}</option>)}
             </select>
             <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9ca3af', fontSize: '0.7rem' }} aria-hidden="true">▼</span>
           </div>
@@ -343,8 +321,8 @@ const Revenue = () => {
             <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
-              <Tooltip formatter={(v, n) => [fmtVN(v), n]} />
+              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1_000_000).toLocaleString('vi-VN')} tr VNĐ`} />
+              <Tooltip formatter={(v, n) => [formatVnd(v), n]} />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.78rem' }} />
               <Bar dataKey="revenue" name="Doanh thu"  fill="#0891b2" radius={[4, 4, 0, 0]} />
               <Bar dataKey="payouts" name="Đã chi trả" fill="#00b14f" radius={[4, 4, 0, 0]} />
@@ -357,7 +335,7 @@ const Revenue = () => {
       <div className="section-card">
         <div className="section-header">
           <div className="section-title">Lịch sử chi trả</div>
-          <button type="button" className="btn-outline" disabled title="Tính năng sắp ra mắt" style={{ fontSize: '0.78rem', padding: '5px 12px', opacity: 0.5, cursor: 'not-allowed' }}>
+          <button type="button" className="btn-outline" onClick={exportPayoutsCsv} style={{ fontSize: '0.78rem', padding: '5px 12px' }} title="Tải CSV lịch sử chi trả (dữ liệu hiển thị)">
             <FaDownload aria-hidden="true" /> Xuất CSV
           </button>
         </div>
@@ -375,7 +353,7 @@ const Revenue = () => {
                 <tr key={p.id}>
                   <td><span className="code-badge">{p.id}</span></td>
                   <td style={{ fontWeight: 600 }}>{p.month}</td>
-                  <td style={{ fontWeight: 700, color: '#00b14f' }} className="tabular-nums">{p.amount.toLocaleString()}đ</td>
+                  <td style={{ fontWeight: 700, color: '#00b14f' }} className="tabular-nums">{formatVnd(p.amount)}</td>
                   <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>{p.method}</td>
                   <td>{p.date}</td>
                   <td><StatusBadge status={p.status} /></td>
@@ -409,7 +387,7 @@ const Revenue = () => {
               type="button"
               className="btn-primary"
               onClick={handleWithdraw}
-              disabled={wLoading || !wBankId}
+              disabled={wLoading || !wBankId || !BANK_ACCOUNTS.length}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
             >
               {wLoading ? <FaSpinner style={{ animation: 'spin 0.8s linear infinite' }} aria-hidden="true" /> : <FaMoneyBillWave aria-hidden="true" />}
@@ -421,13 +399,13 @@ const Revenue = () => {
         <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius: 12, padding: '14px 18px', marginBottom: 20, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: 2 }}>Số dư khả dụng</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#059669', lineHeight: 1 }} className="tabular-nums">{fmtVN(stats?.pending ?? 0)}</div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#059669', lineHeight: 1 }} className="tabular-nums">{formatVnd(stats?.pending ?? 0)}</div>
           </div>
           <FaCheckCircle style={{ fontSize: '2rem', color: '#86efac' }} aria-hidden="true" />
         </div>
 
         <div style={{ marginBottom: 18 }}>
-          <label htmlFor="withdraw-amount" className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">Số tiền muốn rút (đ)</label>
+          <label htmlFor="withdraw-amount" className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">Số tiền muốn rút (VNĐ)</label>
           <input
             id="withdraw-amount"
             name="amount"
@@ -442,7 +420,7 @@ const Revenue = () => {
             inputMode="numeric"
           />
           <div style={{ fontSize: '0.72rem', marginTop: 6, color: wAmtErr ? '#dc2626' : '#6b7280' }} role={wAmtErr ? 'alert' : undefined}>
-            {wAmtErr || `Tối thiểu 100,000đ — Tối đa ${fmtVN(stats?.pending ?? 0)}`}
+            {wAmtErr || `Tối thiểu 100.000 VNĐ — Tối đa ${formatVnd(stats?.pending ?? 0)}`}
           </div>
         </div>
 
@@ -457,9 +435,12 @@ const Revenue = () => {
               value={wBankId}
               onChange={(e) => setWBankId(e.target.value)}
             >
-              {MOCK_BANK_ACCOUNTS.map((acc) => (
+              {BANK_ACCOUNTS.length === 0 && (
+                <option value="">Chưa có tài khoản</option>
+              )}
+              {BANK_ACCOUNTS.map((acc) => (
                 <option key={acc.id} value={acc.id}>
-                  {acc.bankName} ****{acc.accountNo.slice(-4)}
+                  {acc.bankName} ****{String(acc.accountNo).slice(-4)}
                   {acc.primary ? ' — Mặc định' : ''} — {acc.accountName}
                 </option>
               ))}
@@ -520,12 +501,12 @@ const Revenue = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem', marginBottom: 4 }}>
               <tbody>
                 {[
-                  { label: 'Doanh thu gộp', value: fmtVN(detailTx.detail.gross), color: '#059669' },
-                  { label: 'Phí nền tảng (10%)', value: `-${fmtVN(detailTx.detail.platformFee)}`, color: '#dc2626' },
+                  { label: 'Doanh thu gộp', value: formatVnd(detailTx.detail.gross), color: '#059669' },
+                  { label: 'Phí nền tảng (10%)', value: `-${formatVnd(detailTx.detail.platformFee)}`, color: '#dc2626' },
                   ...(detailTx.detail.damagePenalty > 0
-                    ? [{ label: 'Khấu trừ hư hỏng (AI)', value: `-${fmtVN(detailTx.detail.damagePenalty)}`, color: '#d97706' }]
+                    ? [{ label: 'Khấu trừ hư hỏng (AI)', value: `-${formatVnd(detailTx.detail.damagePenalty)}`, color: '#d97706' }]
                     : []),
-                  { label: 'Thực nhận (chủ xe)', value: fmtVN(detailTx.detail.net), color: '#059669', bold: true },
+                  { label: 'Thực nhận (chủ xe)', value: formatVnd(detailTx.detail.net), color: '#059669', bold: true },
                 ].map((row) => (
                   <tr key={row.label}>
                     <td style={{ padding: '7px 0', borderBottom: '1px solid #f3f4f6', color: row.bold ? '#111827' : '#6b7280', fontWeight: row.bold ? 700 : 400 }}>{row.label}</td>
@@ -554,7 +535,7 @@ const Revenue = () => {
                         <td style={{ padding: '7px 10px', borderBottom: '1px solid #f3f4f6' }}>
                           <SmallChip tone={d.severity === 'Nhẹ' ? 'warning' : 'danger'}>{d.severity}</SmallChip>
                         </td>
-                        <td style={{ padding: '7px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', color: '#dc2626', fontWeight: 600 }} className="tabular-nums">-{fmtVN(d.cost)}</td>
+                        <td style={{ padding: '7px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', color: '#dc2626', fontWeight: 600 }} className="tabular-nums">-{formatVnd(d.cost)}</td>
                       </tr>
                     ))}
                   </tbody>

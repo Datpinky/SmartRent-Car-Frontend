@@ -7,6 +7,7 @@ import CarDetail from './components/pages/CarDetail/CarDetail';
 import Login from './components/pages/Login/Login';
 import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import RoleRoute from './components/common/RoleRoute';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -31,6 +32,7 @@ import ShowroomProfile from './pages/showroom/ShowroomProfile/ShowroomProfile';
 // Renter pages
 import Profile from './pages/renter/Profile/Profile';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
+import Transactions from './pages/renter/Transactions/Transactions';
 import Checkout from './pages/renter/Checkout/Checkout';
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
@@ -45,6 +47,7 @@ import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
 
 // Admin profile
 import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
+import NotFound from './pages/NotFound';
 
 
 
@@ -78,6 +81,7 @@ const RenterOrAdminCheckout = ({ children }) => (
 const App = () => {
   return (
     <AuthProvider>
+      <ChatWidgetProvider>
       <Router>
         <Routes>
           {/* Login & public register */}
@@ -113,6 +117,7 @@ const App = () => {
           {/* Renter portal */}
           <Route path="/renter/profile"         element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/bookings"        element={<RenterPage><MyBookings /></RenterPage>} />
+          <Route path="/renter/transactions"    element={<RenterPage><Transactions /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
           <Route path="/renter/checkout"        element={<RenterOrAdminCheckout><Checkout /></RenterOrAdminCheckout>} />
           <Route path="/renter/payment-result"  element={<PaymentResult />} />
@@ -127,14 +132,16 @@ const App = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/xe/:id" element={<CarDetail />} />
                   <Route path="/map" element={<MapPage />} />
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
               <Footer />
-              <ChatWidget />
             </div>
           } />
         </Routes>
+        <ChatWidget />
       </Router>
+      </ChatWidgetProvider>
     </AuthProvider>
   );
 };
