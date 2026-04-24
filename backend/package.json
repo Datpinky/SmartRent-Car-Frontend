@@ -5,14 +5,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "security:audit": "npm audit --audit-level=high"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
+    "@google/generative-ai": "^0.24.1",
     "@mapbox/polyline": "^1.2.1",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
@@ -21,13 +22,15 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
+    "helmet": "^7.2.0",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "lodash": "^4.17.23",
     "mongoose": "^9.1.5",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "stripe": "^20.4.1"
+    "openai": "^6.34.0",
+    "stripe": "^22.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

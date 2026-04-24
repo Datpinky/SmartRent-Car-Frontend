@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { formatVndPerDay } from '../../utils/currencyFormat';
 
 const makeCarIcon = (isSelected) =>
   L.divIcon({
@@ -17,8 +18,7 @@ const makeCarIcon = (isSelected) =>
 
 const formatPrice = (price, currency = 'VND', chargeUnit = 'day') => {
   if (!price) return null;
-  const unitLabel = chargeUnit === 'day' ? '/ngay' : `/${chargeUnit}`;
-  return `${Number(price).toLocaleString('vi-VN')} ${currency}${unitLabel}`;
+  return formatVndPerDay(price);
 };
 
 const formatDistance = (km) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MdClose, MdDirectionsCar, MdFilterList, MdPeople, MdSort } from 'react-icons/md';
 import { FaCar, FaGasPump, FaMoneyBillWave } from 'react-icons/fa';
 import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
@@ -91,15 +91,40 @@ const DEFAULT_SELECTIONS = {
 
 const FilterBar = ({ onFilter, onSort }) => {
   const [openPopup, setOpenPopup] = useState(null);
+  const popupRef = useRef(null);
   const [selections, setSelections] = useState(DEFAULT_SELECTIONS);
   const [tempSelection, setTempSelection] = useState('all');
   const [tempPrice, setTempPrice] = useState({ priceMin: '', priceMax: '' });
 
   useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) setOpenPopup(null);
+    };
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setOpenPopup(null);
+    };
+    if (openPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKey);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [openPopup]);
+
+  useEffect(() => {
     if (!openPopup) {
       return undefined;
     }
+    lockPageScroll();
+    return () => unlockPageScroll();
+  }, [openPopup]);
 
+  useEffect(() => {
+    if (!openPopup) {
+      return undefined;
+    }
     lockPageScroll();
     return () => unlockPageScroll();
   }, [openPopup]);
@@ -241,6 +266,7 @@ const FilterBar = ({ onFilter, onSort }) => {
       {openPopup && (
         <div className="fixed inset-0 z-[9998] bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4" onClick={() => setOpenPopup(null)}>
           <div
+            ref={popupRef}
             className="w-full max-w-[420px] bg-white rounded-[28px] shadow-[0_28px_90px_rgba(0,0,0,0.22)] border border-white/70 overflow-hidden"
             onClick={(event) => event.stopPropagation()}
           >

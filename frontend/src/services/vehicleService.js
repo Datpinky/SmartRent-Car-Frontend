@@ -130,10 +130,10 @@ export function mapVehicle(v) {
     transmission: TRANS_MAP[v.transmission] || v.transmission || 'Số tự động',
     seats: v.number_of_seats || 5,
 
-    // Pricing
-    price: v.vehicle_hire_rate_in_figures || 0,
-    currency: v.vehicle_hire_rate_currency || 'VND',
-    chargeUnit: v.vehicle_hire_charge_per_timing || 'day',
+    // Pricing — hiển thị thống nhất VNĐ/ngày (dữ liệu API vẫn có thể có currency khác)
+    price: Number(v.vehicle_hire_rate_in_figures) || 0,
+    currency: 'VND',
+    chargeUnit: 'day',
 
     // Media
     image: images[0] || '',

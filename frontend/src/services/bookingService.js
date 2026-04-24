@@ -16,6 +16,14 @@ const resolveId = (value) => {
   return value._id || value.id || '';
 };
 
+function normalizeListPayload(raw) {
+  if (Array.isArray(raw)) return { items: raw, pagination: null };
+  if (raw && Array.isArray(raw.data)) {
+    return { items: raw.data, pagination: raw.pagination ?? null };
+  }
+  return { items: [], pagination: null };
+}
+
 const extractBookingList = (payload) => {
   if (Array.isArray(payload?.data)) {
     return payload.data;
@@ -213,6 +221,15 @@ export const bookingService = {
   async getCurrentRoleBookings() {
     const res = await apiClient.get('/api/booking/getMyBooking');
     return extractBookingList(res.data);
+  },
+
+  async getListBookings(filters = {}) {
+    const res = await apiClient.post('/api/booking/getListBookings', {
+      limit: 100,
+      page: 1,
+      ...filters,
+    });
+    return normalizeListPayload(res.data?.data ?? res.data);
   },
 
   async getMyBookingsDetailed(filters = {}) {

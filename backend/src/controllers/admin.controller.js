@@ -1,4 +1,5 @@
 const adminService = require("../services/admin.service");
+const { auditLog } = require("../utils/auditLog");
 
 class AdminController {
     async listUsers(req, res, next) {
@@ -31,6 +32,17 @@ class AdminController {
     async approveShowroom(req, res, next) {
         try {
             const data = await adminService.approveShowroom(req.params.id);
+            auditLog({
+                event_type: "showroom.approve",
+                actor: {
+                    id: String(req.user.userId),
+                    type: "user",
+                    name: req.user.email || "",
+                    ip_address: req.ip || "",
+                },
+                action: { type: "UPDATE", outcome: "success" },
+                resource: { id: String(req.params.id), type: "showroom_user", name: "showroom_approval" },
+            });
             return res.status(200).json({ message: "Đã phê duyệt tài khoản showroom", data });
         } catch (error) {
             next(error);
@@ -40,6 +52,17 @@ class AdminController {
     async rejectShowroom(req, res, next) {
         try {
             const data = await adminService.rejectShowroom(req.params.id, req.body?.reason);
+            auditLog({
+                event_type: "showroom.reject",
+                actor: {
+                    id: String(req.user.userId),
+                    type: "user",
+                    name: req.user.email || "",
+                    ip_address: req.ip || "",
+                },
+                action: { type: "UPDATE", outcome: "success" },
+                resource: { id: String(req.params.id), type: "showroom_user", name: "showroom_rejection" },
+            });
             return res.status(200).json({ message: "Đã từ chối tài khoản showroom", data });
         } catch (error) {
             next(error);

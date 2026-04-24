@@ -21,6 +21,7 @@ import { MdLocationOn } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
+import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import { resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const DELIVERY_FEE_VND = 50000;
@@ -455,10 +456,10 @@ function OrderSummaryPanel({
           <div className="space-y-2.5 text-[0.82rem]">
             <div className="flex justify-between gap-3 text-gray-600">
               <span>
-                {vehicle.price?.toLocaleString('vi-VN')}đ × {days} ngày
+                {formatVndPerDay(vehicle.price)} × {days} ngày
               </span>
               <span className="tabular-nums font-medium text-gray-800">
-                {subtotal.toLocaleString('vi-VN')}đ
+                {formatVnd(subtotal)}
               </span>
             </div>
             <div className="flex justify-between gap-3 text-gray-600">
@@ -467,14 +468,14 @@ function OrderSummaryPanel({
                 Phí dịch vụ (5%)
               </span>
               <span className="tabular-nums font-medium text-gray-800">
-                {serviceFee.toLocaleString('vi-VN')}đ
+                {formatVnd(serviceFee)}
               </span>
             </div>
             {deliveryFee > 0 && (
               <div className="flex justify-between gap-3 text-gray-600">
                 <span>Giao tận nơi</span>
                 <span className="tabular-nums font-medium text-gray-800">
-                  +{deliveryFee.toLocaleString('vi-VN')}đ
+                  +{formatVnd(deliveryFee)}
                 </span>
               </div>
             )}
@@ -483,7 +484,7 @@ function OrderSummaryPanel({
           <div className="flex justify-between items-baseline pt-1 border-t border-dashed border-gray-200">
             <span className="font-bold text-gray-900 text-[0.95rem]">Tổng cộng</span>
             <span className="tabular-nums text-xl font-bold text-primary">
-              {total.toLocaleString('vi-VN')}đ
+              {formatVnd(total)}
             </span>
           </div>
 
@@ -602,7 +603,7 @@ const Checkout = () => {
 
   const priceLine = useMemo(() => {
     if (!vehicle?.price) return '—';
-    return `${Number(vehicle.price).toLocaleString('vi-VN')}đ / ngày`;
+    return formatVndPerDay(vehicle.price);
   }, [vehicle]);
 
   const handleContinue = async () => {
@@ -830,7 +831,7 @@ const Checkout = () => {
                   >
                     <p className="font-bold text-gray-900 text-[0.9rem]">Giao tận nơi</p>
                     <p className="text-gray-600 font-semibold text-[0.85rem] mt-1">
-                      + {DELIVERY_FEE_VND.toLocaleString('vi-VN')}đ
+                      + {formatVnd(DELIVERY_FEE_VND)}
                     </p>
                   </button>
                 </div>

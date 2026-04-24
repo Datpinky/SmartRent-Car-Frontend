@@ -10,23 +10,25 @@ import Home from './components/pages/Home/Home';
 import Login from './components/pages/Login/Login';
 import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
 import DashboardLayout from './layouts/DashboardLayout';
-import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
 import AdminDashboard from './pages/admin/AdminDashboard/AdminDashboard';
+import AdminProfile from './pages/admin/AdminProfile/AdminProfile';
 import ShowroomVerification from './pages/admin/ShowroomVerification/ShowroomVerification';
 import TransactionMonitor from './pages/admin/TransactionMonitor/TransactionMonitor';
 import UserManagement from './pages/admin/UserManagement/UserManagement';
+import MyVehicles from './pages/owner/MyVehicles/MyVehicles';
 import OwnerDashboard from './pages/owner/OwnerDashboard/OwnerDashboard';
 import OwnerProfile from './pages/owner/OwnerProfile/OwnerProfile';
-import MyVehicles from './pages/owner/MyVehicles/MyVehicles';
 import Revenue from './pages/owner/Revenue/Revenue';
 import VehicleTracking from './pages/owner/VehicleTracking/VehicleTracking';
-import Checkout from './pages/renter/Checkout/Checkout';
+import NotFound from './pages/NotFound';
 import AIReports from './pages/renter/AIReports/AIReports';
+import Checkout from './pages/renter/Checkout/Checkout';
 import MapPage from './pages/renter/Map/MapPage';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
-import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
+import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
 import Profile from './pages/renter/Profile/Profile';
 import RenterDashboard from './pages/renter/RenterDashboard/RenterDashboard';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
@@ -58,9 +60,7 @@ const RenterPage = ({ children }) => (
 
 const RenterOnlyPage = ({ children }) => (
   <ProtectedRoute>
-    <RoleRoute roles={['renter']}>
-      {children}
-    </RoleRoute>
+    <RoleRoute roles={['renter']}>{children}</RoleRoute>
   </ProtectedRoute>
 );
 
@@ -72,16 +72,16 @@ const PublicSite = () => (
         <Route path="/" element={<Home />} />
         <Route path="/xe/:id" element={<CarDetail />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
     <Footer />
-    <ChatWidget />
   </div>
 );
 
-const App = () => {
-  return (
-    <AuthProvider>
+const App = () => (
+  <AuthProvider>
+    <ChatWidgetProvider>
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -123,9 +123,10 @@ const App = () => {
 
           <Route path="/*" element={<PublicSite />} />
         </Routes>
+        <ChatWidget />
       </Router>
-    </AuthProvider>
-  );
-};
+    </ChatWidgetProvider>
+  </AuthProvider>
+);
 
 export default App;

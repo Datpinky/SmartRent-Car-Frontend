@@ -10,6 +10,7 @@ router.post('/register-showroom', authValidation.registerShowroom, validate, aut
 
 router.post('/login', authValidation.login, validate, authController.login);
 
+router.get('/me', authMiddleware, authController.getMe);
 router.patch('/me', authMiddleware, authValidation.updateProfile, validate, authController.updateProfile);
 router.post('/change-password', authMiddleware, authValidation.changePassword, validate, authController.changePassword);
 router.get('/sessions', authMiddleware, authController.listSessions);

@@ -80,6 +80,20 @@ const paymentService = {
 
     return Array.isArray(payments) && payments.length > 0 ? payments[0] : null;
   },
+
+  /** Dùng bởi bookingService.enrichBooking và luồng thanh toán. */
+  async getLatestPaymentByBookingId(bookingId) {
+    if (!bookingId) return null;
+    const raw = await this.getListPayments({
+      booking_id: bookingId,
+      sort_by: -1,
+      page: 1,
+      limit: 1,
+    });
+    const payments = Array.isArray(raw) ? raw : raw?.data;
+    if (!Array.isArray(payments) || payments.length === 0) return null;
+    return payments[0];
+  },
 };
 
 export default paymentService;

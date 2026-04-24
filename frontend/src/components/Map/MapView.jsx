@@ -22,6 +22,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
+import { formatVndPerDay } from '../../utils/currencyFormat';
 
 import CarMarker from './CarMarker';
 import UserLocation from './UserLocation';
@@ -329,9 +330,7 @@ const MapView = ({ cars = [], height = '600px', embed = false }) => {
 
                     {car.price && (
                       <div className="mapview-car-price">
-                        {Number(car.price).toLocaleString('vi-VN')}
-                        <span> ₫</span>
-                        <small>/ngày</small>
+                        {formatVndPerDay(car.price)}
                       </div>
                     )}
                   </li>
