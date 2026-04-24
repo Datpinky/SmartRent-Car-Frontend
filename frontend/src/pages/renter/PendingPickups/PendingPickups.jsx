@@ -82,7 +82,7 @@ const PendingPickups = () => {
     setNotice({ tone: '', text: '' });
 
     try {
-      await bookingService.updateBookingStatus(booking.id, 'handed_over');
+      await bookingService.confirmPickupForRenter(booking.id, booking.status);
       setDetailModal(null);
       await loadBookings();
       setNotice({

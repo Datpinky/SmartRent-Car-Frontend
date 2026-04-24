@@ -27,6 +27,7 @@ const mapReportBooking = (booking) => {
     endDate: booking.end_date,
     status: booking.status,
     report: workflow.aiInspection || null,
+    workflowUpdatedAt: workflow.updatedAt || booking.updatedAt || booking.end_date,
   };
 };
 
@@ -51,7 +52,14 @@ const AIReports = () => {
           return;
         }
 
-        const mapped = (bookings || []).map(mapReportBooking).filter((booking) => hasAiInspectionReport({ aiInspection: booking.report }));
+        const mapped = (bookings || [])
+          .map(mapReportBooking)
+          .filter((booking) => hasAiInspectionReport({ aiInspection: booking.report }))
+          .sort(
+            (left, right) =>
+              new Date(right.workflowUpdatedAt || 0).getTime() - new Date(left.workflowUpdatedAt || 0).getTime()
+          );
+
         setReports(mapped);
         setError('');
       } catch (err) {
@@ -60,7 +68,7 @@ const AIReports = () => {
         }
 
         setReports([]);
-        setError(err.message || 'Không thể tải báo cáo AI lúc này.');
+        setError(err.message || 'Khong the tai bao cao AI luc nay.');
       } finally {
         if (mounted) {
           setLoading(false);
@@ -86,7 +94,9 @@ const AIReports = () => {
       return;
     }
 
-    setSelectedBookingId((current) => (current && reports.some((report) => report.id === current) ? current : reports[0].id));
+    setSelectedBookingId((current) => (
+      current && reports.some((report) => report.id === current) ? current : reports[0].id
+    ));
   }, [presetBookingId, reports]);
 
   const selectedReport = useMemo(
@@ -94,22 +104,41 @@ const AIReports = () => {
     [reports, selectedBookingId]
   );
 
-  const summary = useMemo(() => ({
-    total: reports.length,
-    clean: reports.filter((report) => !report.report?.result?.damage_detected).length,
-    warning: reports.filter((report) => report.report?.result?.damage_detected).length,
-  }), [reports]);
+  const summary = useMemo(
+    () => ({
+      total: reports.length,
+      clean: reports.filter((report) => !report.report?.result?.damage_detected).length,
+      warning: reports.filter((report) => report.report?.result?.damage_detected).length,
+    }),
+    [reports]
+  );
 
   return (
     <div className="ai-inspection">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Thiệt hại phát sinh</h1>
-          <p className="page-subtitle">Danh sách kết quả đối chiếu ảnh trước và sau thuê của bạn</p>
+          <h1 className="page-title">Bao cao AI thiet hai phat sinh</h1>
+          <p className="page-subtitle">Danh sach ket qua doi chieu anh truoc va sau thue tren trinh duyet hien tai</p>
         </div>
         <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
-          Về Chuyến đi của tôi
+          Ve Chuyen di cua toi
         </button>
+      </div>
+
+      <div
+        style={{
+          marginBottom: 16,
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          color: '#1d4ed8',
+          borderRadius: 14,
+          padding: '12px 14px',
+          fontSize: '0.82rem',
+          lineHeight: 1.65,
+        }}
+      >
+        Bao cao trong muc nay duoc tao tu anh doi chieu renter da luu trong quy trinh nhan / tra xe tren trinh duyet hien tai.
+        Neu doi trinh duyet hoac xoa du lieu local, bao cao co the khong con hien thi day du.
       </div>
 
       {error && (
@@ -120,9 +149,9 @@ const AIReports = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Tổng báo cáo', value: summary.total, color: '#111827' },
-          { label: 'Không hư hỏng mới', value: summary.clean, color: '#059669' },
-          { label: 'Cần đối chiếu', value: summary.warning, color: '#d97706' },
+          { label: 'Tong bao cao', value: summary.total, color: '#111827' },
+          { label: 'Khong thay hu hong moi', value: summary.clean, color: '#059669' },
+          { label: 'Can doi chieu them', value: summary.warning, color: '#d97706' },
         ].map((item) => (
           <div key={item.label} style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', padding: '12px 18px', minWidth: 150 }}>
             <div style={{ fontSize: '1.35rem', fontWeight: 800, color: item.color }}>{item.value}</div>
@@ -132,18 +161,18 @@ const AIReports = () => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '64px 0', color: '#6b7280' }}>Đang tải báo cáo AI...</div>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: '#6b7280' }}>Dang tai bao cao AI...</div>
       ) : reports.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', padding: 28, textAlign: 'center' }}>
           <div style={{ width: 70, height: 70, borderRadius: '50%', margin: '0 auto 14px', display: 'grid', placeItems: 'center', background: '#eff6ff', color: '#2563eb', fontSize: '1.6rem' }}>
             <FaRobot />
           </div>
-          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Chưa có báo cáo AI nào</div>
+          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Chua co bao cao AI nao tren trinh duyet nay</div>
           <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, maxWidth: 580, margin: '0 auto 16px' }}>
-            Báo cáo thiệt hại sẽ được tạo sau khi bạn gửi bộ ảnh trả xe có ảnh đối chiếu trước thuê trong quy trình nhận / trả xe.
+            Bao cao AI se duoc tao sau khi ban gui bo anh tra xe co anh doi chieu truoc thue trong quy trinh nhan / tra xe, va duoc luu tren trinh duyet hien tai.
           </div>
           <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
-            Mở quy trình trả xe
+            Mo quy trinh tra xe
           </button>
         </div>
       ) : (
@@ -195,8 +224,11 @@ const AIReports = () => {
                   <div style={{ fontSize: '0.76rem', color: '#64748b', lineHeight: 1.6 }}>
                     {formatDateTime(reportItem.startDate)} - {formatDateTime(reportItem.endDate)}
                   </div>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 6 }}>
+                    Cap nhat tren trinh duyet nay: {formatDateTime(reportItem.workflowUpdatedAt)}
+                  </div>
                   <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, color: selected ? '#2563eb' : '#6b7280', fontSize: '0.76rem', fontWeight: 700 }}>
-                    Xem chi tiết <FaArrowRight />
+                    Xem chi tiet <FaArrowRight />
                   </div>
                 </button>
               );

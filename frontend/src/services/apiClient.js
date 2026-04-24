@@ -1,9 +1,20 @@
 import axios from 'axios';
 
+const AUTH_CLEARED_EVENT = 'smartrent:auth-cleared';
+
 const BASE_URL =
   process.env.REACT_APP_API_URL ||
   process.env.REACT_APP_API_BASE_URL ||
   'http://localhost:3000';
+
+const clearStoredAuth = () => {
+  localStorage.removeItem('smartrent_token');
+  localStorage.removeItem('smartrent_user');
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_CLEARED_EVENT));
+  }
+};
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -11,7 +22,6 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT token to every request.
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('smartrent_token');
   if (token) {
@@ -20,7 +30,6 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Normalize error responses for the UI.
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -35,7 +44,6 @@ apiClient.interceptors.response.use(
 
     if (!error.response) {
       normalizedMessage = 'Khong the ket noi den may chu. Kiem tra backend dang chay tai cong 3000.';
-      console.log(`Lỗi không rõ: ${error};`)
     } else if (status === 401) {
       const enToVi = {
         'Invalid email or password': 'Email hoac mat khau khong dung.',
@@ -50,8 +58,7 @@ apiClient.interceptors.response.use(
           : 'Phien dang nhap het han. Vui long dang nhap lai.');
 
       if (!isLoginRequest) {
-        localStorage.removeItem('smartrent_token');
-        localStorage.removeItem('smartrent_user');
+        clearStoredAuth();
       }
     } else if (status === 403) {
       const isReview =

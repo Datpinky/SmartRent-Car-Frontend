@@ -304,12 +304,15 @@ const Profile = () => {
         longitude: mapLocation?.longitude ?? fallbackLongitude,
         plusCode: mapLocation?.plusCode || fallbackPlusCode || '',
       });
+      const hasResolvedCoordinates =
+        Number.isFinite(Number(updatedProfile?.userLocation?.latitude))
+        && Number.isFinite(Number(updatedProfile?.userLocation?.longitude));
 
       setProfile(updatedProfile);
       updateUser(updatedProfile);
       setSavedAddress(updatedProfile.address || '');
 
-      if (updatedProfile.userLocation) {
+      if (hasResolvedCoordinates && updatedProfile.userLocation) {
         applyStoredLocation(updatedProfile.userLocation);
       } else if (trimmedAddress) {
         await loadMapPreview(trimmedAddress);
@@ -320,8 +323,8 @@ const Profile = () => {
       setIsEditing(false);
 
       setNotice({
-        type: trimmedAddress && !updatedProfile.userLocation ? 'warning' : 'success',
-        message: trimmedAddress && !updatedProfile.userLocation
+        type: trimmedAddress && !hasResolvedCoordinates ? 'warning' : 'success',
+        message: trimmedAddress && !hasResolvedCoordinates
           ? 'Đã cập nhật hồ sơ. Địa chỉ đã được lưu, nhưng hệ thống chưa xác định được toạ độ chính xác để đồng bộ'
           : 'Đã cập nhật hồ sơ thành công.',
       });

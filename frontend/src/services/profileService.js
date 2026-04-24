@@ -33,7 +33,7 @@ export const mapProfileUser = (user = {}) => ({
   role: mapBackendRole(user.role || user.backendRole || ''),
   backendRole: user.backendRole || user.role || '',
   phone: user.phone || '',
-  address: user.address || '',
+  address: user.userLocation?.address || user.address || '',
   age: user.age ?? '',
   showroom_status: user.showroom_status || '',
   business_name: user.business_name || '',
@@ -104,9 +104,6 @@ export const profileService = {
     if (Object.prototype.hasOwnProperty.call(payload, 'phone')) {
       body.phone = payload.phone;
     }
-    if (Object.prototype.hasOwnProperty.call(payload, 'address')) {
-      body.address = payload.address;
-    }
     if (Object.prototype.hasOwnProperty.call(payload, 'age')) {
       body.age = payload.age;
     }
@@ -128,15 +125,13 @@ export const profileService = {
 
       if (!trimmedAddress) {
         await userLocationService.remove(userId);
-      } else if (hasCoordinates) {
+      } else {
         userLocation = await userLocationService.upsert(userId, {
           address: trimmedAddress,
-          latitude: normalizedLatitude,
-          longitude: normalizedLongitude,
+          latitude: hasCoordinates ? normalizedLatitude : null,
+          longitude: hasCoordinates ? normalizedLongitude : null,
           plusCode,
         });
-      } else {
-        await userLocationService.remove(userId);
       }
     } else {
       userLocation = await userLocationService.getByUserId(userId);

@@ -331,7 +331,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
 
       try {
         if (!['waiting_return_confirmation', 'completed'].includes(booking?.status)) {
-          await bookingService.updateBookingStatus(booking.id, 'waiting_return_confirmation');
+          await bookingService.requestReturnForRenter(booking.id, booking.status);
           nextStatus = 'waiting_return_confirmation';
         }
 

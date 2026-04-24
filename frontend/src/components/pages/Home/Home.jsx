@@ -278,7 +278,7 @@ const Home = () => {
 
       <SearchBar onSearch={handleSearch} />
       <FilterBar onFilter={handleFilter} onSort={handleSort} />
-      <CarGrid cars={filteredCars} loading={loading} />
+      <CarGrid cars={filteredCars} loading={loading} rentalSearch={currentSearch.current} />
     </main>
   );
 };

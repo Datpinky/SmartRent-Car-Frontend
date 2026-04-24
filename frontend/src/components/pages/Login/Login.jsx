@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { MdEmail, MdLock, MdPhone, MdDirectionsCar } from 'react-icons/md';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { MdDirectionsCar, MdEmail, MdPhone } from 'react-icons/md';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   PasswordStrengthInput,
@@ -15,11 +15,9 @@ const ROLE_REDIRECTS = {
   renter: '/renter/dashboard',
 };
 
-const inputCls = "w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]";
+const inputCls =
+  'w-full py-3 pl-10 pr-3 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]';
 
-/**
- * Đặt ở ngoài Login để tránh remount input mỗi lần state đổi (mất focus khi gõ).
- */
 const LoginFormField = ({
   label,
   name,
@@ -33,23 +31,38 @@ const LoginFormField = ({
   extra = {},
 }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[0.8rem] font-semibold text-gray-700">{label}</label>
+    <label htmlFor={`field-${name}`} className="text-[0.8rem] font-semibold text-gray-700">
+      {label}
+    </label>
     <div className="relative flex items-center">
-      <Icon className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
+      <Icon
+        aria-hidden="true"
+        className="pointer-events-none absolute left-3 text-gray-400"
+        size={17}
+      />
       <input
-        className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
+        id={`field-${name}`}
+        className={`${inputCls} ${
+          error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''
+        }`}
         name={name}
         type={type}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         required={required}
+        aria-invalid={!!error}
+        aria-describedby={error ? `field-${name}-error` : undefined}
         {...extra}
       />
     </div>
     {error && (
-      <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">
-        ⚠ {error}
+      <div
+        id={`field-${name}-error`}
+        role="alert"
+        className="mt-2 flex items-center gap-1 text-[0.78rem] font-medium text-red-600"
+      >
+        Canh bao: {error}
       </div>
     )}
   </div>
@@ -59,63 +72,94 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, register } = useAuth();
+
   const [tab, setTab] = useState('login');
   const [form, setForm] = useState({
-    email: '', password: '', confirmPassword: '', phone: '', name: '', accountType: 'renter',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    name: '',
+    accountType: 'renter',
   });
   const [confirmError, setConfirmError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [registerError, setRegisterError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState('');
-  const registerPasswordInvalid = tab === 'register' && !!registerError && !passwordMeetsPolicy(form.password);
-  const registerPhoneInvalid = tab === 'register'
-    && !!registerError
-    && (form.phone || '').replace(/\D/g, '').length !== 10;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const registerPasswordInvalid =
+    tab === 'register' && !!registerError && !passwordMeetsPolicy(form.password);
+  const registerPhoneInvalid =
+    tab === 'register' &&
+    !!registerError &&
+    (form.phone || '').replace(/\D/g, '').length !== 10;
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
     if (name === 'phone') {
       const digits = value.replace(/\D/g, '').slice(0, 10);
-      setForm(f => ({ ...f, phone: digits }));
+      setForm((current) => ({ ...current, phone: digits }));
       if (registerError) setRegisterError('');
       return;
     }
+
     if (name === 'accountType') {
-      setForm(f => ({ ...f, accountType: value }));
+      setForm((current) => ({ ...current, accountType: value }));
       return;
     }
-    setForm(f => ({ ...f, [name]: value }));
+
+    setForm((current) => ({ ...current, [name]: value }));
     if (tab === 'register' && registerError) setRegisterError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoginError(''); setRegisterError(''); setConfirmError(''); setRegisterSuccess('');
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoginError('');
+    setRegisterError('');
+    setConfirmError('');
+    setRegisterSuccess('');
 
     if (tab === 'register') {
       if (!passwordMeetsPolicy(form.password)) {
-        setRegisterError('Mật khẩu phải có ít nhất 8 ký tự, gồm 1 chữ in hoa và 1 ký tự đặc biệt.');
+        setRegisterError(
+          'Mat khau chua du do manh. Vui long dap ung day du cac yeu cau ben duoi o mat khau.'
+        );
         return;
       }
-      if (form.password !== form.confirmPassword) { setConfirmError('Mật khẩu xác nhận không khớp!'); return; }
+
+      if (form.password !== form.confirmPassword) {
+        setConfirmError('Mat khau xac nhan khong khop.');
+        return;
+      }
+
       const phoneDigits = (form.phone || '').replace(/\D/g, '');
-      if (phoneDigits.length !== 10) { setRegisterError('Số điện thoại phải có đúng 10 chữ số.'); return; }
+      if (phoneDigits.length !== 10) {
+        setRegisterError('So dien thoai phai co dung 10 chu so.');
+        return;
+      }
+
       setSubmitting(true);
       const result = await register(
         form.name,
         form.email,
         form.password,
         form.phone,
-        form.accountType || 'renter',
+        form.accountType || 'renter'
       );
       setSubmitting(false);
+
       if (result.success) {
-        setRegisterSuccess('Tạo tài khoản thành công! Vui lòng đăng nhập.');
+        setRegisterSuccess('Tao tai khoan thanh cong. Vui long dang nhap.');
         setTab('login');
-        setForm(f => ({ ...f, password: '', confirmPassword: '' }));
+        setForm((current) => ({
+          ...current,
+          password: '',
+          confirmPassword: '',
+        }));
       } else {
-        setRegisterError(result.error || 'Đăng ký thất bại. Vui lòng thử lại.');
+        setRegisterError(result.error || 'Dang ky that bai. Vui long thu lai.');
       }
       return;
     }
@@ -123,26 +167,43 @@ const Login = () => {
     setSubmitting(true);
     const result = await login(form.email, form.password);
     setSubmitting(false);
+
     if (result.success) {
       const from = location.state?.from?.pathname;
-      const redirect = from && from !== '/login' ? from : ROLE_REDIRECTS[result.user.role] || '/';
+      const fallback = ROLE_REDIRECTS[result.user.role] || '/';
+      const allowedPrefix = {
+        admin: '/admin',
+        showroom: '/showroom',
+        owner: '/owner',
+        renter: '/renter',
+      }[result.user.role];
+
+      const redirect =
+        from && from !== '/login' && allowedPrefix && String(from).startsWith(allowedPrefix)
+          ? from
+          : fallback;
+
       setTimeout(() => navigate(redirect, { replace: true }), 0);
     } else {
-      setLoginError(result.error || 'Đăng nhập thất bại');
+      setLoginError(result.error || 'Dang nhap that bai');
     }
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-50">
-      {/* Left panel — fixed height, never scrolls */}
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <div
-        className="flex-1 hidden md:flex items-center justify-center px-10 py-[60px] relative overflow-hidden h-full sticky top-0"
+        className="sticky top-0 hidden h-full flex-1 items-center justify-center overflow-hidden px-10 py-[60px] md:flex"
         style={{ background: 'linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 50%, #f8fffc 100%)' }}
       >
-        {/* Subtle green blobs */}
-        <div className="absolute w-[420px] h-[420px] -top-[80px] -right-[80px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.12) 0%, transparent 70%)' }} />
-        <div className="absolute w-[280px] h-[280px] -bottom-[40px] -left-[40px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.08) 0%, transparent 70%)' }} />
-        <div className="relative z-[1] flex flex-col items-center justify-center max-w-[400px] w-full">
+        <div
+          className="absolute -right-[80px] -top-[80px] h-[420px] w-[420px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.12) 0%, transparent 70%)' }}
+        />
+        <div
+          className="absolute -bottom-[40px] -left-[40px] h-[280px] w-[280px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(0,177,79,0.08) 0%, transparent 70%)' }}
+        />
+        <div className="relative z-[1] flex w-full max-w-[400px] flex-col items-center justify-center">
           <img
             src="/logo_transparent.png"
             alt="SmartRent Logo"
@@ -151,50 +212,62 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right panel — scrolls independently */}
-      <div className="w-full md:w-[480px] flex flex-col justify-center bg-white px-12 py-[60px] max-[480px]:px-6 max-[480px]:py-10 overflow-y-auto h-full">
-        <div className="text-[1.75rem] font-extrabold text-gray-900 mb-2">
-          {tab === 'login' ? 'Chào mừng trở lại!' : 'Tạo tài khoản'}
+      <div className="flex h-full w-full flex-col justify-center overflow-y-auto bg-white px-12 py-[60px] md:w-[480px] max-[480px]:px-6 max-[480px]:py-10">
+        <div className="mb-2 text-[1.75rem] font-extrabold text-gray-900">
+          {tab === 'login' ? 'Chao mung tro lai!' : 'Tao tai khoan'}
         </div>
-        <div className="text-[0.875rem] text-gray-500 mb-8">
-          {tab === 'login' && 'Đăng nhập để tiếp tục thuê xe'}
+        <div className="mb-8 text-[0.875rem] text-gray-500">
+          {tab === 'login' && 'Dang nhap de tiep tuc thue xe'}
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b-2 border-gray-200 mb-7">
-          {['login', 'register'].map(t => (
-            <div
-              key={t}
-              className={`flex-1 py-2.5 text-center text-[0.9rem] font-semibold cursor-pointer border-b-2 -mb-0.5 transition-all
-                ${tab === t ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
-              onClick={() => setTab(t)}
+        <div className="mb-7 flex border-b-2 border-gray-200">
+          {['login', 'register'].map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={`-mb-0.5 flex-1 border-b-2 py-2.5 text-center text-[0.9rem] font-semibold transition-all ${
+                tab === value
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setTab(value)}
             >
-              {t === 'login' ? 'Đăng nhập' : 'Đăng ký'}
-            </div>
+              {value === 'login' ? 'Dang nhap' : 'Dang ky'}
+            </button>
           ))}
         </div>
 
         {registerSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700 text-[0.82rem] mb-2.5">{registerSuccess}</div>
+          <div className="mb-2.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[0.82rem] text-green-700">
+            {registerSuccess}
+          </div>
         )}
         {loginError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600 text-[0.82rem] mb-2.5">{loginError}</div>
+          <div className="mb-2.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[0.82rem] text-red-600">
+            {loginError}
+          </div>
+        )}
+        {tab === 'register' && registerError && !registerPasswordInvalid && !registerPhoneInvalid && (
+          <div className="mb-2.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[0.82rem] text-red-600">
+            {registerError}
+          </div>
         )}
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {tab === 'register' && (
             <LoginFormField
-              label="Họ và tên"
+              label="Ho va ten"
               name="name"
               icon={MdDirectionsCar}
-              placeholder="Nguyễn Văn A"
+              placeholder="Nguyen Van A"
               value={form.name}
               onChange={handleChange}
             />
           )}
+
           {tab === 'register' && (
             <LoginFormField
-              label="Số điện thoại (10 số)"
+              label="So dien thoai (10 so)"
               name="phone"
               type="tel"
               icon={MdPhone}
@@ -205,18 +278,22 @@ const Login = () => {
               extra={{ inputMode: 'numeric', autoComplete: 'tel', maxLength: 10 }}
             />
           )}
+
           {tab === 'register' && (
             <div className="flex flex-col gap-2">
-              <span className="text-[0.8rem] font-semibold text-gray-700">Tôi muốn</span>
+              <span className="text-[0.8rem] font-semibold text-gray-700">Toi muon</span>
               <div className="flex flex-col gap-2">
                 {[
-                  { value: 'renter', label: 'Thuê xe (khách hàng)' },
-                  { value: 'owner', label: 'Cho thuê xe cá nhân (chủ xe)' },
+                  { value: 'renter', label: 'Thue xe (khach hang)' },
+                  { value: 'owner', label: 'Cho thue xe ca nhan (chu xe)' },
                 ].map(({ value, label }) => (
                   <label
                     key={value}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors
-                      ${form.accountType === value ? 'border-primary bg-primary-light' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                      form.accountType === value
+                        ? 'border-primary bg-primary-light'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
                   >
                     <input
                       type="radio"
@@ -224,14 +301,15 @@ const Login = () => {
                       value={value}
                       checked={form.accountType === value}
                       onChange={handleChange}
-                      className="accent-primary w-4 h-4"
+                      className="h-4 w-4 accent-primary"
                     />
-                    <span className="text-[0.88rem] text-gray-800 font-medium">{label}</span>
+                    <span className="text-[0.88rem] font-medium text-gray-800">{label}</span>
                   </label>
                 ))}
               </div>
             </div>
           )}
+
           <LoginFormField
             label="Email"
             name="email"
@@ -243,56 +321,62 @@ const Login = () => {
             onChange={handleChange}
             extra={{ autoComplete: tab === 'login' ? 'username' : 'email' }}
           />
+
           {tab === 'register' ? (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
+              <label className="text-[0.8rem] font-semibold text-gray-700">Mat khau</label>
               <PasswordStrengthInput
                 name="password"
                 id="register-password"
                 value={form.password}
                 onChange={handleChange}
                 error={registerPasswordInvalid}
-                placeholder="Nhập mật khẩu"
+                placeholder="Nhap mat khau"
               />
               {registerPasswordInvalid && (
-                <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-1">
-                  ⚠ {registerError}
+                <div className="mt-1 flex items-center gap-1 text-[0.78rem] font-medium text-red-600">
+                  Canh bao: {registerError}
                 </div>
               )}
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
-              <div className="relative flex items-center">
-                <MdLock className="absolute left-3 text-gray-400 pointer-events-none" size={17} />
-                <input
-                  className={inputCls}
-                  name="password"
-                  type="password"
-                  placeholder="Nhập mật khẩu"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                />
+              <PasswordToggleInput
+                label="Mat khau"
+                name="password"
+                id="login-password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Nhap mat khau"
+                autoComplete="current-password"
+                required
+              />
+              <div className="cursor-pointer text-right text-[0.78rem] font-medium text-primary">
+                Quen mat khau?
               </div>
-              <div className="text-[0.78rem] text-primary cursor-pointer text-right font-medium">Quên mật khẩu?</div>
             </div>
           )}
+
           {tab === 'register' && (
             <div className="flex flex-col gap-1.5">
               <PasswordToggleInput
-                label="Xác nhận mật khẩu"
+                label="Xac nhan mat khau"
                 name="confirmPassword"
                 id="confirm-password"
                 value={form.confirmPassword}
-                onChange={(e) => { handleChange(e); setConfirmError(''); }}
+                onChange={(event) => {
+                  handleChange(event);
+                  setConfirmError('');
+                }}
                 error={confirmError}
-                placeholder="Nhập lại mật khẩu"
+                placeholder="Nhap lai mat khau"
                 autoComplete="new-password"
                 required
               />
               {confirmError && (
-                <div className="text-[0.78rem] text-red-600 font-medium flex items-center gap-1 mt-2">⚠ {confirmError}</div>
+                <div className="mt-2 flex items-center gap-1 text-[0.78rem] font-medium text-red-600">
+                  Canh bao: {confirmError}
+                </div>
               )}
             </div>
           )}
@@ -300,22 +384,42 @@ const Login = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] transition-all mt-1 tracking-wide hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+            className="mt-1 w-full rounded-xl bg-gradient-to-br from-primary to-primary-dark py-3.5 text-[0.95rem] font-bold tracking-wide text-white transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0"
           >
-            {submitting ? 'Đang xử lý...' : (tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')}
+            {submitting ? 'Dang xu ly...' : tab === 'login' ? 'Dang nhap' : 'Tao tai khoan'}
           </button>
         </form>
 
-        <div className="text-center text-[0.83rem] text-gray-500 mt-5 space-y-2">
-          {tab === 'login'
-            ? <>Chưa có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('register')}>Đăng ký ngay</span></>
-            : <>Đã có tài khoản? <span className="text-primary font-semibold cursor-pointer" onClick={() => setTab('login')}>Đăng nhập</span></>
-          }
+        <div className="mt-5 space-y-2 text-center text-[0.83rem] text-gray-500">
+          {tab === 'login' ? (
+            <>
+              Chua co tai khoan?{' '}
+              <button
+                type="button"
+                className="font-semibold text-primary"
+                onClick={() => setTab('register')}
+              >
+                Dang ky ngay
+              </button>
+            </>
+          ) : (
+            <>
+              Da co tai khoan?{' '}
+              <button
+                type="button"
+                className="font-semibold text-primary"
+                onClick={() => setTab('login')}
+              >
+                Dang nhap
+              </button>
+            </>
+          )}
+
           {tab === 'register' && (
             <div>
-              Bạn là doanh nghiệp / showroom?{' '}
-              <Link to="/partner/register" className="text-primary font-semibold hover:underline">
-                Đăng ký đối tác
+              Ban la doanh nghiep / showroom?{' '}
+              <Link to="/partner/register" className="font-semibold text-primary hover:underline">
+                Dang ky doi tac
               </Link>
             </div>
           )}

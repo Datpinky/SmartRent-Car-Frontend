@@ -35,18 +35,18 @@ class BookingService {
   static async getMyBookings(userId, role) {
     if (role === 'user' || role === 'owner') {
       return BookingModel.find({ user_id: userId })
-        .populate('showroom_id', 'name email')
+        .populate('showroom_id', 'name email phone business_name showroom_status is_active')
         .populate('vehicle_id')
     }
     else if (role === 'showroom') {
       return BookingModel.find({ showroom_id: userId })
-        .populate('user_id', 'name email')
+        .populate('user_id', 'name email phone is_active')
         .populate('vehicle_id');
     }
     else if (role === 'admin') {
       return BookingModel.find({ $or: [{ user_id: userId }, { showroom_id: userId }] })
-        .populate('user_id')
-        .populate('showroom_id')
+        .populate('user_id', 'name email phone role is_active')
+        .populate('showroom_id', 'name email phone role business_name showroom_status is_active')
         .populate('vehicle_id');
     }
     else {

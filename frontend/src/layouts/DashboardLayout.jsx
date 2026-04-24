@@ -54,7 +54,7 @@ const MENUS = {
   renter: [
     { key: 'profile', label: 'Hồ sơ cá nhân', icon: <FaUser aria-hidden="true" />, path: '/renter/profile' },
     { key: 'bookings', label: 'Chuyến đi của tôi', icon: <FaCalendarAlt aria-hidden="true" />, path: '/renter/bookings' },
-    { key: 'ai-reports', label: 'Thiệt hại phát sinh', icon: <FaRobot aria-hidden="true" />, path: '/renter/ai-reports' },
+    { key: 'ai-reports', label: 'Báo cáo AI', icon: <FaRobot aria-hidden="true" />, path: '/renter/ai-reports' },
     { key: 'transactions', label: 'Lịch sử giao dịch', icon: <FaExchangeAlt aria-hidden="true" />, path: '/renter/transactions' },
     { key: 'sos', label: 'Hỗ trợ khẩn cấp', icon: <FaAmbulance aria-hidden="true" />, path: '/renter/sos' },
   ],

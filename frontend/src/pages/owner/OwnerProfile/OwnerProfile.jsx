@@ -1,71 +1,102 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
 import {
-  FaSave, FaCheckCircle, FaUser, FaShieldAlt, FaCar,
-  FaKey, FaMoneyBillWave, FaExclamationCircle,
+  FaCar,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaKey,
+  FaMoneyBillWave,
+  FaSave,
+  FaShieldAlt,
+  FaUser,
 } from 'react-icons/fa';
-import { MdVerifiedUser, MdDirectionsCar } from 'react-icons/md';
+import { MdDirectionsCar, MdVerifiedUser } from 'react-icons/md';
 import { passwordMeetsPolicy } from '../../../components/common/PasswordInput';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const OWNER_STATS = [
-  { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar aria-hidden="true" />, color: '#6d28d9' },
-  { label: 'Tổng doanh thu',   value: '52,400,000₫', icon: <FaMoneyBillWave aria-hidden="true" />, color: '#059669' },
-  { label: 'Chờ rút tiền',     value: '8,200,000₫',  icon: <FaExclamationCircle aria-hidden="true" />, color: '#d97706' },
+  {
+    label: 'Xe đang ký gửi',
+    value: '3',
+    icon: <MdDirectionsCar aria-hidden="true" />,
+    color: '#6d28d9',
+  },
+  {
+    label: 'Tổng doanh thu',
+    value: '52,400,000₫',
+    icon: <FaMoneyBillWave aria-hidden="true" />,
+    color: '#059669',
+  },
+  {
+    label: 'Chờ rút tiền',
+    value: '8,200,000₫',
+    icon: <FaExclamationCircle aria-hidden="true" />,
+    color: '#d97706',
+  },
 ];
 
 const OwnerProfile = () => {
   const { user, updateUser } = useAuth();
-  const [tab, setTab]         = useState('info');
-  const [form, setForm]       = useState({
-    name:    user?.name  || 'Nguyễn Văn Khoa',
-    email:   user?.email || 'owner@smartrent.com',
-    phone:   user?.phone || '0900000003',
-    dob:     '15/07/1985',
+  const [tab, setTab] = useState('info');
+  const [form, setForm] = useState({
+    name: user?.name || 'Nguyễn Văn Khoa',
+    email: user?.email || 'owner@smartrent.com',
+    phone: user?.phone || '0900000003',
+    dob: '15/07/1985',
     address: '56 Trần Hưng Đạo, Q.1, TP.HCM',
-    bank:    'Vietcombank – 0012345678910',
+    bank: 'Vietcombank - 0012345678910',
   });
-  const [saved, setSaved]     = useState(false);
+  const [saved, setSaved] = useState(false);
   const [phoneError, setPhoneError] = useState('');
-  const [nameError, setNameError]   = useState('');
-  const [dobError, setDobError]     = useState('');
+  const [nameError, setNameError] = useState('');
+  const [dobError, setDobError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [pwForm, setPwForm]   = useState({ current: '', next: '', confirm: '' });
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSaved, setPwSaved] = useState(false);
 
-  const initials = user?.name?.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() || 'OW';
+  const initials =
+    user?.name
+      ?.split(' ')
+      .map((word) => word[0])
+      .slice(-2)
+      .join('')
+      .toUpperCase() || 'OW';
 
-  // Viết hoa chữ cái đầu mỗi từ (không strip ký tự để bộ gõ Telex/VNI hoạt động)
-  const toTitleCase = (str) =>
-    str.split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
+  const toTitleCase = (value) =>
+    String(value || '')
+      .split(' ')
+      .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+      .join(' ');
 
   const handleFieldChange = (key, value) => {
     if (key === 'name') {
       setNameError('');
-      setForm(f => ({ ...f, name: toTitleCase(value) }));
+      setForm((current) => ({ ...current, name: toTitleCase(value) }));
       return;
     }
+
     if (key === 'phone') {
-      // Only allow digits, max 10
       const digits = String(value).replace(/\D/g, '').slice(0, 10);
-      setForm(f => ({ ...f, phone: digits }));
+      setForm((current) => ({ ...current, phone: digits }));
       setPhoneError('');
       return;
     }
+
     if (key === 'email') {
       setEmailError('');
     }
+
     if (key === 'dob') {
       setDobError('');
     }
-    setForm(f => ({ ...f, [key]: value }));
+
+    setForm((current) => ({ ...current, [key]: value }));
   };
 
   const handleSave = () => {
     let hasError = false;
+    const trimmedName = String(form.name || '').trim();
 
-    // Name validation
-    const trimmedName = (form.name || '').trim();
     if (!trimmedName) {
       setNameError('Họ và tên không được để trống.');
       hasError = true;
@@ -76,36 +107,32 @@ const OwnerProfile = () => {
       setNameError('');
     }
 
-    // DOB validation
-    const dobParts = (form.dob || '').split('/');
+    const dobParts = String(form.dob || '').split('/');
     if (dobParts.length === 3) {
-      const day   = parseInt(dobParts[0], 10);
+      const day = parseInt(dobParts[0], 10);
       const month = parseInt(dobParts[1], 10);
-      const year  = parseInt(dobParts[2], 10);
+      const year = parseInt(dobParts[2], 10);
 
-      if (isNaN(day) || isNaN(month) || isNaN(year)) {
+      if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) {
         setDobError('Ngày sinh không hợp lệ (định dạng DD/MM/YYYY).');
         hasError = true;
       } else if (month < 1 || month > 12) {
         setDobError('Tháng không hợp lệ, phải từ 1 đến 12.');
         hasError = true;
       } else {
-        // Tính số ngày hợp lệ trong tháng
-        const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
         const maxDays = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
 
         if (day < 1 || day > maxDays) {
-          if (month === 2) {
-            setDobError(`Tháng 2 năm ${year} chỉ có ${maxDays} ngày${isLeap ? ' (năm nhuận)' : ''}.`);
-          } else {
-            setDobError(`Tháng ${month} chỉ có ${maxDays} ngày.`);
-          }
+          setDobError(month === 2 ? `Tháng 2 năm ${year} chỉ có ${maxDays} ngày.` : `Tháng ${month} chỉ có ${maxDays} ngày.`);
           hasError = true;
         } else {
-          const dob   = new Date(year, month - 1, day);
+          const dob = new Date(year, month - 1, day);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          const age = today.getFullYear() - year -
+          const age =
+            today.getFullYear() -
+            year -
             (today < new Date(today.getFullYear(), month - 1, day) ? 1 : 0);
 
           if (dob >= today) {
@@ -124,8 +151,7 @@ const OwnerProfile = () => {
       hasError = true;
     }
 
-    // Phone validation
-    const phoneDigits = (form.phone || '').replace(/\D/g, '');
+    const phoneDigits = String(form.phone || '').replace(/\D/g, '');
     if (phoneDigits.length !== 10) {
       setPhoneError('Số điện thoại phải có đúng 10 chữ số.');
       hasError = true;
@@ -136,16 +162,17 @@ const OwnerProfile = () => {
       setPhoneError('');
     }
 
-    // Email validation
     const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(form.email || '')) {
+    if (!emailRegex.test(String(form.email || ''))) {
       setEmailError('Email không hợp lệ (ví dụ: name@domain.com).');
       hasError = true;
     } else {
       setEmailError('');
     }
 
-    if (hasError) return;
+    if (hasError) {
+      return;
+    }
 
     updateUser({ name: form.name, phone: form.phone });
     setSaved(true);
@@ -153,20 +180,29 @@ const OwnerProfile = () => {
   };
 
   const handlePwSave = () => {
-    if (!pwForm.current)            { setPwError('Vui lòng nhập mật khẩu hiện tại'); return; }
-    if (!passwordMeetsPolicy(pwForm.next)) {
-      setPwError('Mật khẩu mới phải có ít nhất 8 ký tự, gồm 1 chữ in hoa và 1 ký tự đặc biệt.');
+    if (!pwForm.current) {
+      setPwError('Vui lòng nhập mật khẩu hiện tại');
       return;
     }
-    if (pwForm.next !== pwForm.confirm) { setPwError('Mật khẩu xác nhận không khớp'); return; }
+
+    if (!passwordMeetsPolicy(pwForm.next)) {
+      setPwError('Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.');
+      return;
+    }
+
+    if (pwForm.next !== pwForm.confirm) {
+      setPwError('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
     setPwError('');
     setPwSaved(true);
     setPwForm({ current: '', next: '', confirm: '' });
     setTimeout(() => setPwSaved(false), 2500);
   };
 
-  const TABS = [
-    ['info',     <FaUser aria-hidden="true" />,      'Thông tin'],
+  const tabs = [
+    ['info', <FaUser aria-hidden="true" />, 'Thông tin'],
     ['security', <FaShieldAlt aria-hidden="true" />, 'Bảo mật'],
   ];
 
@@ -174,17 +210,19 @@ const OwnerProfile = () => {
     <div className="op-page">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Hồ sơ Chủ xe</h1>
+          <h1 className="page-title">Hồ sơ chủ xe</h1>
           <p className="page-subtitle">Quản lý thông tin và bảo mật tài khoản</p>
         </div>
       </div>
 
-      {/* Hero */}
       <div className="op-hero">
         <div className="op-avatar-wrap">
           <div className="op-avatar">{initials}</div>
-          <div className="op-avatar-badge"><FaCar aria-hidden="true" /></div>
+          <div className="op-avatar-badge">
+            <FaCar aria-hidden="true" />
+          </div>
         </div>
+
         <div className="op-hero-info">
           <div className="op-hero-name">{user?.name}</div>
           <div className="op-hero-email">{user?.email}</div>
@@ -194,20 +232,22 @@ const OwnerProfile = () => {
             </span>
           </div>
         </div>
+
         <div className="op-hero-stats">
-          {OWNER_STATS.map(s => (
-            <div key={s.label} className="op-stat">
-              <div className="op-stat-icon" style={{ color: s.color }}>{s.icon}</div>
-              <div className="op-stat-val tabular-nums">{s.value}</div>
-              <div className="op-stat-label">{s.label}</div>
+          {OWNER_STATS.map((item) => (
+            <div key={item.label} className="op-stat">
+              <div className="op-stat-icon" style={{ color: item.color }}>
+                {item.icon}
+              </div>
+              <div className="op-stat-val tabular-nums">{item.value}</div>
+              <div className="op-stat-label">{item.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="op-tabs">
-        {TABS.map(([key, icon, label]) => (
+        {tabs.map(([key, icon, label]) => (
           <button
             type="button"
             key={key}
@@ -219,12 +259,11 @@ const OwnerProfile = () => {
         ))}
       </div>
 
-      {/* Info Tab */}
       {tab === 'info' && (
         <div className="op-card">
           <h3 className="op-section-title">Thông tin cá nhân</h3>
+
           <div className="op-form-grid">
-            {/* Name */}
             <div>
               <label className="op-label" htmlFor="owner-name">Họ và tên</label>
               <input
@@ -233,14 +272,13 @@ const OwnerProfile = () => {
                 autoComplete="name"
                 type="text"
                 value={form.name}
-                onChange={e => handleFieldChange('name', e.target.value)}
+                onChange={(event) => handleFieldChange('name', event.target.value)}
                 className="op-input"
                 placeholder="Nguyễn Văn A"
               />
               {nameError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{nameError}</div>}
             </div>
 
-            {/* Email */}
             <div>
               <label className="op-label" htmlFor="owner-email">Email</label>
               <input
@@ -249,14 +287,13 @@ const OwnerProfile = () => {
                 autoComplete="email"
                 type="email"
                 value={form.email}
-                onChange={e => handleFieldChange('email', e.target.value)}
+                onChange={(event) => handleFieldChange('email', event.target.value)}
                 className="op-input"
                 placeholder="name@domain.com"
               />
               {emailError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{emailError}</div>}
             </div>
 
-            {/* Phone */}
             <div>
               <label className="op-label" htmlFor="owner-phone">Số điện thoại (10 số)</label>
               <input
@@ -265,7 +302,7 @@ const OwnerProfile = () => {
                 autoComplete="tel"
                 type="tel"
                 value={form.phone}
-                onChange={e => handleFieldChange('phone', e.target.value)}
+                onChange={(event) => handleFieldChange('phone', event.target.value)}
                 className="op-input"
                 maxLength={10}
                 inputMode="numeric"
@@ -275,7 +312,6 @@ const OwnerProfile = () => {
               {phoneError && <div role="alert" style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: 4 }}>{phoneError}</div>}
             </div>
 
-            {/* DOB */}
             <div>
               <label className="op-label" htmlFor="owner-dob">Ngày sinh (DD/MM/YYYY)</label>
               <input
@@ -284,7 +320,7 @@ const OwnerProfile = () => {
                 autoComplete="bday"
                 type="text"
                 value={form.dob}
-                onChange={e => handleFieldChange('dob', e.target.value)}
+                onChange={(event) => handleFieldChange('dob', event.target.value)}
                 className="op-input"
                 placeholder="DD/MM/YYYY"
                 maxLength={10}
@@ -299,7 +335,7 @@ const OwnerProfile = () => {
                 name="street-address"
                 autoComplete="street-address"
                 value={form.address}
-                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
                 className="op-input"
               />
             </div>
@@ -311,16 +347,30 @@ const OwnerProfile = () => {
                 name="bank-account"
                 autoComplete="off"
                 value={form.bank}
-                onChange={e => setForm(f => ({ ...f, bank: e.target.value }))}
+                onChange={(event) => setForm((current) => ({ ...current, bank: event.target.value }))}
                 className="op-input"
-                placeholder="Tên ngân hàng – Số tài khoản"
+                placeholder="Tên ngân hàng - Số tài khoản"
               />
             </div>
           </div>
 
           <div aria-live="polite">
             {saved && (
-              <div role="status" style={{ marginTop: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div
+                role="status"
+                style={{
+                  marginTop: 12,
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  color: '#166534',
+                  fontSize: '0.82rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
                 <FaCheckCircle aria-hidden="true" /> Thông tin đã được lưu!
               </div>
             )}
@@ -332,27 +382,37 @@ const OwnerProfile = () => {
         </div>
       )}
 
-      {/* Security Tab */}
       {tab === 'security' && (
         <div className="op-card">
           <h3 className="op-section-title">Đổi mật khẩu</h3>
+
           <div style={{ maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              ['Mật khẩu hiện tại',     'pw-current', 'current', 'current-password'],
-              ['Mật khẩu mới',          'pw-new',     'next',    'new-password'],
+              ['Mật khẩu hiện tại', 'pw-current', 'current', 'current-password'],
+              ['Mật khẩu mới', 'pw-new', 'next', 'new-password'],
               ['Xác nhận mật khẩu mới', 'pw-confirm', 'confirm', 'new-password'],
             ].map(([label, id, key, autoComplete]) => (
               <div key={id}>
                 <label className="op-label" htmlFor={id}>{label}</label>
                 <div style={{ position: 'relative' }}>
-                  <FaKey style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.8rem' }} aria-hidden="true" />
+                  <FaKey
+                    style={{
+                      position: 'absolute',
+                      left: 12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#9ca3af',
+                      fontSize: '0.8rem',
+                    }}
+                    aria-hidden="true"
+                  />
                   <input
                     id={id}
                     name={autoComplete}
                     autoComplete={autoComplete}
                     type="password"
                     value={pwForm[key]}
-                    onChange={e => setPwForm(f => ({ ...f, [key]: e.target.value }))}
+                    onChange={(event) => setPwForm((current) => ({ ...current, [key]: event.target.value }))}
                     placeholder="••••••••"
                     className="op-input"
                     style={{ paddingLeft: 34 }}
@@ -360,11 +420,13 @@ const OwnerProfile = () => {
                 </div>
               </div>
             ))}
+
             {pwError && (
               <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.82rem' }}>
                 {pwError}
               </div>
             )}
+
             <div aria-live="polite">
               {pwSaved && (
                 <div role="status" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', color: '#166534', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -372,6 +434,7 @@ const OwnerProfile = () => {
                 </div>
               )}
             </div>
+
             <button type="button" className="op-btn-primary" style={{ alignSelf: 'flex-start' }} onClick={handlePwSave}>
               <FaShieldAlt aria-hidden="true" /> Cập nhật mật khẩu
             </button>

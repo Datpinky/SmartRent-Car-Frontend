@@ -32,7 +32,21 @@ class ProfileService {
     }
 
     async updateProfile(userId, data) {
-        return await UserModel.findByIdAndUpdate(userId, data, { new: true }).select('-password');
+        const updates = {};
+
+        if (Object.prototype.hasOwnProperty.call(data, "name")) {
+            updates.name = data.name;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(data, "phone")) {
+            updates.phone = data.phone;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(data, "age")) {
+            updates.age = data.age;
+        }
+
+        return await UserModel.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
     }
 
     async deleteProfileById(userId) {

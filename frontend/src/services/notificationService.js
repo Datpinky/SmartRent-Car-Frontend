@@ -1,8 +1,8 @@
 import apiClient from './apiClient';
 
-// Backend hien tai trong repo nay chua co routes /api/notifications.
-// Giu FE o che do no-op de tranh request 404 lap lai.
-const BACKEND_NOTIFICATIONS_SUPPORTED = false;
+// Backend hien tai da mount /api/notifications.
+// FE giu luong request binh thuong, va NotificationBell se tu xu ly neu request loi.
+const BACKEND_NOTIFICATIONS_SUPPORTED = true;
 
 const EMPTY_RESULT = Object.freeze({ data: [], unread: 0 });
 

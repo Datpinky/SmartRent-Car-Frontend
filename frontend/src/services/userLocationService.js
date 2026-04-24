@@ -28,8 +28,8 @@ const buildPayload = (payload = {}) => {
 
   return {
     address: String(payload.address || '').trim(),
-    latitude: normalizedLatitude != null ? String(normalizedLatitude) : '',
-    longitude: normalizedLongitude != null ? String(normalizedLongitude) : '',
+    latitude: normalizedLatitude != null ? String(normalizedLatitude) : null,
+    longitude: normalizedLongitude != null ? String(normalizedLongitude) : null,
     plus_code: String(payload.plus_code || payload.plusCode || '').trim() || null,
   };
 };
@@ -80,7 +80,7 @@ export const userLocationService = {
 
   async upsert(userId, payload = {}) {
     const body = buildPayload(payload);
-    if (!userId || !body.address || !body.latitude || !body.longitude) {
+    if (!userId || !body.address) {
       return null;
     }
 

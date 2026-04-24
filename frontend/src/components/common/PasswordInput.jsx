@@ -5,36 +5,35 @@ import { MdLock } from 'react-icons/md';
 const inputCls =
   'w-full py-3 pl-10 pr-10 border-[1.5px] border-gray-200 rounded-lg text-[0.875rem] text-gray-800 font-[inherit] transition-[border-color,box-shadow] outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,177,79,0.1)]';
 
-/** Đồng bộ với backend: `backend/src/utils/passwordPolicy.js` */
+// Must stay in sync with backend/src/utils/passwordPolicy.js
 export const PASSWORD_REQUIREMENTS = [
-  { regex: /.{8,}/, text: 'Ít nhất 8 ký tự' },
-  { regex: /[A-Z]/, text: 'Ít nhất 1 chữ hoa' },
-  { regex: /[^A-Za-z0-9\s]/, text: 'Ít nhất 1 ký tự đặc biệt' },
+  { regex: /.{8,}/, text: 'It nhat 8 ky tu' },
+  { regex: /[0-9]/, text: 'It nhat 1 chu so' },
+  { regex: /[a-z]/, text: 'It nhat 1 chu thuong' },
+  { regex: /[A-Z]/, text: 'It nhat 1 chu hoa' },
+  { regex: /[!-\/:-@[-`{-~]/, text: 'It nhat 1 ky tu dac biet' },
 ];
 
 const STRENGTH_TEXTS = {
-  0: 'Nhập mật khẩu',
-  1: 'Mật khẩu yếu',
-  2: 'Sắp đạt yêu cầu',
-  3: 'Đạt yêu cầu',
+  0: 'Nhap mat khau',
+  1: 'Mat khau yeu',
+  2: 'Mat khau trung binh',
+  3: 'Mat khau kha manh',
+  4: 'Mat khau manh',
+  5: 'Mat khau rat manh',
 };
 
-/** Đủ cả 3 quy tắc — dùng khi validate trước khi gửi đăng ký */
 export function passwordMeetsPolicy(password) {
   return PASSWORD_REQUIREMENTS.every((req) => req.regex.test(password || ''));
 }
 
-/**
- * Ô mật khẩu có thanh độ mạnh + checklist (tab Đăng ký).
- * Controlled: value, onChange nhận synthetic event { target: { name, value } }.
- */
 export function PasswordStrengthInput({
   name = 'password',
   id = 'register-password',
   value,
   onChange,
   error,
-  placeholder = 'Nhập mật khẩu',
+  placeholder = 'Nhap mat khau',
   required = true,
 }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -44,79 +43,80 @@ export function PasswordStrengthInput({
       met: req.regex.test(value || ''),
       text: req.text,
     }));
+
     return {
       score: requirements.filter((req) => req.met).length,
       requirements,
     };
   }, [value]);
 
-  const emit = (next) => {
-    onChange({ target: { name, value: next } });
+  const emit = (nextValue) => {
+    onChange({ target: { name, value: nextValue } });
   };
 
   return (
-    <div className="w-full flex flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       <div className="relative flex items-center">
-        <MdLock aria-hidden="true" className="absolute left-3 text-gray-400 pointer-events-none z-[1]" size={17} />
+        <MdLock
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 z-[1] text-gray-400"
+          size={17}
+        />
         <input
           id={id}
           name={name}
           type={isVisible ? 'text' : 'password'}
           value={value}
-          onChange={(e) => emit(e.target.value)}
+          onChange={(event) => emit(event.target.value)}
           placeholder={placeholder}
           autoComplete="new-password"
           required={required}
           aria-describedby="password-strength-hint"
-          className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
+          className={`${inputCls} ${
+            error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''
+          }`}
         />
         <button
           type="button"
           onClick={() => setIsVisible((prev) => !prev)}
-          aria-label={isVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-          className="absolute inset-y-0 right-0 flex items-center justify-center w-10 text-gray-500 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-r-lg"
+          aria-label={isVisible ? 'An mat khau' : 'Hien mat khau'}
+          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-gray-500 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {isVisible ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
         </button>
       </div>
 
-      <div className="flex gap-1.5 w-full justify-between mt-0.5">
-        {PASSWORD_REQUIREMENTS.map((_, index) => {
-          const step = index + 1;
-          return (
-            <span
-              key={step}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
-                calculateStrength.score >= step ? 'bg-emerald-500' : 'bg-gray-200'
-              }`}
-            />
-          );
-        })}
+      <div className="mt-0.5 flex w-full justify-between gap-1.5">
+        {[1, 2, 3, 4, 5].map((step) => (
+          <span
+            key={step}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${
+              calculateStrength.score >= step ? 'bg-emerald-500' : 'bg-gray-200'
+            }`}
+          />
+        ))}
       </div>
 
       <p
         id="password-strength-hint"
-        className="text-[0.8rem] font-medium text-gray-700 flex justify-between gap-2"
+        className="flex justify-between gap-2 text-[0.8rem] font-medium text-gray-700"
       >
-        <span>Yêu cầu:</span>
-        <span className="text-primary font-semibold shrink-0">
-          {STRENGTH_TEXTS[Math.min(calculateStrength.score, PASSWORD_REQUIREMENTS.length)]}
+        <span>Yeu cau:</span>
+        <span className="shrink-0 font-semibold text-primary">
+          {STRENGTH_TEXTS[Math.min(calculateStrength.score, 5)]}
         </span>
       </p>
 
-      <ul className="space-y-1.5" aria-label="Yêu cầu mật khẩu">
+      <ul className="space-y-1.5" aria-label="Yeu cau mat khau">
         {calculateStrength.requirements.map((req) => (
           <li key={req.text} className="flex items-center gap-2">
             {req.met ? (
-              <CheckCheck size={16} className="text-emerald-500 shrink-0" strokeWidth={2} />
+              <CheckCheck size={16} className="shrink-0 text-emerald-500" strokeWidth={2} />
             ) : (
-              <X size={16} className="text-gray-400 shrink-0" strokeWidth={2} />
+              <X size={16} className="shrink-0 text-gray-400" strokeWidth={2} />
             )}
-            <span
-              className={`text-[0.75rem] ${req.met ? 'text-emerald-700' : 'text-gray-500'}`}
-            >
+            <span className={`text-[0.75rem] ${req.met ? 'text-emerald-700' : 'text-gray-500'}`}>
               {req.text}
-              <span className="sr-only">{req.met ? ' — đã đạt' : ' — chưa đạt'}</span>
             </span>
           </li>
         ))}
@@ -125,9 +125,6 @@ export function PasswordStrengthInput({
   );
 }
 
-/**
- * Ô mật khẩu chỉ có nút hiện/ẩn (Xác nhận mật khẩu / Đăng nhập).
- */
 export function PasswordToggleInput({
   name,
   id,
@@ -135,7 +132,7 @@ export function PasswordToggleInput({
   value,
   onChange,
   error,
-  placeholder = 'Nhập mật khẩu',
+  placeholder = 'Nhap mat khau',
   autoComplete = 'current-password',
   required = false,
 }) {
@@ -149,23 +146,29 @@ export function PasswordToggleInput({
         </label>
       )}
       <div className="relative flex items-center">
-        <MdLock aria-hidden="true" className="absolute left-3 text-gray-400 pointer-events-none z-[1]" size={17} />
+        <MdLock
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 z-[1] text-gray-400"
+          size={17}
+        />
         <input
           id={id}
           name={name}
           type={isVisible ? 'text' : 'password'}
           value={value}
-          onChange={(e) => onChange({ target: { name, value: e.target.value } })}
+          onChange={(event) => onChange({ target: { name, value: event.target.value } })}
           placeholder={placeholder}
           autoComplete={autoComplete}
           required={required}
-          className={`${inputCls} ${error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''}`}
+          className={`${inputCls} ${
+            error ? 'border-red-400 shadow-[0_0_0_3px_rgba(229,62,62,0.1)]' : ''
+          }`}
         />
         <button
           type="button"
           onClick={() => setIsVisible((prev) => !prev)}
-          aria-label={isVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-          className="absolute inset-y-0 right-0 flex items-center justify-center w-10 text-gray-500 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-r-lg"
+          aria-label={isVisible ? 'An mat khau' : 'Hien mat khau'}
+          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-gray-500 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {isVisible ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
         </button>

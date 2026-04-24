@@ -127,6 +127,33 @@ const enrichBooking = async (booking) => {
   });
 };
 
+const runStatusTransitions = async (bookingId, transitions = []) => {
+  let latestBooking = null;
+
+  for (const status of transitions) {
+    const res = await apiClient.patch(`/api/booking/updateBookingStatus/${bookingId}`, { status });
+    latestBooking = res.data?.data ?? null;
+  }
+
+  return latestBooking;
+};
+
+const PICKUP_CONFIRMATION_PATHS = {
+  pending: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
+  waiting_payment: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
+  paid: ['confirmed', 'waiting_handover', 'handed_over'],
+  confirmed: ['waiting_handover', 'handed_over'],
+  waiting_handover: ['handed_over'],
+  handed_over: [],
+};
+
+const RETURN_REQUEST_PATHS = {
+  handed_over: ['in_use', 'waiting_return_confirmation'],
+  in_use: ['waiting_return_confirmation'],
+  waiting_return_confirmation: [],
+  completed: [],
+};
+
 export const bookingService = {
   async createBooking(payload = {}) {
     const currentUser = readStoredUser();
@@ -180,6 +207,11 @@ export const bookingService = {
       ...filters,
     });
 
+    return extractBookingList(res.data);
+  },
+
+  async getCurrentRoleBookings() {
+    const res = await apiClient.get('/api/booking/getMyBooking');
     return extractBookingList(res.data);
   },
 
@@ -239,6 +271,34 @@ export const bookingService = {
   async updateBookingStatus(id, status) {
     const res = await apiClient.patch(`/api/booking/updateBookingStatus/${id}`, { status });
     return res.data.data;
+  },
+
+  async confirmPickupForRenter(id, currentStatus) {
+    const transitions = PICKUP_CONFIRMATION_PATHS[currentStatus];
+
+    if (!transitions) {
+      throw new Error(`Khong the xac nhan nhan xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
+    }
+
+    if (transitions.length === 0) {
+      return null;
+    }
+
+    return runStatusTransitions(id, transitions);
+  },
+
+  async requestReturnForRenter(id, currentStatus) {
+    const transitions = RETURN_REQUEST_PATHS[currentStatus];
+
+    if (!transitions) {
+      throw new Error(`Khong the gui yeu cau tra xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
+    }
+
+    if (transitions.length === 0) {
+      return null;
+    }
+
+    return runStatusTransitions(id, transitions);
   },
 };
 

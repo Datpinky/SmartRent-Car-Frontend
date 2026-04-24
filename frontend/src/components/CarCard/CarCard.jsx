@@ -5,6 +5,7 @@ import { FaGasPump, FaHeart, FaMapMarkerAlt, FaRegHeart, FaStar, FaStore } from 
 import { MdDirectionsCar, MdPeople, MdSettings } from 'react-icons/md';
 import { useAuth } from '../../contexts/AuthContext';
 import favoriteService from '../../services/favoriteService';
+import { buildRentalWindowQuery, sanitizeRentalWindow } from '../../utils/rentalWindow';
 
 const isMongoId = (value) => /^[a-f\d]{24}$/i.test(String(value || ''));
 
@@ -66,7 +67,7 @@ const StarRating = ({ rating }) => (
   </div>
 );
 
-const CarCard = ({ car }) => {
+const CarCard = ({ car, rentalSearch = null }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -81,6 +82,7 @@ const CarCard = ({ car }) => {
   const fuelIcon = normalizeText(car.fuel) === 'dien'
     ? <BsLightningChargeFill style={{ color: '#2196f3' }} />
     : <FaGasPump style={{ color: '#f59e0b' }} />;
+  const rentalWindow = sanitizeRentalWindow(rentalSearch?.pickupDate, rentalSearch?.returnDate);
 
   const handleLike = async (event) => {
     event.stopPropagation();
@@ -108,7 +110,11 @@ const CarCard = ({ car }) => {
   return (
     <article
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-[250ms] hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_8px_32px_rgba(0,0,0,0.14)]"
-      onClick={() => navigate(`/xe/${carId}`)}
+      onClick={() => navigate(`/xe/${carId}${buildRentalWindowQuery(rentalWindow.pickupDate, rentalWindow.returnDate)}`, {
+        state: {
+          rentalSearch: rentalWindow,
+        },
+      })}
     >
       <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16/10' }}>
         {imageUrl && !imgError ? (

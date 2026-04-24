@@ -13,11 +13,11 @@ const userLocationSchema = new mongoose.Schema({
   },
   latitude: {
     type: String,
-    required: true
+    default: null
   },
   longitude: {
     type: String,
-    required: true
+    default: null
   },
   // plus_code tạm thời có thể bỏ, hoặc để optional
   plus_code: {

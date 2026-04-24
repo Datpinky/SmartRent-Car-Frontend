@@ -22,7 +22,6 @@
   }
 }
 
-/* ── Header ──────────────────────────────────────────────── */
 .map-page-header {
   display: flex;
   align-items: flex-start;
@@ -82,12 +81,16 @@
   border: 1px solid #90cdf4;
 }
 
-/* ── Map container ───────────────────────────────────────── */
 .map-page-map-container {
   width: 100%;
 }
 
-/* ── Tips row ────────────────────────────────────────────── */
+.car-detail-map-wrap {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
 .map-tips {
   display: flex;
   gap: 12px;
@@ -114,7 +117,6 @@
   flex-shrink: 0;
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 700px) {
   .map-page {
     padding: 16px 0 24px;

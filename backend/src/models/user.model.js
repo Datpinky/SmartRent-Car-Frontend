@@ -19,25 +19,33 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
             minlength: 6,
+            select: false,
         },
 
         role: {
             type: String,
-            enum: ["user", "showroom", "admin", "owner"],
+            enum: ["user", "owner", "showroom", "admin"],
             default: "user"
         },
+
+        phone: { type: String, trim: true, default: "" },
+
+        /** Chỉ áp dụng khi role === "showroom" */
+        showroom_status: {
+            type: String,
+            enum: ["pending", "approved", "rejected"],
+            default: "pending",
+        },
+        business_name: { type: String, trim: true, default: "" },
+        tax_code: { type: String, trim: true, default: "" },
+        license_document_urls: { type: [String], default: [] },
+        showroom_rejection_reason: { type: String, trim: true, default: "" },
 
         is_active: {
             type: Boolean,
             default: true
         },
-        
-        address: {
-            type: String,
-        },
-        phone: {
-            type: String,
-        },
+
         age: {
             type: Number,
         },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -21,6 +21,7 @@ import { MdLocationOn } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
+import { resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const DELIVERY_FEE_VND = 50000;
 
@@ -517,6 +518,7 @@ function OrderSummaryPanel({
 const Checkout = () => {
   const { carId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [step, setStep] = useState(1);
   const [vehicle, setVehicle] = useState(null);
@@ -527,6 +529,10 @@ const Checkout = () => {
   const [returnDate, setReturnDate] = useState(defaultReturn);
   const [pickupMethod, setPickupMethod] = useState('self');
   const minPickupDateTime = useMemo(() => defaultPickup(), []);
+  const incomingRentalWindow = useMemo(
+    () => resolveRentalWindow({ state: location.state, search: location.search }),
+    [location.search, location.state]
+  );
 
   const [clientSecret, setClientSecret] = useState('');
   const [bookingId, setBookingId] = useState('');
@@ -563,12 +569,27 @@ const Checkout = () => {
   }, [fetchVehicle]);
 
   useEffect(() => {
+    if (!incomingRentalWindow.pickupDate || !incomingRentalWindow.returnDate) {
+      return;
+    }
+
+    setPickupDate(incomingRentalWindow.pickupDate);
+    setReturnDate(incomingRentalWindow.returnDate);
+  }, [incomingRentalWindow.pickupDate, incomingRentalWindow.returnDate]);
+
+  useEffect(() => {
     const pick = parseLocalDateTime(pickupDate);
     const ret = parseLocalDateTime(returnDate);
     if (pick && ret && ret < pick) {
       setReturnDate(toLocalInputValue(pick));
     }
   }, [pickupDate, returnDate]);
+
+  useEffect(() => {
+    if (prepError) {
+      setPrepError('');
+    }
+  }, [pickupDate, prepError, pickupMethod, returnDate]);
 
   const days = Math.max(
     1,
@@ -589,6 +610,19 @@ const Checkout = () => {
     setPreparingPay(true);
     setPrepError('');
     try {
+      const availability = await bookingService.checkAvailability({
+        vehicleId: vehicle._id || vehicle.id,
+        pickupDate,
+        returnDate,
+      });
+
+      if (!availability?.isAvailable) {
+        throw new Error(
+          availability?.message
+          || 'Xe da co lich thue trung trong khung thoi gian ban chon. Vui long doi sang moc thoi gian khac.'
+        );
+      }
+
       const booking = await bookingService.createBooking({
         vehicle_id: vehicle._id || vehicle.id,
         showroom_id: vehicle.addedBy,

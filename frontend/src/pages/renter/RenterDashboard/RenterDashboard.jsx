@@ -25,40 +25,39 @@ import { formatDateTime, formatMoney, PAYMENT_LABELS } from '../../../utils/rent
 import { sanitizeImageList } from '../../../utils/media';
 
 const PAYMENT_VISUALS = {
-  successful: { label: 'Đã ghi nhận', bg: '#dcfce7', color: '#166534' },
-  refunded: { label: 'Đã hoàn trả', bg: '#dbeafe', color: '#1d4ed8' },
-  refund_pending: { label: 'Chờ hoàn trả', bg: '#dbeafe', color: '#1d4ed8' },
-  pending: { label: 'Chờ thanh toán', bg: '#fef3c7', color: '#b45309' },
-  failed: { label: 'Thất bại', bg: '#fee2e2', color: '#b91c1c' },
-  declined: { label: 'Bị từ chối', bg: '#fee2e2', color: '#b91c1c' },
-  refund_tracking: { label: 'Đang chờ hoàn trả', bg: '#dbeafe', color: '#1d4ed8' },
+  successful: { label: 'Da ghi nhan', bg: '#dcfce7', color: '#166534' },
+  refunded: { label: 'Da hoan tra', bg: '#dbeafe', color: '#1d4ed8' },
+  refund_pending: { label: 'Dang xu ly hoan tra', bg: '#dbeafe', color: '#1d4ed8' },
+  pending: { label: 'Cho thanh toan', bg: '#fef3c7', color: '#b45309' },
+  failed: { label: 'That bai', bg: '#fee2e2', color: '#b91c1c' },
+  declined: { label: 'Bi tu choi', bg: '#fee2e2', color: '#b91c1c' },
 };
 
 const SUMMARY_CARD_CONFIG = [
   {
     key: 'recordedAmount',
-    label: 'Tiền đặt xe đã ghi nhận',
+    label: 'Tien dat xe da ghi nhan',
     icon: FaMoneyBillWave,
     accent: '#059669',
     tint: 'rgba(5, 150, 105, 0.12)',
   },
   {
     key: 'refundTrackingAmount',
-    label: 'Tiền đã hoàn trả',
+    label: 'Hoan tra da ghi nhan / dang xu ly',
     icon: FaUndoAlt,
     accent: '#2563eb',
     tint: 'rgba(37, 99, 235, 0.12)',
   },
   {
     key: 'refundTrackingCount',
-    label: 'Booking hoàn trả',
+    label: 'Booking theo doi hoan tra',
     icon: FaReceipt,
     accent: '#7c3aed',
     tint: 'rgba(124, 58, 237, 0.12)',
   },
   {
     key: 'pendingAmount',
-    label: 'Số tiền chờ thanh toán',
+    label: 'So tien cho thanh toan',
     icon: FaClock,
     accent: '#d97706',
     tint: 'rgba(217, 119, 6, 0.12)',
@@ -73,6 +72,8 @@ const parseDate = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 };
+
+const timestampOf = (value) => (value instanceof Date ? value.getTime() : 0);
 
 const getMonthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
@@ -127,7 +128,6 @@ const resolveFinanceItem = (booking) => {
   const refundPending = booking.status === 'cancelled' && paymentStatus === 'successful';
   const refundCompleted = paymentStatus === 'refunded';
   const pendingPayment = paymentStatus === 'pending' && booking.status !== 'cancelled';
-  const failedPayment = ['failed', 'declined'].includes(paymentStatus);
   const images = sanitizeImageList([
     ...(booking.vehicle?.images || []),
     ...(booking.vehicle_id?.vehicle_images_paths || []),
@@ -153,17 +153,11 @@ const resolveFinanceItem = (booking) => {
     refundCompleted,
     hasRefundActivity: refundPending || refundCompleted,
     pendingPayment,
-    failedPayment,
     image: images[0] || '',
     refundHint: refundCompleted
-      ? 'Booking đã hủy sau khi thanh toán thành công. Đang chờ xử lý hoàn trả.'
-      : pendingPayment
-        ? 'Booking nay chua co payment thanh cong.'
-        : 'Khoan tien da duoc ghi nhan tren he thong.',
-    refundHintResolved: refundCompleted
       ? 'Khoan hoan tra da duoc ghi nhan tren he thong.'
       : refundPending
-        ? 'Booking da huy sau khi thanh toan thanh cong. Dang cho xu ly hoan tra.'
+        ? 'Booking da huy sau khi thanh toan thanh cong. FE dang theo doi de doi chieu hoan tra.'
         : pendingPayment
           ? 'Booking nay chua co payment thanh cong.'
           : 'Khoan tien da duoc ghi nhan tren he thong.',
@@ -189,16 +183,14 @@ const cardHint = (key, summary) => {
     }
 
     if (summary.refundPendingCount && summary.refundCompletedCount) {
-      return `${summary.refundCompletedCount} da hoan tra, ${summary.refundPendingCount} dang cho hoan tra`;
+      return `${summary.refundCompletedCount} da hoan tra, ${summary.refundPendingCount} dang xu ly`;
     }
 
     if (summary.refundCompletedCount) {
       return `${summary.refundCompletedCount} booking da hoan tra`;
     }
 
-    return summary.refundTrackingCount
-      ? `${summary.refundTrackingCount} booking hủy đang chờ hoàn trả`
-      : 'Chưa có booking nào cần hoàn trả';
+    return `${summary.refundPendingCount} booking dang xu ly hoan tra`;
   }
 
   if (key === 'refundTrackingCount') {
@@ -206,13 +198,15 @@ const cardHint = (key, summary) => {
       return 'Chua co yeu cau hoan tra nao can theo doi';
     }
 
-    if (summary.refundCompletedCount) {
-      return 'Bao gom da hoan tra va dang cho hoan tra';
+    if (summary.refundCompletedCount && summary.refundPendingCount) {
+      return 'Bao gom booking da hoan tra va booking dang xu ly';
     }
 
-    return summary.refundTrackingCount
-      ? 'Mo danh sach ben duoi de xem tung booking'
-      : 'Chưa có yêu cầu hoàn trả nào cần theo dõi';
+    if (summary.refundCompletedCount) {
+      return 'Tat ca booking trong nhom nay da hoan tra';
+    }
+
+    return 'Mo danh sach ben duoi de xem tung booking';
   }
 
   return summary.pendingCount
@@ -335,8 +329,7 @@ const RenterDashboard = () => {
         return;
       }
 
-      const key = getMonthKey(timelineDate);
-      const bucket = bucketMap.get(key);
+      const bucket = bucketMap.get(getMonthKey(timelineDate));
       if (!bucket) {
         return;
       }
@@ -360,13 +353,13 @@ const RenterDashboard = () => {
   const refundCases = useMemo(
     () => [...items]
       .filter((item) => item.hasRefundActivity)
-      .sort((a, b) => b.timelineDate - a.timelineDate),
+      .sort((left, right) => timestampOf(right.timelineDate) - timestampOf(left.timelineDate)),
     [items]
   );
 
   const recentItems = useMemo(
     () => [...items]
-      .sort((a, b) => b.timelineDate - a.timelineDate)
+      .sort((left, right) => timestampOf(right.timelineDate) - timestampOf(left.timelineDate))
       .slice(0, 6),
     [items]
   );
@@ -386,12 +379,15 @@ const RenterDashboard = () => {
           alignItems: 'center',
         }}
       >
-        <div style={{ maxWidth: 720 }}>
-          <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#111827' }}>Tổng quan tiền đặt xe và hoàn trả</div>
+        <div style={{ maxWidth: 760 }}>
+          <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#111827' }}>
+            Tong quan tien dat xe va hoan tra
+          </div>
           <div style={{ fontSize: '0.92rem', color: '#4b5563', marginTop: 8, lineHeight: 1.65 }}>
-            Dashboard này tổng hợp số tiền đã được ghi nhận từ thanh toán, các booking đã hủy cần hoàn trả,
-            và những khoản vẫn đang chờ thanh toán. Hiện backend chưa có trường hoàn trả riêng, nên hệ thống
-            tạm đánh dấu hoàn trả theo booking đã hủy nhưng thanh toán đã thành công.
+            Dashboard nay tong hop tien dat xe da ghi nhan, cac booking huy co lien quan den hoan tra,
+            va nhung khoan van dang cho thanh toan. Hien FE dang doi chieu hoan tra theo trang thai
+            booking va payment hien co. Khi backend co them trang thai refund rieng, so lieu se duoc
+            tach ro hon.
           </div>
         </div>
 
@@ -401,14 +397,14 @@ const RenterDashboard = () => {
             className="btn-primary"
             onClick={() => navigate('/renter/transactions')}
           >
-            <FaExchangeAlt /> Lịch sử giao dịch
+            <FaExchangeAlt /> Lich su giao dich
           </button>
           <button
             type="button"
             className="renter-btn-soft"
             onClick={() => navigate('/renter/bookings')}
           >
-            <FaArrowRight /> Chuyến đi của tôi
+            <FaArrowRight /> Chuyen di cua toi
           </button>
         </div>
       </section>
@@ -450,10 +446,25 @@ const RenterDashboard = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: '#6b7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
                     {card.label}
                   </div>
-                  <div style={{ fontSize: card.key === 'refundTrackingCount' ? '1.8rem' : '1.55rem', fontWeight: 900, color: '#111827', marginTop: 10 }}>
+                  <div
+                    style={{
+                      fontSize: card.key === 'refundTrackingCount' ? '1.8rem' : '1.55rem',
+                      fontWeight: 900,
+                      color: '#111827',
+                      marginTop: 10,
+                    }}
+                  >
                     {loading ? '...' : cardValue(card.key, summary)}
                   </div>
                 </div>
@@ -475,7 +486,7 @@ const RenterDashboard = () => {
                 </div>
               </div>
               <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 12, lineHeight: 1.55 }}>
-                {loading ? 'Đang tổng hợp dữ liệu...' : cardHint(card.key, summary)}
+                {loading ? 'Dang tong hop du lieu...' : cardHint(card.key, summary)}
               </div>
             </div>
           );
@@ -491,11 +502,21 @@ const RenterDashboard = () => {
           boxShadow: '0 18px 45px rgba(15, 23, 42, 0.04)',
         }}
       >
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, marginBottom: 18 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
           <div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#111827' }}>Dòng tiền 6 tháng gần đây</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#111827' }}>
+              Dong tien 6 thang gan day
+            </div>
             <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>
-              Xanh lá: đã ghi nhận. Xanh dương: booking đang chờ hoàn trả. Cam: chưa thanh toán.
+              Xanh la: da ghi nhan. Xanh duong: da hoan tra hoac dang xu ly. Cam: cho thanh toan.
             </div>
           </div>
           <div
@@ -511,7 +532,7 @@ const RenterDashboard = () => {
               fontWeight: 700,
             }}
           >
-            <FaCalendarAlt /> Cập nhật theo booking / payment hiện có
+            <FaCalendarAlt /> Cap nhat theo booking / payment hien co
           </div>
         </div>
 
@@ -531,17 +552,15 @@ const RenterDashboard = () => {
                 formatter={(value) => formatMoney(value)}
                 labelStyle={{ fontWeight: 700, color: '#0f172a' }}
               />
-              <Bar dataKey="bookedAmount" name="Đã ghi nhận" fill="#00b14f" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="refundAmount" name="Đang chờ hoàn trả" fill="#2563eb" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="pendingAmount" name="Chờ thanh toán" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="bookedAmount" name="Da ghi nhan" fill="#00b14f" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="refundAmount" name="Hoan tra / dang xu ly" fill="#2563eb" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="pendingAmount" name="Cho thanh toan" fill="#f59e0b" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </section>
 
-      <section
-        className="grid gap-[18px] xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]"
-      >
+      <section className="grid gap-[18px] xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]">
         <div
           style={{
             background: '#ffffff',
@@ -553,9 +572,12 @@ const RenterDashboard = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 18 }}>
             <div>
-              <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#111827' }}>Booking cần hoàn trả</div>
+              <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#111827' }}>
+                Theo doi hoan tra
+              </div>
               <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>
-                Các booking đã hủy nhưng thanh toán vẫn thành công, đang chờ xử lý hoàn trả.
+                Bao gom booking da huy co payment da ghi nhan. FE dang nhom chung cac truong hop da hoan tra
+                va dang xu ly de renter de theo doi.
               </div>
             </div>
             <button
@@ -568,11 +590,13 @@ const RenterDashboard = () => {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', color: '#6b7280', padding: '48px 0' }}>Dang tai dashboard...</div>
+            <div style={{ textAlign: 'center', color: '#6b7280', padding: '48px 0' }}>
+              Dang tai dashboard...
+            </div>
           ) : refundCases.length === 0 ? (
             <EmptyPanel
-              title="Chưa có booking nào cần hoàn trả"
-              description="Khi booking bị hủy sau khi thanh toán thành công, trường hợp đó sẽ hiện tại đây để theo dõi."
+              title="Chua co booking nao can theo doi hoan tra"
+              description="Khi booking bi huy sau khi da co payment ghi nhan, muc nay se hien de renter theo doi."
             />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -604,7 +628,11 @@ const RenterDashboard = () => {
                     }}
                   >
                     {item.image ? (
-                      <img src={item.image} alt={item.vehicleName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img
+                        src={item.image}
+                        alt={item.vehicleName}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     ) : (
                       'REF'
                     )}
@@ -639,7 +667,7 @@ const RenterDashboard = () => {
                         lineHeight: 1.55,
                       }}
                     >
-                      {item.refundHintResolved || item.refundHint}
+                      {item.refundHint}
                     </div>
 
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
@@ -674,13 +702,17 @@ const RenterDashboard = () => {
             boxShadow: '0 18px 45px rgba(15, 23, 42, 0.04)',
           }}
         >
-          <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#111827' }}>Dòng tiền gần đây</div>
+          <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#111827' }}>
+            Giao dich gan day
+          </div>
           <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4, marginBottom: 16 }}>
-            Các booking/payment mới nhất được tổng hợp tại đây.
+            Cac booking va payment moi nhat duoc FE tong hop tai day de renter doi chieu nhanh.
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', color: '#6b7280', padding: '48px 0' }}>Đang tải lịch sử...</div>
+            <div style={{ textAlign: 'center', color: '#6b7280', padding: '48px 0' }}>
+              Dang tai lich su...
+            </div>
           ) : recentItems.length === 0 ? (
             <EmptyPanel
               title="Chua co dong tien nao"
