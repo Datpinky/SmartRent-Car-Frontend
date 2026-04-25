@@ -25,9 +25,11 @@ import Checkout from './pages/renter/Checkout/Checkout';
 import AIReports from './pages/renter/AIReports/AIReports';
 import MapPage from './pages/renter/Map/MapPage';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
+import PendingPayments from './pages/renter/PendingPayments/PendingPayments';
 import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import Profile from './pages/renter/Profile/Profile';
+import RetryPayment from './pages/renter/RetryPayment/RetryPayment';
 import RenterDashboard from './pages/renter/RenterDashboard/RenterDashboard';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
 import Transactions from './pages/renter/Transactions/Transactions';
@@ -112,12 +114,14 @@ const App = () => {
 
           <Route path="/renter/dashboard" element={<RenterPage><RenterDashboard /></RenterPage>} />
           <Route path="/renter/profile" element={<RenterPage><Profile /></RenterPage>} />
+          <Route path="/renter/pending-payments" element={<RenterPage><PendingPayments /></RenterPage>} />
           <Route path="/renter/pending-pickups" element={<RenterPage><PendingPickups /></RenterPage>} />
           <Route path="/renter/bookings" element={<RenterPage><MyBookings /></RenterPage>} />
           <Route path="/renter/ai-reports" element={<RenterPage><AIReports /></RenterPage>} />
           <Route path="/renter/transactions" element={<RenterPage><Transactions /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/checkout" element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/retry-payment/:bookingId" element={<RenterOnlyPage><RetryPayment /></RenterOnlyPage>} />
           <Route path="/renter/payment-result" element={<RenterOnlyPage><PaymentResult /></RenterOnlyPage>} />
           <Route path="/renter/sos" element={<RenterPage><SOSReport /></RenterPage>} />
 

@@ -15,6 +15,8 @@ export const PAYMENT_LABELS = {
   failed: 'That bai',
 };
 
+const RETRY_PAYMENT_BOOKING_STATUSES = ['pending', 'waiting_payment'];
+
 export const formatDateTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'N/A';
@@ -62,6 +64,9 @@ export const mapRenterBooking = (booking) => {
     paymentStatus,
     paymentMethod: booking.payment?.payment_method || 'Chua co',
     paymentRecord: booking.payment || null,
+    canRetryPayment:
+      RETRY_PAYMENT_BOOKING_STATUSES.includes(booking.status)
+      && ['pending', 'failed', 'declined'].includes(paymentStatus),
     canCancel: CANCELLABLE_STATUSES.includes(booking.status),
     canReviewVehicle: canReviewBooking(booking),
     canConfirmPickup: flowState.canConfirmPickup,
@@ -70,6 +75,7 @@ export const mapRenterBooking = (booking) => {
     hasRentalEnded: flowState.hasEnded,
     hasRentalStarted: flowState.hasStarted,
     isActive: flowState.isActive,
+    isAwaitingPayment: flowState.isAwaitingPayment,
     isAwaitingPickup: flowState.isAwaitingPickup,
     isCancelled: flowState.isCancelled,
     isCompleted: flowState.isCompleted,

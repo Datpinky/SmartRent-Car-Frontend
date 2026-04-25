@@ -138,15 +138,6 @@ const runStatusTransitions = async (bookingId, transitions = []) => {
   return latestBooking;
 };
 
-const PICKUP_CONFIRMATION_PATHS = {
-  pending: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
-  waiting_payment: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
-  paid: ['confirmed', 'waiting_handover', 'handed_over'],
-  confirmed: ['waiting_handover', 'handed_over'],
-  waiting_handover: ['handed_over'],
-  handed_over: [],
-};
-
 const RETURN_REQUEST_PATHS = {
   handed_over: ['in_use', 'waiting_return_confirmation'],
   in_use: ['waiting_return_confirmation'],
@@ -274,17 +265,11 @@ export const bookingService = {
   },
 
   async confirmPickupForRenter(id, currentStatus) {
-    const transitions = PICKUP_CONFIRMATION_PATHS[currentStatus];
-
-    if (!transitions) {
-      throw new Error(`Khong the xac nhan nhan xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
+    if (currentStatus !== 'waiting_handover') {
+      throw new Error('Chi co the xac nhan da nhan xe khi booking dang o trang thai Cho ban giao.');
     }
 
-    if (transitions.length === 0) {
-      return null;
-    }
-
-    return runStatusTransitions(id, transitions);
+    return this.updateBookingStatus(id, 'handed_over');
   },
 
   async requestReturnForRenter(id, currentStatus) {

@@ -16,11 +16,11 @@ import {
 import { MdDirectionsCar } from 'react-icons/md';
 import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { useAuth } from '../../../contexts/AuthContext';
 import bookingService from '../../../services/bookingService';
 import reviewService from '../../../services/reviewService';
 import { getCancelBookingNotice } from '../../../utils/bookingCancellationFeedback';
 import { getBookingFlowState } from '../../../utils/bookingFlowState';
+import { resolveReviewBookingId } from '../../../utils/bookingReviewEligibility';
 import {
   PAYMENT_LABELS,
   formatDateTime,
@@ -36,15 +36,8 @@ const TAB_CONFIG = [
   { key: 'cancelled', label: 'Đã hủy' },
 ];
 
-const getReviewUserId = (review) => {
-  const reviewUser = review?.user;
-  if (!reviewUser) return '';
-  if (typeof reviewUser === 'string') return reviewUser;
-  return reviewUser._id || reviewUser.id || '';
-};
-
 const matchTab = (booking, tabKey) => {
-  if (tabKey === 'all') return !booking.isCancelled && !booking.isAwaitingPickup;
+  if (tabKey === 'all') return !booking.isCancelled && !booking.isAwaitingPickup && !booking.isAwaitingPayment;
   if (tabKey === 'active') return booking.isActive;
   if (tabKey === 'completed') return booking.isCompleted;
   if (tabKey === 'cancelled') return booking.isCancelled;
@@ -53,7 +46,6 @@ const matchTab = (booking, tabKey) => {
 
 const MyBookings = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState('all');
   const [bookings, setBookings] = useState([]);
@@ -69,8 +61,6 @@ const MyBookings = () => {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState('');
-
-  const currentUserId = user?._id || user?.id || '';
 
   const loadBookings = async () => {
     setLoading(true);
@@ -97,7 +87,8 @@ const MyBookings = () => {
 
   const summary = useMemo(
     () => ({
-      total: bookings.filter((booking) => !booking.isCancelled && !booking.isAwaitingPickup).length,
+      total: bookings.filter((booking) => !booking.isCancelled && !booking.isAwaitingPickup && !booking.isAwaitingPayment).length,
+      awaitingPayment: bookings.filter((booking) => booking.isAwaitingPayment).length,
       awaitingPickup: bookings.filter((booking) => booking.isAwaitingPickup).length,
       active: bookings.filter((booking) => booking.isActive).length,
       completed: bookings.filter((booking) => booking.isCompleted).length,
@@ -135,6 +126,7 @@ const MyBookings = () => {
       hasRentalEnded: nextFlowState.hasEnded,
       hasRentalStarted: nextFlowState.hasStarted,
       isActive: nextFlowState.isActive,
+      isAwaitingPayment: nextFlowState.isAwaitingPayment,
       isAwaitingPickup: nextFlowState.isAwaitingPickup,
       isCancelled: nextFlowState.isCancelled,
       isCompleted: nextFlowState.isCompleted,
@@ -216,8 +208,10 @@ const MyBookings = () => {
     setReviewLoading(true);
 
     try {
-      const res = await reviewService.getByVehicleId(booking.vehicleId, { page: 1, limit: 100 });
-      const ownReview = (res?.data || []).find((review) => getReviewUserId(review) === currentUserId);
+      const ownReviews = await reviewService.getMineByVehicleId(booking.vehicleId);
+      const ownReview = (ownReviews || []).find(
+        (review) => resolveReviewBookingId(review) === booking.id
+      );
 
       if (ownReview) {
         setEditingReviewId(ownReview._id || '');
@@ -252,6 +246,7 @@ const MyBookings = () => {
         });
       } else {
         await reviewService.create({
+          booking_id: reviewModalBooking.id,
           vehicle_id: reviewModalBooking.vehicleId,
           rating: reviewForm.rating,
           comment: reviewForm.comment,
@@ -364,6 +359,32 @@ const MyBookings = () => {
           </div>
         ))}
       </div>
+
+      {summary.awaitingPayment > 0 && (
+        <div
+          style={{
+            marginBottom: 18,
+            background: '#fffbeb',
+            border: '1px solid #fcd34d',
+            color: '#92400e',
+            borderRadius: 14,
+            padding: '14px 16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ fontSize: '0.84rem', lineHeight: 1.6 }}>
+            Ban co {summary.awaitingPayment} booking dang cho thanh toan hoac can thanh toan lai. Hay mo menu
+            "Cho thanh toan" de tiep tuc xu ly.
+          </div>
+          <button className="btn-primary" onClick={() => navigate('/renter/pending-payments')}>
+            Mo khu cho thanh toan
+          </button>
+        </div>
+      )}
 
       {summary.awaitingPickup > 0 && (
         <div
@@ -696,8 +717,8 @@ const MyBookings = () => {
                   }}
                 >
                   {editingReviewId
-                    ? 'Bạn đang chỉnh sửa đánh giá đã gửi trước đó cho chiếc xe này.'
-                    : 'Hãy chia sẻ trải nghiệm thuê xe để showroom và renter khác tham khảo.'}
+                    ? 'Ban dang chinh sua danh gia da gui truoc do cho booking nay. Moi don thue chi duoc danh gia mot lan.'
+                    : 'Hay chia se trai nghiem cua booking nay. He thong chi cho phep 1 danh gia cho moi don thue cua xe nay.'}
                 </div>
 
                 <div>

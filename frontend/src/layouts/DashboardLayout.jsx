@@ -78,6 +78,15 @@ if (!MENUS.renter.some((item) => item.key === 'pending-pickups')) {
   });
 }
 
+if (!MENUS.renter.some((item) => item.key === 'pending-payments')) {
+  MENUS.renter.splice(1, 0, {
+    key: 'pending-payments',
+    label: 'Cho thanh toan',
+    icon: <FaMoneyBillWave aria-hidden="true" />,
+    path: '/renter/pending-payments',
+  });
+}
+
 const ROLE_CONFIG = {
   admin: { label: 'Quản trị viên', color: '#6d28d9', bg: '#f5f3ff' },
   showroom: { label: 'Showroom', color: '#00b14f', bg: '#f0fdf4' },
@@ -93,6 +102,7 @@ const PROFILE_PATHS = {
 };
 
 const FALLBACK_TITLES = [
+  { prefix: '/renter/retry-payment', label: 'Thanh toan lai' },
   { prefix: '/renter/checkout', label: 'Thanh toán đặt xe' },
   { prefix: '/renter/transactions', label: 'Lịch sử giao dịch' },
   { prefix: '/renter/payment-result', label: 'Kết quả thanh toán' },

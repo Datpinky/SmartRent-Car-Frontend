@@ -58,6 +58,10 @@ const hasPaymentRecord = (booking) =>
         || Number(booking?.payment?.amount || 0) > 0
     );
 
+const canRetryPayment = (booking) =>
+    ['pending', 'waiting_payment'].includes(booking?.status)
+    && ['pending', 'failed', 'declined'].includes(resolvePaymentStatus(booking));
+
 const mapTransaction = (booking) => {
     const payment = booking.payment || null;
     const images = sanitizeImageList([
@@ -80,6 +84,7 @@ const mapTransaction = (booking) => {
         paidAt: payment?.paid_at || '',
         createdAt: payment?.createdAt || booking.createdAt || '',
         bookingStatus: booking.status,
+        canRetryPayment: canRetryPayment(booking),
         image: images[0] || '',
         raw: booking,
     };
@@ -106,7 +111,6 @@ const Transactions = () => {
     const [detailModal, setDetailModal] = useState(null);
 
     // Các trạng thái booking bị loại khỏi lịch sử giao dịch
-    const EXCLUDED_BOOKING_STATUSES = ['pending', 'waiting_payment'];
 
     useEffect(() => {
         let mounted = true;
@@ -124,7 +128,7 @@ const Transactions = () => {
                         return hasPaymentRecord(booking);
                     }
 
-                    return !EXCLUDED_BOOKING_STATUSES.includes(booking.status);
+                    return hasPaymentRecord(booking) || canRetryPayment(booking);
                 });
                 setTransactions(validBookings.map(mapTransaction));
                 setError('');
@@ -282,6 +286,16 @@ const Transactions = () => {
                                 >
                                     <FaEye />
                                 </button>
+                                {transaction.canRetryPayment && (
+                                    <button
+                                        type="button"
+                                        className="renter-btn-soft-success"
+                                        style={{ marginLeft: 'auto', marginTop: 10 }}
+                                        onClick={() => navigate(`/renter/retry-payment/${transaction.bookingId}`)}
+                                    >
+                                        <FaCreditCard /> Thanh toan lai
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -313,6 +327,15 @@ const Transactions = () => {
                         ))}
 
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {detailModal.canRetryPayment && (
+                                <button
+                                    className="btn-primary"
+                                    style={{ flex: 1, justifyContent: 'center' }}
+                                    onClick={() => navigate(`/renter/retry-payment/${detailModal.bookingId}`)}
+                                >
+                                    <FaCreditCard /> Thanh toan lai
+                                </button>
+                            )}
                             <button
                                 className="btn-primary"
                                 style={{ flex: 1, justifyContent: 'center' }}

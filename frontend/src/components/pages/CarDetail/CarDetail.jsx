@@ -21,7 +21,11 @@ import vehicleLocationService from '../../../services/vehicleLocationService';
 import reviewService from '../../../services/reviewService';
 import favoriteService from '../../../services/favoriteService';
 import { useAuth } from '../../../contexts/AuthContext';
-import { canReviewBooking, resolveBookingVehicleId } from '../../../utils/bookingReviewEligibility';
+import {
+  canReviewBooking,
+  resolveBookingVehicleId,
+  resolveReviewBookingId,
+} from '../../../utils/bookingReviewEligibility';
 import { buildRentalWindowQuery, resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const ROLE_DEFAULT_PATHS = {
@@ -245,7 +249,7 @@ const CarDetail = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState('');
   const [reviewAccessLoading, setReviewAccessLoading] = useState(false);
-  const [reviewAccess, setReviewAccess] = useState({ canReview: false, eligibleBookings: 0 });
+  const [reviewAccess, setReviewAccess] = useState({ eligibleBookings: [], ownReviews: [] });
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
@@ -303,24 +307,27 @@ const CarDetail = () => {
 
   const loadReviewAccess = useCallback(async () => {
     if (user?.role !== 'renter' || !isMongoId(id)) {
-      setReviewAccess({ canReview: false, eligibleBookings: 0 });
+      setReviewAccess({ eligibleBookings: [], ownReviews: [] });
       setReviewAccessLoading(false);
       return;
     }
 
     setReviewAccessLoading(true);
     try {
-      const myBookings = await bookingService.getMyBookings();
+      const [myBookings, ownReviews] = await Promise.all([
+        bookingService.getMyBookings(),
+        reviewService.getMineByVehicleId(id),
+      ]);
       const eligibleBookings = (myBookings || []).filter(
         (booking) => resolveBookingVehicleId(booking) === id && canReviewBooking(booking)
       );
 
       setReviewAccess({
-        canReview: eligibleBookings.length > 0,
-        eligibleBookings: eligibleBookings.length,
+        eligibleBookings,
+        ownReviews: ownReviews || [],
       });
     } catch {
-      setReviewAccess({ canReview: false, eligibleBookings: 0 });
+      setReviewAccess({ eligibleBookings: [], ownReviews: [] });
     } finally {
       setReviewAccessLoading(false);
     }
@@ -370,6 +377,11 @@ const CarDetail = () => {
       return;
     }
 
+    if (needsBookingScopedReview) {
+      setReviewError('Ban co nhieu don thue hop le cho xe nay. Vui long vao Chuyen di cua toi de danh gia theo tung booking.');
+      return;
+    }
+
     if (!canReviewThisVehicle) {
       setReviewError('Bạn chỉ có thể đánh giá sau khi hoàn tất ít nhất một booking cho chiếc xe này.');
       return;
@@ -381,10 +393,11 @@ const CarDetail = () => {
       if (editingReviewId) {
         await reviewService.update({ review_id: editingReviewId, ...reviewForm });
       } else {
-        await reviewService.create({ vehicle_id: id, ...reviewForm });
+        await reviewService.create({ booking_id: composerBookingId, vehicle_id: id, ...reviewForm });
       }
       resetReviewComposer();
       await loadReviews();
+      await loadReviewAccess();
     } catch (error) {
       setReviewError(error.message);
     } finally {
@@ -422,7 +435,19 @@ const CarDetail = () => {
 
   const currentUserId = user?._id || user?.id || '';
   const canManageReviews = user?.role === 'renter' && isMongoId(id);
-  const canReviewThisVehicle = canManageReviews && reviewAccess.canReview;
+  const eligibleReviewBookings = reviewAccess.eligibleBookings || [];
+  const ownReviewsByBookingId = useMemo(
+    () => new Map((reviewAccess.ownReviews || []).map((review) => [resolveReviewBookingId(review), review])),
+    [reviewAccess.ownReviews]
+  );
+  const composerBooking = eligibleReviewBookings.length === 1 ? eligibleReviewBookings[0] : null;
+  const composerBookingId = composerBooking?._id || composerBooking?.id || '';
+  const composerExistingReview = composerBookingId
+    ? ownReviewsByBookingId.get(composerBookingId) || null
+    : null;
+  const hasReviewableBookings = canManageReviews && eligibleReviewBookings.length > 0;
+  const needsBookingScopedReview = canManageReviews && eligibleReviewBookings.length > 1;
+  const canReviewThisVehicle = canManageReviews && Boolean(composerBookingId);
   const hasReviews = reviews.length > 0;
   const isEditingReview = Boolean(editingReviewId);
 
@@ -453,10 +478,32 @@ const CarDetail = () => {
 
   const openCreateReviewForm = useCallback(() => {
     setReviewError('');
+    if (!composerBookingId) {
+      setShowReviewForm(false);
+      setEditingReviewId('');
+      setReviewForm({ rating: 5, comment: '' });
+      setReviewError(
+        needsBookingScopedReview
+          ? 'Ban co nhieu don thue hop le cho xe nay. Vui long vao Chuyen di cua toi de danh gia theo tung booking.'
+          : 'Ban chi co the danh gia sau khi hoan tat it nhat mot booking cho chiec xe nay.'
+      );
+      return;
+    }
+
+    if (composerExistingReview) {
+      setEditingReviewId(composerExistingReview._id || '');
+      setReviewForm({
+        rating: Number(composerExistingReview.rating) || 5,
+        comment: composerExistingReview.comment || '',
+      });
+      setShowReviewForm(true);
+      return;
+    }
+
     setEditingReviewId('');
     setReviewForm({ rating: 5, comment: '' });
     setShowReviewForm((current) => (isEditingReview ? true : !current));
-  }, [isEditingReview]);
+  }, [composerBookingId, composerExistingReview, isEditingReview, needsBookingScopedReview]);
 
   const openEditReviewForm = useCallback((review) => {
     setReviewError('');
@@ -800,7 +847,14 @@ const CarDetail = () => {
                 <p className="mb-3 text-[0.8rem] text-gray-400">Đang kiểm tra điều kiện đánh giá...</p>
               )}
 
-              {canManageReviews && !reviewAccessLoading && !canReviewThisVehicle && (
+              {needsBookingScopedReview && !reviewAccessLoading && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[0.8rem] leading-6 text-blue-800">
+                  Ban co {eligibleReviewBookings.length} don thue hop le cho chiec xe nay. Moi don thue chi duoc danh gia
+                  1 lan, vi vay vui long vao <strong>Chuyen di cua toi</strong> de danh gia dung theo tung booking.
+                </div>
+              )}
+
+              {canManageReviews && !reviewAccessLoading && !hasReviewableBookings && (
                 <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.8rem] leading-6 text-amber-800">
                   Bạn có thể xem đánh giá của những renter khác tại đây. Quyền viết đánh giá chỉ mở sau khi bạn hoàn tất
                   ít nhất một booking cho chiếc xe này.
@@ -913,7 +967,7 @@ const CarDetail = () => {
                       </div>
                     </div>
 
-                    {canReviewThisVehicle && isOwnReview(review) && (
+                    {canManageReviews && isOwnReview(review) && (
                       <button
                         type="button"
                         onClick={() => openEditReviewForm(review)}

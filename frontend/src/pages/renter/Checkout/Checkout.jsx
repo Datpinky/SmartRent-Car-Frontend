@@ -80,6 +80,26 @@ function parseLocalDateTime(value) {
   return d;
 }
 
+function normalizeIncomingRentalWindow(pickupValue, returnValue, minPickupValue) {
+  const minPickup = parseLocalDateTime(minPickupValue);
+  const incomingPickup = parseLocalDateTime(pickupValue);
+  const incomingReturn = parseLocalDateTime(returnValue);
+
+  if (!incomingPickup || !incomingReturn || !minPickup) {
+    return null;
+  }
+
+  const safePickup = incomingPickup < minPickup ? new Date(minPickup) : new Date(incomingPickup);
+  const safeReturn = incomingReturn <= safePickup
+    ? new Date(safePickup.getTime() + 60 * 60 * 1000)
+    : new Date(incomingReturn);
+
+  return {
+    pickupDate: toLocalInputValue(safePickup),
+    returnDate: toLocalInputValue(safeReturn),
+  };
+}
+
 function formatDateTimeInputLabel(isoLocal) {
   const d = parseLocalDateTime(isoLocal);
   if (!d) return 'Chọn ngày giờ';
@@ -573,9 +593,19 @@ const Checkout = () => {
       return;
     }
 
-    setPickupDate(incomingRentalWindow.pickupDate);
-    setReturnDate(incomingRentalWindow.returnDate);
-  }, [incomingRentalWindow.pickupDate, incomingRentalWindow.returnDate]);
+    const sanitizedWindow = normalizeIncomingRentalWindow(
+      incomingRentalWindow.pickupDate,
+      incomingRentalWindow.returnDate,
+      minPickupDateTime
+    );
+
+    if (!sanitizedWindow) {
+      return;
+    }
+
+    setPickupDate(sanitizedWindow.pickupDate);
+    setReturnDate(sanitizedWindow.returnDate);
+  }, [incomingRentalWindow.pickupDate, incomingRentalWindow.returnDate, minPickupDateTime]);
 
   useEffect(() => {
     const pick = parseLocalDateTime(pickupDate);
@@ -610,10 +640,26 @@ const Checkout = () => {
     setPreparingPay(true);
     setPrepError('');
     try {
+      const minPickup = parseLocalDateTime(minPickupDateTime);
+      const pickup = parseLocalDateTime(pickupDate);
+      const ret = parseLocalDateTime(returnDate);
+
+      if (!pickup || !ret) {
+        throw new Error('Vui long chon day du thoi gian nhan xe va tra xe.');
+      }
+
+      if (minPickup && pickup < minPickup) {
+        throw new Error('Thoi gian nhan xe khong hop le. Vui long chon mot moc thoi gian o hien tai hoac trong tuong lai.');
+      }
+
+      if (ret <= pickup) {
+        throw new Error('Thoi gian tra xe phai sau thoi gian nhan xe.');
+      }
+
       const availability = await bookingService.checkAvailability({
         vehicleId: vehicle._id || vehicle.id,
-        pickupDate,
-        returnDate,
+        pickupDate: pickup.toISOString(),
+        returnDate: ret.toISOString(),
       });
 
       if (!availability?.isAvailable) {
@@ -626,8 +672,8 @@ const Checkout = () => {
       const booking = await bookingService.createBooking({
         vehicle_id: vehicle._id || vehicle.id,
         showroom_id: vehicle.addedBy,
-        start_date: new Date(pickupDate).toISOString(),
-        end_date: new Date(returnDate).toISOString(),
+        start_date: pickup.toISOString(),
+        end_date: ret.toISOString(),
         total_price: total,
       });
       const bId = booking?._id || booking?.id || booking;

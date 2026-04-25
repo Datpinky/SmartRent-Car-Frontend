@@ -1142,9 +1142,26 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               lineHeight: 1.6,
             }}
           >
+            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va gui trang thai tra xe cho showroom
+            theo dung trang thai booking hien co tren he thong.
+          </div>
+
+          {false && (
+          <div
+            style={{
+              background: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: 14,
+              padding: 14,
+              color: '#1d4ed8',
+              fontSize: '0.82rem',
+              lineHeight: 1.6,
+            }}
+          >
             FE hiện cho phép renter lưu biên bản nhận xe, upload ảnh trả xe và gửi trạng thái trả xe cho showroom.
             Nếu backend chưa đẩy kịp trạng thái nhận / trả xe, giao diện sẽ mở flow theo lịch thuê thực tế.
           </div>
+          )}
 
           {usingTimelineFallback && (
             <div

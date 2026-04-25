@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BsLightningChargeFill } from 'react-icons/bs';
 import { FaGasPump, FaHeart, FaMapMarkerAlt, FaRegHeart, FaStar, FaStore } from 'react-icons/fa';
@@ -67,11 +67,55 @@ const StarRating = ({ rating }) => (
   </div>
 );
 
+let favoriteIdsCache = null;
+let favoriteIdsPromise = null;
+
+const extractFavoriteIds = (payload) => {
+  const items = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload?.data?.data)
+      ? payload.data.data
+      : [];
+
+  return new Set(
+    items
+      .map((item) => item?.vehicle_id?._id || item?.vehicle_id?.id || item?.vehicle_id)
+      .filter(Boolean)
+      .map(String)
+  );
+};
+
+const loadFavoriteIds = async () => {
+  if (favoriteIdsCache) {
+    return favoriteIdsCache;
+  }
+
+  if (!favoriteIdsPromise) {
+    favoriteIdsPromise = favoriteService
+      .getMyFavorites({ page: 1, limit: 200 })
+      .then((payload) => {
+        favoriteIdsCache = extractFavoriteIds(payload);
+        return favoriteIdsCache;
+      })
+      .catch(() => {
+        favoriteIdsCache = new Set();
+        return favoriteIdsCache;
+      })
+      .finally(() => {
+        favoriteIdsPromise = null;
+      });
+  }
+
+  return favoriteIdsPromise;
+};
+
 const CarCard = ({ car, rentalSearch = null }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(
+    typeof car?.isFavorited === 'boolean' ? car.isFavorited : null
+  );
   const [likeLoading, setLikeLoading] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -83,6 +127,30 @@ const CarCard = ({ car, rentalSearch = null }) => {
     ? <BsLightningChargeFill style={{ color: '#2196f3' }} />
     : <FaGasPump style={{ color: '#f59e0b' }} />;
   const rentalWindow = sanitizeRentalWindow(rentalSearch?.pickupDate, rentalSearch?.returnDate);
+
+  useEffect(() => {
+    if (typeof car?.isFavorited === 'boolean') {
+      setLiked(car.isFavorited);
+      return;
+    }
+
+    if (!user || user.role !== 'renter' || !isMongoId(carId)) {
+      setLiked(false);
+      return;
+    }
+
+    let mounted = true;
+    loadFavoriteIds().then((ids) => {
+      if (!mounted) {
+        return;
+      }
+      setLiked(ids.has(String(carId)));
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [car?.isFavorited, carId, user]);
 
   const handleLike = async (event) => {
     event.stopPropagation();
@@ -100,8 +168,16 @@ const CarCard = ({ car, rentalSearch = null }) => {
     try {
       const result = await favoriteService.toggle(carId);
       setLiked(result.favorited);
+      if (!favoriteIdsCache) {
+        favoriteIdsCache = new Set();
+      }
+      if (result.favorited) {
+        favoriteIdsCache.add(String(carId));
+      } else {
+        favoriteIdsCache.delete(String(carId));
+      }
     } catch {
-      setLiked((current) => !current);
+      setLiked((current) => current);
     } finally {
       setLikeLoading(false);
     }
@@ -134,7 +210,7 @@ const CarCard = ({ car, rentalSearch = null }) => {
         <button
           type="button"
           className={`absolute right-3 top-3 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform hover:scale-110 ${
-            liked ? 'text-red-500' : 'text-gray-400'
+            liked === true ? 'text-red-500' : liked === false ? 'text-gray-400' : 'text-gray-300'
           } ${likeLoading ? 'cursor-wait opacity-50' : ''}`}
           onClick={handleLike}
           disabled={likeLoading}

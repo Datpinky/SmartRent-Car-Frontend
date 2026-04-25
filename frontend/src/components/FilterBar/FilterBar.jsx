@@ -5,7 +5,6 @@ import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const FILTERS = [
   { id: 'all', label: 'Tat ca', icon: <MdFilterList />, hasPopup: false },
-  { id: 'type', label: 'Hinh thuc thue', icon: <MdDirectionsCar />, hasPopup: true },
   { id: 'seats', label: 'So cho', icon: <MdPeople />, hasPopup: true },
   { id: 'brand', label: 'Hang xe', icon: <FaCar />, hasPopup: true },
   { id: 'model', label: 'Mau xe', icon: <MdDirectionsCar />, hasPopup: true },
@@ -15,11 +14,6 @@ const FILTERS = [
 ];
 
 const POPUP_OPTIONS = {
-  type: [
-    { value: 'all', label: 'Tat ca hinh thuc' },
-    { value: 'Gap chu xe', label: 'Gap chu xe' },
-    { value: 'Tu nhan xe', label: 'Tu nhan xe' },
-  ],
   seats: [
     { value: 'all', label: 'Tat ca' },
     { value: '4', label: '4 cho' },
@@ -67,7 +61,6 @@ const POPUP_OPTIONS = {
 };
 
 const POPUP_TITLES = {
-  type: 'Hinh thuc thue',
   seats: 'So cho',
   brand: 'Hang xe',
   model: 'Mau xe',
@@ -78,7 +71,6 @@ const POPUP_TITLES = {
 };
 
 const DEFAULT_SELECTIONS = {
-  type: 'all',
   seats: 'all',
   brand: 'all',
   model: 'all',

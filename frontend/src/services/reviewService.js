@@ -16,8 +16,19 @@ export const reviewService = {
   },
 
   /**
+   * Get current renter's reviews for a vehicle.
+   * Returns: Review[]
+   */
+  async getMineByVehicleId(vehicleId) {
+    const res = await apiClient.post('/api/reviews/my-by-vehicle', {
+      vehicle_id: vehicleId,
+    });
+    return res.data.data || [];
+  },
+
+  /**
    * Create a review (requires auth + role user).
-   * payload: { vehicle_id, rating (1-5), comment? }
+   * payload: { booking_id, vehicle_id, rating (1-5), comment? }
    */
   async create(payload) {
     const res = await apiClient.post('/api/reviews/create', payload);
