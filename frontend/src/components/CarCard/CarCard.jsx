@@ -152,14 +152,18 @@ const CarCard = ({ car, rentalSearch = null }) => {
 
         <div className="flex items-center gap-1 text-[0.78rem] text-primary font-medium">
           <FaMapMarkerAlt aria-hidden="true" size={11} />
-          {car.location}
+          {locationText || 'Đang cập nhật'}
         </div>
 
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <StarRating rating={car.rating} />
-          <span className="text-[0.8rem] font-bold text-gray-800">{car.rating}</span>
-          <span className="text-[0.75rem] text-gray-500">({car.trips} chuyến)</span>
-        </div>
+        {hasReviewData ? (
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <StarRating rating={car.rating} />
+            <span className="text-[0.8rem] font-bold text-gray-800">{car.rating}</span>
+            <span className="text-[0.75rem] text-gray-500">({car.trips} chuyến)</span>
+          </div>
+        ) : (
+          <div className="mt-0.5 text-[0.75rem] text-gray-500">Chưa có đánh giá</div>
+        )}
 
         <div className="flex items-baseline gap-2 mt-1">
           <span className="text-[1.2rem] font-extrabold text-primary">{car.price.toLocaleString()}K</span>

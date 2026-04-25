@@ -2,8 +2,6 @@ const BookingModel = require('../models/booking.model');
 const BaseService = require('./base.service');
 const throwError = require('../utils/throwError');
 const QueryBuilder = require('../utils/queryBuilder');
-const PaymentModel = require('../models/payment.model');
-const PaymentService = require('./payment.service');
 
 const BOOKING_VALID_TRANSITIONS = {
   'pending': ['waiting_payment', 'paid', 'confirmed', 'cancelled'],
@@ -22,11 +20,6 @@ const BOOKING_VALID_TRANSITIONS = {
 
 const CAN_BE_CANCELLED = ['pending', 'waiting_payment', 'paid', 'confirmed'];
 
-const EARLY_CANCEL = [
-  'pending',
-  'waiting_payment'
-];
-
 const IGNORED_OVERLAP_STATUSES = [
   'cancelled',
   'completed'
@@ -34,13 +27,17 @@ const IGNORED_OVERLAP_STATUSES = [
 
 class BookingService {
 
-  static async createBooking(data) {
-    const booking = new BookingModel(data);
+  static async createBooking(data, currentUserId = '') {
+    const payload = {
+      ...data,
+      user_id: data.user_id || currentUserId,
+    };
+    const booking = new BookingModel(payload);
     return booking.save();
   }
 
   static async getMyBookings(userId, role) {
-    if (role === 'user' || role === 'owner') {
+    if (role === 'user' || role === 'renter' || role === 'owner') {
       return BookingModel.find({ user_id: userId })
         .populate('showroom_id', 'name email')
         .populate('vehicle_id')

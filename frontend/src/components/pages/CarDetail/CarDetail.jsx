@@ -542,11 +542,6 @@ const CarDetail = () => {
     });
   };
 
-  const openGalleryAt = (index) => {
-    setActiveImageIndex(index);
-    setGalleryOpen(true);
-  };
-
   const moveGallery = (direction) => {
     if (visibleGalleryImages.length <= 1) {
       return;
@@ -665,7 +660,6 @@ const CarDetail = () => {
                     }`}
                     style={{ aspectRatio: '4/3' }}
                     onClick={() => {
-                      setImgError(false);
                       setActiveImageIndex(index);
                     }}
                   >

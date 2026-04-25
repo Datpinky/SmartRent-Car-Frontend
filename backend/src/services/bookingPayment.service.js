@@ -47,7 +47,7 @@ class BookingPaymentService {
                 })
 
                 if (payment && payment.payment_status !== "pending") {
-                    throw throwError('Chỉ có thanh toán pending mới được tạo intent', 400);
+                    throwError('Chỉ có thanh toán pending mới được tạo intent', 400);
                 }
 
                 // Nếu chưa có thì tạo mới
@@ -80,7 +80,8 @@ class BookingPaymentService {
                     });
 
                 }
-                result = { ...payment, stripe_payment_intent_id: intent.id, client_secret: intent.client_secret };
+                const paymentObj = typeof payment.toObject === 'function' ? payment.toObject() : payment;
+                result = { ...paymentObj, stripe_payment_intent_id: intent.id, client_secret: intent.client_secret };
             })
         }
         finally {
