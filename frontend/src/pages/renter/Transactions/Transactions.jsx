@@ -58,6 +58,9 @@ const hasPaymentRecord = (booking) =>
         || Number(booking?.payment?.amount || 0) > 0
     );
 
+// Các trạng thái booking bị loại khỏi lịch sử giao dịch
+const EXCLUDED_BOOKING_STATUSES = ['pending', 'waiting_payment'];
+
 const mapTransaction = (booking) => {
     const payment = booking.payment || null;
     const images = sanitizeImageList([
@@ -104,9 +107,6 @@ const Transactions = () => {
     const [error, setError] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
     const [detailModal, setDetailModal] = useState(null);
-
-    // Các trạng thái booking bị loại khỏi lịch sử giao dịch
-    const EXCLUDED_BOOKING_STATUSES = ['pending', 'waiting_payment'];
 
     useEffect(() => {
         let mounted = true;

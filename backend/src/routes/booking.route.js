@@ -13,6 +13,7 @@ router.post(
 );
 
 router.get("/getMyBooking", authMiddleware, bookingController.getMyBookings);
+router.post("/cancelBookingWithRefund/:bookingId", authMiddleware, bookingController.cancelBookingWithRefund);
 router.post("/cancelBooking/:bookingId", authMiddleware, bookingController.cancelBooking)
 router.post("/checkAvailability", bookingController.checkAvailability);
 

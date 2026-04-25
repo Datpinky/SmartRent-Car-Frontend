@@ -34,7 +34,7 @@ const RevenueReports = () => {
         const vFilters = user?._id ? { added_by: user._id, limit: 100 } : {};
         const [{ data: vData }, { items: bItems }] = await Promise.all([
           vehicleService.getList(vFilters),
-          bookingService.getListBookings({ limit: 200 }),
+          bookingService.getListBookings({ limit: 100 }),
         ]);
         if (!cancelled) {
           setVehicles(vData || []);

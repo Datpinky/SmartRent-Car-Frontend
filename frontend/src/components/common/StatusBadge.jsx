@@ -8,6 +8,8 @@ const STATUS_CONFIG = {
   available:   { label: 'Sẵn sàng',      bg: '#d1fae5', color: '#059669' },
   maintenance: { label: 'Bảo dưỡng',     bg: '#f3e8ff', color: '#7c3aed' },
   completed:   { label: 'Hoàn thành',    bg: '#d1fae5', color: '#059669' },
+  cancel_pending: { label: 'Đang hủy/hoàn tiền', bg: '#dbeafe', color: '#2563eb' },
+  cancel_failed:  { label: 'Hủy/hoàn tiền lỗi', bg: '#fee2e2', color: '#dc2626' },
   cancelled:   { label: 'Đã hủy',        bg: '#f3f4f6', color: '#6b7280' },
   verified:    { label: 'Đã xác minh',   bg: '#d1fae5', color: '#059669' },
   unverified:  { label: 'Chưa xác minh', bg: '#fef3c7', color: '#d97706' },

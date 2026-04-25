@@ -10,6 +10,7 @@ router.post(
   paymentController.createPaymentForBooking
 );
 
+router.post('/processRefund', paymentController.processRefund);
 router.post('/createPaymentDB', paymentController.createPaymentDB);
 router.get('/getPaymentIntent/:intentId', paymentController.getPaymentIntentById);
 router.get("/getPaymentById/:paymentId",paymentController.getPaymentDBById);

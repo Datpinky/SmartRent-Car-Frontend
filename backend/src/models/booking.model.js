@@ -15,6 +15,8 @@ const bookingSchema = new mongoose.Schema(
                 'pending',
                 'confirmed',
                 'cancelled',
+                'cancel_pending',
+                'cancel_failed',
                 'completed',
                 'waiting_payment',
                 'paid',
