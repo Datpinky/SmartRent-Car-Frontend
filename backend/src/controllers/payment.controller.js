@@ -113,6 +113,28 @@ class PaymentController {
       next(error);
     }
   }
+  async processRefund(req, res, next) {
+    try {
+      const { paymentId, refundReason } = req.body;
+
+      if (!paymentId) {
+        return res.status(400).json({ error: 'paymentId là bắt buộc' });
+      }
+      const refundResult = await paymentService.processRefund(
+        paymentId,
+        refundReason
+      );
+
+      return res.status(200).json({
+        message: 'Hoàn tiền thành công',
+        data: refundResult,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+
 
   async confirmPayment(req, res, next) {
     try {

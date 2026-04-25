@@ -224,10 +224,12 @@ export const bookingService = {
   },
 
   async getListBookings(filters = {}) {
+    const safeLimit = Math.min(100, Math.max(1, Number(filters.limit || 100)));
+    const safePage = Math.max(1, Number(filters.page || 1));
     const res = await apiClient.post('/api/booking/getListBookings', {
-      limit: 100,
-      page: 1,
       ...filters,
+      limit: safeLimit,
+      page: safePage,
     });
     return normalizeListPayload(res.data?.data ?? res.data);
   },
@@ -267,7 +269,7 @@ export const bookingService = {
   },
 
   async cancelBooking(id) {
-    const res = await apiClient.post(`/api/booking/cancelBooking/${id}`);
+    const res = await apiClient.post(`/api/booking/cancelBookingWithRefund/${id}`);
     return res.data.data;
   },
 

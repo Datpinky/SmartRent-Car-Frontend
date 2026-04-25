@@ -11,7 +11,7 @@ export const PASSWORD_REQUIREMENTS = [
   { regex: /[0-9]/, text: 'It nhat 1 chu so' },
   { regex: /[a-z]/, text: 'It nhat 1 chu thuong' },
   { regex: /[A-Z]/, text: 'It nhat 1 chu hoa' },
-  { regex: /[!-\/:-@[-`{-~]/, text: 'It nhat 1 ky tu dac biet' },
+  { regex: /[!-/:-@[-`{-~]/, text: 'It nhat 1 ky tu dac biet' },
 ];
 
 const STRENGTH_TEXTS = {

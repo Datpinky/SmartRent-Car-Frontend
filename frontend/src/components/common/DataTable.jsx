@@ -87,13 +87,19 @@ const DataTable = ({
                   scope="col"
                   className={`px-3.5 py-[11px] text-left text-[0.75rem] font-semibold text-gray-500 uppercase tracking-[0.04em] whitespace-nowrap border-b border-[#f0f0f0] ${col.sortable ? 'cursor-pointer select-none hover:text-primary' : ''}`}
                   style={col.width ? { width: col.width } : {}}
+                  aria-sort={
+                    col.sortable
+                      ? sortKey === (col.accessor || col.key)
+                        ? (sortDir === 'asc' ? 'ascending' : 'descending')
+                        : 'none'
+                      : undefined
+                  }
                 >
                   {col.sortable ? (
                     <button
                       type="button"
                       onClick={() => handleSort(col.accessor || col.key)}
                       aria-label={`Sắp xếp theo ${col.label}`}
-                      aria-sort={sortKey === (col.accessor || col.key) ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                       className="inline-flex items-center gap-1 uppercase tracking-[0.04em] font-semibold text-gray-500 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
                     >
                       {col.label}

@@ -28,14 +28,14 @@ const Footer = () => (
         </p>
         <div className="flex gap-2.5 mt-1">
           {SOCIAL.map(({ Icon, label }) => (
-            <a
+            <button
+              type="button"
               key={label}
-              href="#"
               aria-label={label}
               className="w-9 h-9 rounded-full bg-white/[0.08] flex items-center justify-center text-gray-400 text-[0.9rem] border border-white/[0.08] transition-[background-color,color,border-color,transform] hover:bg-primary hover:text-white hover:border-primary hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Icon aria-hidden="true" />
-            </a>
+            </button>
           ))}
         </div>
 
@@ -47,7 +47,12 @@ const Footer = () => (
         <ul className="flex flex-col gap-2.5 list-none p-0 m-0">
           {['Giới thiệu', 'Tuyển dụng', 'Tin tức', 'Blog', 'Đối tác', 'Liên hệ'].map(t => (
             <li key={t}>
-              <a href="#" className="text-[0.82rem] text-gray-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:text-primary no-underline">{t}</a>
+              <button
+                type="button"
+                className="text-left text-[0.82rem] text-gray-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:text-primary no-underline"
+              >
+                {t}
+              </button>
             </li>
           ))}
         </ul>
@@ -59,7 +64,12 @@ const Footer = () => (
         <ul className="flex flex-col gap-2.5 list-none p-0 m-0">
           {['Hướng dẫn đặt xe', 'Chính sách thuê xe', 'Quy định bảo hiểm', 'Câu hỏi thường gặp', 'Trung tâm hỗ trợ'].map(t => (
             <li key={t}>
-              <a href="#" className="text-[0.82rem] text-gray-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:text-primary no-underline">{t}</a>
+              <button
+                type="button"
+                className="text-left text-[0.82rem] text-gray-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:text-primary no-underline"
+              >
+                {t}
+              </button>
             </li>
           ))}
         </ul>
@@ -71,7 +81,12 @@ const Footer = () => (
         <ul className="flex flex-col gap-2.5 list-none p-0 m-0">
           {['Ký gửi xe', 'Hướng dẫn ký gửi', 'Chính sách chủ xe', 'Doanh thu & thống kê', 'Cộng đồng chủ xe'].map(t => (
             <li key={t}>
-              <a href="#" className="text-[0.82rem] text-gray-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:text-primary no-underline">{t}</a>
+              <button
+                type="button"
+                className="text-left text-[0.82rem] text-gray-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:text-primary no-underline"
+              >
+                {t}
+              </button>
             </li>
           ))}
         </ul>
@@ -81,9 +96,24 @@ const Footer = () => (
     <div className="max-w-[1280px] mx-auto border-t border-white/[0.06] pt-6 flex items-center justify-between text-[0.78rem] text-gray-600 max-[560px]:flex-col max-[560px]:gap-2.5 max-[560px]:text-center">
       <span>© 2026 SmartRent Car. Tất cả quyền được bảo lưu.</span>
       <nav aria-label="Liên kết pháp lý" className="flex gap-5">
-        <a href="#" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary no-underline">Điều khoản sử dụng</a>
-        <a href="#" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary no-underline">Chính sách bảo mật</a>
-        <a href="#" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary no-underline">Cookie</a>
+        <button
+          type="button"
+          className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary no-underline"
+        >
+          Điều khoản sử dụng
+        </button>
+        <button
+          type="button"
+          className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary no-underline"
+        >
+          Chính sách bảo mật
+        </button>
+        <button
+          type="button"
+          className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary no-underline"
+        >
+          Cookie
+        </button>
       </nav>
     </div>
   </footer>

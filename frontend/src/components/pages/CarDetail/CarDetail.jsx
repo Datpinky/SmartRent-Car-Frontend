@@ -250,7 +250,6 @@ const CarDetail = () => {
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
-  const [imgError, setImgError] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [brokenImages, setBrokenImages] = useState({});
@@ -341,7 +340,6 @@ const CarDetail = () => {
     setActiveImageIndex(0);
     setGalleryOpen(false);
     setBrokenImages({});
-    setImgError(false);
   }, [car?._id, car?.id]);
 
   const handleToggleFavorite = async (event) => {
@@ -421,8 +419,6 @@ const CarDetail = () => {
     [brokenImages, galleryImages]
   );
 
-  const activeImage =
-    visibleGalleryImages[activeImageIndex] || visibleGalleryImages[0] || '';
   const nImg = visibleGalleryImages.length;
   const activeIdx = Math.min(activeImageIndex, Math.max(nImg - 1, 0));
   const mainSrc = visibleGalleryImages[activeIdx] || '';
@@ -506,10 +502,6 @@ const CarDetail = () => {
     if (activeImageIndex > visibleGalleryImages.length - 1) {
       setActiveImageIndex(0);
     }
-  }, [activeImageIndex, visibleGalleryImages.length]);
-
-  useEffect(() => {
-    setImgError(false);
   }, [activeImageIndex, visibleGalleryImages.length]);
 
   if (loading) {

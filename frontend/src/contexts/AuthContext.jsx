@@ -2,26 +2,6 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
-const AUTH_CLEARED_EVENT = 'smartrent:auth-cleared';
-
-const readStoredUser = () => {
-  const token = localStorage.getItem('smartrent_token');
-  const savedUser = localStorage.getItem('smartrent_user');
-
-  if (!token || !savedUser) {
-    localStorage.removeItem('smartrent_token');
-    localStorage.removeItem('smartrent_user');
-    return null;
-  }
-
-  try {
-    return JSON.parse(savedUser);
-  } catch {
-    localStorage.removeItem('smartrent_token');
-    localStorage.removeItem('smartrent_user');
-    return null;
-  }
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

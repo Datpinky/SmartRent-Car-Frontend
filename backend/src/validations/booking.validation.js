@@ -3,6 +3,8 @@ const { body, param } = require("express-validator");
 const BOOKING_STATUSES = ['pending',
   'confirmed',
   'cancelled',
+  'cancel_pending',
+  'cancel_failed',
   'completed',
   'waiting_payment',
   'paid',

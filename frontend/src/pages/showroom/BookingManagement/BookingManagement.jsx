@@ -14,6 +14,8 @@ const STATUS_ORDER = [
   'handed_over',
   'waiting_return_confirmation',
   'completed',
+  'cancel_pending',
+  'cancel_failed',
   'cancelled',
 ];
 
@@ -26,6 +28,8 @@ const STATUS_LABELS = {
   handed_over: 'Đã bàn giao',
   waiting_return_confirmation: 'Chờ xác nhận trả',
   completed: 'Hoàn thành',
+  cancel_pending: 'Đang xử lý hủy/hoàn tiền',
+  cancel_failed: 'Hủy/hoàn tiền lỗi',
   cancelled: 'Đã hủy',
 };
 
@@ -92,6 +96,34 @@ const BookingManagement = () => {
       );
     } catch (err) {
       setLoadError(err?.response?.data?.message || err?.message || 'Không thể cập nhật trạng thái booking.');
+      await fetchBookings();
+    } finally {
+      setUpdatingId('');
+    }
+  };
+
+  const cancelBooking = async (booking) => {
+    const bookingId = booking?._id || booking?.id;
+    if (!bookingId) return;
+
+    setUpdatingId(bookingId);
+    setLoadError('');
+
+    try {
+      const result = await bookingService.cancelBooking(bookingId);
+      const nextStatus = result?.bookingStatus || 'cancelled';
+
+      setBookings((current) =>
+        current.map((item) => ((item._id || item.id) === bookingId ? { ...item, status: nextStatus } : item))
+      );
+      setViewModal((current) =>
+        current && (current._id || current.id) === bookingId
+          ? { ...current, status: nextStatus }
+          : current
+      );
+      setCancelModal(null);
+    } catch (err) {
+      setLoadError(err?.response?.data?.message || err?.message || 'Không thể hủy booking hoặc hoàn tiền.');
       await fetchBookings();
     } finally {
       setUpdatingId('');
@@ -378,19 +410,18 @@ const BookingManagement = () => {
             <button
               type="button"
               className="btn-danger"
-              onClick={() => {
-                updateStatus(cancelModal._id || cancelModal.id, 'cancelled');
-                setCancelModal(null);
-              }}
+              onClick={() => cancelBooking(cancelModal)}
+              disabled={updatingId === (cancelModal?._id || cancelModal?.id)}
             >
-              Xác nhận hủy
+              {updatingId === (cancelModal?._id || cancelModal?.id) ? 'Đang xử lý...' : 'Xác nhận hủy'}
             </button>
           </>
         }
       >
         {cancelModal && (
           <p style={{ fontSize: '0.85rem', color: '#374151' }}>
-            Bạn đang hủy booking của khách hàng <b>{cancelModal.renterName}</b>. Hành động này sẽ chuyển booking sang trạng thái đã hủy.
+            Bạn đang hủy booking của khách hàng <b>{cancelModal.renterName}</b>. Nếu booking đã thanh toán,
+            hệ thống sẽ gọi API refund trước khi chuyển booking sang trạng thái đã hủy.
           </p>
         )}
       </Modal>
