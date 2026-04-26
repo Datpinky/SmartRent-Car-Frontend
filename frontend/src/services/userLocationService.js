@@ -48,7 +48,8 @@ export const userLocationService = {
       const res = await apiClient.get(`/api/user_location/getUserLocationByUserId/${userId}`);
       return normalizeLocation(res.data?.data || res.data);
     } catch (error) {
-      if (error.status === 404) {
+      const status = error?.status ?? error?.response?.status;
+      if (status === 404) {
         return null;
       }
       throw error;
@@ -71,7 +72,8 @@ export const userLocationService = {
       );
       return normalizeLocation(res.data?.data || res.data);
     } catch (error) {
-      if (error.status === 404) {
+      const status = error?.status ?? error?.response?.status;
+      if (status === 404) {
         return null;
       }
       throw error;
@@ -101,7 +103,8 @@ export const userLocationService = {
       const res = await apiClient.delete(`/api/user_location/deleteUserLocationByUserId/${userId}`);
       return normalizeLocation(res.data?.data || res.data);
     } catch (error) {
-      if (error.status === 404) {
+      const status = error?.status ?? error?.response?.status;
+      if (status === 404) {
         return null;
       }
       throw error;

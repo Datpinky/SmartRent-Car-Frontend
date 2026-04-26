@@ -25,6 +25,15 @@ const IGNORED_OVERLAP_STATUSES = [
   'completed'
 ];
 
+const populateBooking = (q) =>
+  q
+    .populate({ path: 'user_id', select: 'name email phone' })
+    .populate({
+      path: 'vehicle_id',
+      select: 'vehicle_name vehicle_brand vehicle_model vehicle_images_paths address',
+    })
+    .populate({ path: 'showroom_id', select: 'name email business_name phone' });
+
 class BookingService {
 
   static async createBooking(data) {
@@ -135,14 +144,28 @@ class BookingService {
       { field: 'total_price', value: sort_by_price },
       { field: 'createdAt', value: sort_by }
     ]);
+    const sort = Object.keys(sortOptions).length ? sortOptions : { createdAt: -1 };
 
+    const [data, total] = await Promise.all([
+      populateBooking(BookingModel.find(filter).sort(sort).skip(pagination.skip).limit(pagination.limit)).lean(),
+      BookingModel.countDocuments(filter),
+    ]);
 
-    // Find paginated
-    return BaseService.findPaginated(BookingModel, filter, sortOptions, pagination);
+    return {
+      data,
+      pagination: {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(total / pagination.limit) || 0,
+      },
+    };
   }
 
-  static async getBookingById(id) {
-    return BookingModel.findById(id)
+  static async getBookingById(id, options = {}) {
+    const q = BookingModel.findById(id);
+    if (options.populate) populateBooking(q);
+    return q.lean();
   }
 
 

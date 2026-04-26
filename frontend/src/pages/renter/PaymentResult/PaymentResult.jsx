@@ -55,8 +55,7 @@ const PaymentResult = () => {
       : (redirectStatus === 'processing'
         ? 'pending'
         : (redirectStatus === 'failed' ? 'error' : 'pending')));
-  const [status, setStatus] = useState(fallbackStatus);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState('loading');
   const [booking, setBooking] = useState(null);
   const canRetryPayment =
     ['pending', 'waiting_payment'].includes(booking?.paymentState?.bookingStatus || booking?.status || '')
@@ -72,12 +71,9 @@ const PaymentResult = () => {
 
     const init = async () => {
       try {
-        setLoading(true);
-
         if (!bookingId) {
           if (mounted) {
             setStatus('error');
-            setLoading(false);
           }
           return;
         }
@@ -114,9 +110,7 @@ const PaymentResult = () => {
         console.error('Payment result load error:', err);
         setStatus('error');
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        // no-op: status is set from booking/payment resolution paths above
       }
     };
 
@@ -126,7 +120,16 @@ const PaymentResult = () => {
     };
   }, [bookingId, fallbackStatus, paymentIntentId]);
 
-  if (loading) {
+  const bookingCode = booking?._id
+    ? `BK${String(booking._id).slice(-6).toUpperCase()}`
+    : bookingId
+      ? `BK${String(bookingId).slice(-6).toUpperCase()}`
+      : 'N/A';
+  const totalPrice = booking?.total_price != null
+    ? `${Number(booking.total_price).toLocaleString('vi-VN')}d`
+    : 'N/A';
+
+  if (status === 'loading') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}>
         <FaSpinner className="animate-spin" style={{ fontSize: '3rem', color: '#00b14f' }} />
@@ -172,10 +175,10 @@ const PaymentResult = () => {
 
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'left' }}>
           {[
-            ['Ma booking', bookingId || 'N/A'],
+            ['Ma booking', bookingCode],
             ['Xe', booking?.vehicle?.name || booking?.vehicle_id?.vehicle_name || 'Dang tai...'],
             ['Thoi gian thue', booking ? `${formatDate(booking.start_date)} -> ${formatDate(booking.end_date)}` : 'N/A'],
-            ['Tong tien', booking ? `${Number(booking.total_price || 0).toLocaleString('vi-VN')}d` : 'N/A'],
+            ['Tong tien', totalPrice],
             ['Payment method', booking?.payment?.payment_method || 'Chua co'],
             ['Payment status', booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || 'pending'],
             ['Booking status', booking?.paymentState?.bookingStatus || booking?.status || 'N/A'],

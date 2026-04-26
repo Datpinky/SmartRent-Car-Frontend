@@ -60,6 +60,9 @@ body {
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 bg-white text-gray-700 border-[1.5px] border-gray-200 rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-medium cursor-pointer transition-[border-color,color] hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
   }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 bg-gray-100 text-gray-800 border-[1.5px] border-gray-200 rounded-[9px] px-[18px] py-[9px] text-[0.85rem] font-semibold cursor-pointer transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
   .btn-warn {
     @apply inline-flex items-center justify-center gap-2 bg-amber-600 text-white border-none rounded-[9px] px-3.5 py-[7px] text-[0.8rem] font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400;
   }

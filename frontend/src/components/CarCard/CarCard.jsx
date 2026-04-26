@@ -5,7 +5,7 @@ import { FaGasPump, FaHeart, FaMapMarkerAlt, FaRegHeart, FaStar, FaStore } from 
 import { MdDirectionsCar, MdPeople, MdSettings } from 'react-icons/md';
 import { useAuth } from '../../contexts/AuthContext';
 import favoriteService from '../../services/favoriteService';
-import { buildRentalWindowQuery, sanitizeRentalWindow } from '../../utils/rentalWindow';
+import { buildRentalWindowQuery } from '../../utils/rentalWindow';
 
 const isMongoId = (value) => /^[a-f\d]{24}$/i.test(String(value || ''));
 
@@ -16,28 +16,10 @@ const normalizeText = (value) =>
     .toLowerCase()
     .trim();
 
-const formatPrice = (price, currency = 'VND') => {
-  const numericPrice = Number(price || 0);
-  if (!numericPrice) {
-    return 'Lien he';
-  }
-
-  if (currency === 'VND') {
-    return `${numericPrice.toLocaleString('vi-VN')}d`;
-  }
-
-  return `${numericPrice.toLocaleString('en-US')} ${currency}`;
-};
-
-const formatChargeUnit = (unit) => {
-  if (unit === 'day') {
-    return '/ngay';
-  }
-  if (unit === 'hour') {
-    return '/gio';
-  }
-  return unit ? `/${unit}` : '';
-};
+const sanitizeRentalWindow = (pickupDate, returnDate) => ({
+  pickupDate: String(pickupDate || ''),
+  returnDate: String(returnDate || ''),
+});
 
 const CarColorBg = ({ color, name }) => {
   const hue = Math.abs(name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 360;
@@ -123,9 +105,12 @@ const CarCard = ({ car, rentalSearch = null }) => {
   const imageUrl = useMemo(() => car.image || (Array.isArray(car.images) ? car.images[0] : ''), [car.image, car.images]);
   const locationText = car.address || car.pickupAddress || car.location || '';
   const hasReviewData = Number(car.rating || 0) > 0 || Number(car.trips || 0) > 0;
-  const fuelIcon = normalizeText(car.fuel) === 'dien'
-    ? <BsLightningChargeFill style={{ color: '#2196f3' }} />
-    : <FaGasPump style={{ color: '#f59e0b' }} />;
+  const fuelIcon =
+    normalizeText(car.fuel) === 'dien' ? (
+      <BsLightningChargeFill style={{ color: '#2196f3' }} />
+    ) : (
+      <FaGasPump style={{ color: '#f59e0b' }} />
+    );
   const rentalWindow = sanitizeRentalWindow(rentalSearch?.pickupDate, rentalSearch?.returnDate);
 
   useEffect(() => {
@@ -186,11 +171,13 @@ const CarCard = ({ car, rentalSearch = null }) => {
   return (
     <article
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-[250ms] hover:-translate-y-1 hover:border-gray-200 hover:shadow-[0_8px_32px_rgba(0,0,0,0.14)]"
-      onClick={() => navigate(`/xe/${carId}${buildRentalWindowQuery(rentalWindow.pickupDate, rentalWindow.returnDate)}`, {
-        state: {
-          rentalSearch: rentalWindow,
-        },
-      })}
+      onClick={() =>
+        navigate(`/xe/${carId}${buildRentalWindowQuery(rentalWindow.pickupDate, rentalWindow.returnDate)}`, {
+          state: {
+            rentalSearch: rentalWindow,
+          },
+        })
+      }
     >
       <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16/10' }}>
         {imageUrl && !imgError ? (
@@ -214,7 +201,7 @@ const CarCard = ({ car, rentalSearch = null }) => {
           } ${likeLoading ? 'cursor-wait opacity-50' : ''}`}
           onClick={handleLike}
           disabled={likeLoading}
-          aria-label="Yeu thich"
+          aria-label="Yêu thích"
         >
           {liked ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
         </button>
@@ -239,36 +226,30 @@ const CarCard = ({ car, rentalSearch = null }) => {
           </div>
         )}
 
-        {locationText && (
-          <div
-            className="flex items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.78rem] font-medium text-primary"
-            title={locationText}
-          >
-            <FaMapMarkerAlt size={11} />
-            {locationText}
-          </div>
-        )}
-
-        {hasReviewData ? (
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <StarRating rating={Number(car.rating || 0)} />
-            <span className="text-[0.8rem] font-bold text-gray-800">{Number(car.rating || 0).toFixed(1)}</span>
-            <span className="text-[0.75rem] text-gray-500">({Number(car.trips || 0)} chuyen)</span>
-          </div>
-        ) : (
-          <div className="mt-0.5 text-[0.78rem] text-gray-400">Chua co danh gia</div>
-        )}
-
-        <div className="mt-1 flex items-baseline gap-2">
-          <span className="text-[1.1rem] font-extrabold text-primary">{formatPrice(car.price, car.currency)}</span>
-          <span className="text-[0.8rem] font-medium text-gray-500">{formatChargeUnit(car.chargeUnit)}</span>
+        <div className="flex items-center gap-1 text-[0.78rem] text-primary font-medium">
+          <FaMapMarkerAlt aria-hidden="true" size={11} />
+          {car.location}
         </div>
 
-        <div className="mt-2 flex items-center border-t border-gray-100 pt-2.5">
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <StarRating rating={car.rating} />
+          <span className="text-[0.8rem] font-bold text-gray-800">{car.rating}</span>
+          <span className="text-[0.75rem] text-gray-500">({car.trips} chuyến)</span>
+        </div>
+
+        <div className="flex items-baseline gap-2 mt-1">
+          <span className="text-[1.2rem] font-extrabold text-primary">{car.price.toLocaleString()}K</span>
+          <span className="text-[0.8rem] font-medium text-gray-500">/ngày</span>
+        </div>
+        <div className="text-[0.75rem] text-gray-500 -mt-0.5">2 ngày 4 giờ</div>
+        <div className="text-[0.68rem] text-primary italic -mt-0.5">Giá tạm tính chưa bao gồm VAT</div>
+
+        {/* Specs */}
+        <div className="flex items-center border-t border-gray-100 mt-2 pt-2.5">
           {[
-            { icon: <MdPeople size={18} />, label: `${car.seats || 0} cho` },
-            { icon: <MdSettings size={18} />, label: car.transmission || 'Dang cap nhat' },
-            { icon: fuelIcon, label: car.fuel || 'Dang cap nhat' },
+            { icon: <MdPeople size={18} />, label: `${car.seats || 0} chỗ` },
+            { icon: <MdSettings size={18} />, label: car.transmission || 'Đang cập nhật' },
+            { icon: fuelIcon, label: car.fuel || 'Đang cập nhật' },
           ].map(({ icon, label }, index, all) => (
             <div
               key={`${label}-${index}`}

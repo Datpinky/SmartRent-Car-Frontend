@@ -88,7 +88,15 @@ class AuthValidation {
             .optional({ checkFalsy: true })
             .trim()
             .matches(/^\d{10}$/)
-            .withMessage("So dien thoai phai co dung 10 chu so"),
+            .withMessage("Số điện thoại phải có đúng 10 chữ số"),
+        body("business_name").optional().trim().isLength({ max: 200 }).withMessage("Tên doanh nghiệp tối đa 200 ký tự"),
+        body("public_address").optional().trim().isLength({ max: 500 }),
+        body("opening_hours").optional().trim().isLength({ max: 200 }),
+        body("policy_text").optional().trim().isLength({ max: 20000 }),
+        body("logo_url").optional().trim().isLength({ max: 500 }),
+        body("showroom_description").optional().trim().isLength({ max: 5000 }),
+        body("showroom_representative_name").optional().trim().isLength({ max: 120 }),
+        body("showroom_license_public").optional().trim().isLength({ max: 200 }),
     ];
 
     changePassword = [

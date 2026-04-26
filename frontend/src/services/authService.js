@@ -46,6 +46,15 @@ export const authService = {
       showroom_status: user.showroom_status,
       business_name: user.business_name,
       address: user.userLocation?.address || '',
+      tax_code: user.tax_code || '',
+      public_address: user.public_address || '',
+      opening_hours: user.opening_hours || '',
+      policy_text: user.policy_text || '',
+      logo_url: user.logo_url || '',
+      showroom_description: user.showroom_description || '',
+      showroom_representative_name: user.showroom_representative_name || '',
+      showroom_license_public: user.showroom_license_public || '',
+      license_document_urls: user.license_document_urls || [],
     };
 
     localStorage.setItem('smartrent_token', token);
@@ -95,8 +104,17 @@ export const authService = {
       backendRole: user.backendRole || user.role,
       phone: user.phone || '',
       showroom_status: user.showroom_status,
-      business_name: user.business_name,
+      business_name: user.business_name || '',
       address: user.userLocation?.address || '',
+      tax_code: user.tax_code || '',
+      public_address: user.public_address || '',
+      opening_hours: user.opening_hours || '',
+      policy_text: user.policy_text || '',
+      logo_url: user.logo_url || '',
+      showroom_description: user.showroom_description || '',
+      showroom_representative_name: user.showroom_representative_name || '',
+      showroom_license_public: user.showroom_license_public || '',
+      license_document_urls: user.license_document_urls || [],
     };
   },
 
@@ -108,8 +126,13 @@ export const authService = {
     return this.mapUser(storedUser);
   },
 
-  async updateProfile({ name, phone }) {
-    const res = await apiClient.patch('/api/auth/me', { name, phone });
+  async getMe() {
+    const res = await apiClient.get('/api/auth/me');
+    return this.mapUser(res.data?.data);
+  },
+
+  async updateProfile(payload) {
+    const res = await apiClient.patch('/api/auth/me', payload);
     return this.mapUser(res.data?.data);
   },
 

@@ -7,7 +7,7 @@ const PLACEHOLDER_HOSTS = new Set([
 const API_BASE_URL = (
     process.env.REACT_APP_API_URL ||
     process.env.REACT_APP_API_BASE_URL ||
-    'http://localhost:3000'
+    'http://localhost:5000'
 ).replace(/\/+$/, '');
 
 const hasHttpProtocol = (value) => /^https?:\/\//i.test(value);

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -45,35 +45,53 @@ export const AuthProvider = ({ children }) => {
   }, [persistUser]);
 
   useEffect(() => {
-    const bootstrapAuth = async () => {
-      const storedUser = readStoredUser();
-      setUser(storedUser);
-
-      if (!localStorage.getItem('smartrent_token')) {
-        setLoading(false);
+    let cancelled = false;
+    (async () => {
+      const token = localStorage.getItem('smartrent_token');
+      if (!token) {
+        try {
+          const saved = localStorage.getItem('smartrent_user');
+          if (saved) localStorage.removeItem('smartrent_user');
+        } catch {
+          /* ignore */
+        }
+        if (!cancelled) {
+          setUser(null);
+          setLoading(false);
+        }
         return;
       }
 
       try {
-        await refreshUser();
-      } catch {
-        authService.logout();
-        setUser(null);
+        const u = await authService.getMe();
+        if (!cancelled && u) {
+          setUser(u);
+          localStorage.setItem('smartrent_user', JSON.stringify(u));
+        }
+      } catch (e) {
+        if (cancelled) return;
+        if (e?.status === 401) {
+          authService.logout();
+          setUser(null);
+        } else {
+          try {
+            const saved = localStorage.getItem('smartrent_user');
+            if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim().startsWith('{')) {
+              setUser(JSON.parse(saved));
+            }
+          } catch {
+            authService.logout();
+            setUser(null);
+          }
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    bootstrapAuth();
-
-    const handleAuthCleared = () => {
-      setUser(null);
-      setLoading(false);
-    };
-
-    window.addEventListener(AUTH_CLEARED_EVENT, handleAuthCleared);
-    return () => window.removeEventListener(AUTH_CLEARED_EVENT, handleAuthCleared);
-  }, [refreshUser]);
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -111,10 +129,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  /** Cố định tham chiếu để tránh useEffect (vd. Profile) phụ thuộc chạy lại vô hạn. */
   const updateUser = useCallback((updates) => {
-    setUser((currentUser) => {
-      if (!currentUser) return currentUser;
-      const updated = { ...currentUser, ...updates };
+    setUser((prev) => {
+      const updated = { ...prev, ...updates };
       localStorage.setItem('smartrent_user', JSON.stringify(updated));
       return updated;
     });
@@ -123,12 +141,11 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
-    isAuthenticated: Boolean(user && localStorage.getItem('smartrent_token')),
     login,
     register,
     logout,
-    refreshUser,
     updateUser,
+    refreshUser,
   };
 
   return (

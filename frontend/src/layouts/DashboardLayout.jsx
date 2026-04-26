@@ -1,62 +1,66 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  FaAmbulance,
-  FaAngleDown,
-  FaAngleRight,
-  FaBars,
-  FaBuilding,
-  FaCalendarAlt,
-  FaCar,
-  FaChartLine,
-  FaComments,
-  FaExchangeAlt,
-  FaFileContract,
-  FaMapMarkerAlt,
-  FaMoneyBillWave,
-  FaRobot,
-  FaSignOutAlt,
-  FaStore,
-  FaTachometerAlt,
-  FaTimes,
-  FaUser,
-  FaUsers,
-} from 'react-icons/fa';
-import { MdVerifiedUser } from 'react-icons/md';
-import NotificationBell from '../components/common/NotificationBell';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useChatWidget } from '../contexts/ChatWidgetContext';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import NotificationBell from '../components/common/NotificationBell';
+import { Sidebar, SidebarBody, SidebarLink, useSidebar } from '../components/ui/sidebar';
+import { cn } from '../lib/utils';
+import {
+  IconLayoutDashboard,
+  IconUsers,
+  IconBuildingStore,
+  IconReceipt,
+  IconUserCircle,
+  IconCar,
+  IconCalendarEvent,
+  IconFileDescription,
+  IconChartBar,
+  IconRobot,
+  IconBuildingCommunity,
+  IconMap2,
+  IconCashBanknote,
+  IconAmbulance,
+  IconMenu2,
+  IconLogout,
+  IconHome,
+  IconMessageCircle,
+  IconChevronDown,
+  IconUser,
+} from '@tabler/icons-react';
+
+const stroke = 1.5;
+const ic = (Icon) => <Icon className="h-5 w-5 shrink-0 text-neutral-600 dark:text-neutral-300" stroke={stroke} />;
 
 const MENUS = {
   admin: [
-    { key: 'dashboard', label: 'Tổng quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/admin/dashboard' },
-    { key: 'users', label: 'Quản lý người dùng', icon: <FaUsers aria-hidden="true" />, path: '/admin/users' },
-    { key: 'showrooms', label: 'Xác minh showroom', icon: <FaStore aria-hidden="true" />, path: '/admin/showrooms' },
-    { key: 'transactions', label: 'Giao dịch', icon: <FaExchangeAlt aria-hidden="true" />, path: '/admin/transactions' },
-    { key: 'profile', label: 'Hồ sơ', icon: <FaUser aria-hidden="true" />, path: '/admin/profile' },
+    { key: 'dashboard', label: 'Tổng quan', path: '/admin/dashboard', Icon: IconLayoutDashboard },
+    { key: 'users', label: 'Quản lý người dùng', path: '/admin/users', Icon: IconUsers },
+    { key: 'showrooms', label: 'Xác minh Showroom', path: '/admin/showrooms', Icon: IconBuildingStore },
+    { key: 'transactions', label: 'Giao dịch', path: '/admin/transactions', Icon: IconReceipt },
+    { key: 'profile', label: 'Hồ sơ', path: '/admin/profile', Icon: IconUserCircle },
   ],
   showroom: [
-    { key: 'dashboard', label: 'Tổng quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/showroom/dashboard' },
-    { key: 'vehicles', label: 'Quản lý xe', icon: <FaCar aria-hidden="true" />, path: '/showroom/vehicles' },
-    { key: 'bookings', label: 'Quản lý đặt xe', icon: <FaCalendarAlt aria-hidden="true" />, path: '/showroom/bookings' },
-    { key: 'contracts', label: 'Hợp đồng', icon: <FaFileContract aria-hidden="true" />, path: '/showroom/contracts' },
-    { key: 'customers', label: 'Khách hàng', icon: <FaUsers aria-hidden="true" />, path: '/showroom/customers' },
-    { key: 'revenue', label: 'Doanh thu', icon: <FaChartLine aria-hidden="true" />, path: '/showroom/revenue' },
-    { key: 'ai-inspection', label: 'Kiểm tra AI', icon: <FaRobot aria-hidden="true" />, path: '/showroom/ai-inspection' },
-    { key: 'profile', label: 'Hồ sơ showroom', icon: <FaBuilding aria-hidden="true" />, path: '/showroom/profile' },
+    { key: 'dashboard', label: 'Tổng quan', path: '/showroom/dashboard', Icon: IconLayoutDashboard },
+    { key: 'vehicles', label: 'Quản lý xe', path: '/showroom/vehicles', Icon: IconCar },
+    { key: 'bookings', label: 'Quản lý đặt xe', path: '/showroom/bookings', Icon: IconCalendarEvent },
+    { key: 'contracts', label: 'Hợp đồng', path: '/showroom/contracts', Icon: IconFileDescription },
+    { key: 'customers', label: 'Khách hàng', path: '/showroom/customers', Icon: IconUsers },
+    { key: 'revenue', label: 'Doanh thu', path: '/showroom/revenue', Icon: IconChartBar },
+    { key: 'ai-inspection', label: 'Kiểm tra AI', path: '/showroom/ai-inspection', Icon: IconRobot },
+    { key: 'profile', label: 'Hồ sơ Showroom', path: '/showroom/profile', Icon: IconBuildingCommunity },
   ],
   owner: [
-    { key: 'dashboard', label: 'Tổng quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/owner/dashboard' },
-    { key: 'vehicles', label: 'Xe của tôi', icon: <FaCar aria-hidden="true" />, path: '/owner/vehicles' },
-    { key: 'tracking', label: 'Theo dõi xe', icon: <FaMapMarkerAlt aria-hidden="true" />, path: '/owner/tracking' },
-    { key: 'revenue', label: 'Doanh thu và rút tiền', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/owner/revenue' },
-    { key: 'profile', label: 'Hồ sơ', icon: <FaUser aria-hidden="true" />, path: '/owner/profile' },
+    { key: 'dashboard', label: 'Tổng quan', path: '/owner/dashboard', Icon: IconLayoutDashboard },
+    { key: 'vehicles', label: 'Xe của tôi', path: '/owner/vehicles', Icon: IconCar },
+    { key: 'tracking', label: 'Theo dõi xe', path: '/owner/tracking', Icon: IconMap2 },
+    { key: 'revenue', label: 'Doanh thu & Rút tiền', path: '/owner/revenue', Icon: IconCashBanknote },
+    { key: 'profile', label: 'Hồ sơ', path: '/owner/profile', Icon: IconUserCircle },
   ],
   renter: [
-    { key: 'profile', label: 'Hồ sơ cá nhân', icon: <FaUser aria-hidden="true" />, path: '/renter/profile' },
-    { key: 'bookings', label: 'Chuyến đi của tôi', icon: <FaCalendarAlt aria-hidden="true" />, path: '/renter/bookings' },
-    { key: 'ai-reports', label: 'Báo cáo AI', icon: <FaRobot aria-hidden="true" />, path: '/renter/ai-reports' },
-    { key: 'transactions', label: 'Lịch sử giao dịch', icon: <FaExchangeAlt aria-hidden="true" />, path: '/renter/transactions' },
-    { key: 'sos', label: 'Hỗ trợ khẩn cấp', icon: <FaAmbulance aria-hidden="true" />, path: '/renter/sos' },
+    { key: 'profile', label: 'Hồ sơ cá nhân', path: '/renter/profile', Icon: IconUser },
+    { key: 'bookings', label: 'Chuyến đi của tôi', path: '/renter/bookings', Icon: IconCalendarEvent },
+    { key: 'transactions', label: 'Lịch sử giao dịch', path: '/renter/transactions', Icon: IconReceipt },
+    { key: 'sos', label: 'Hỗ trợ khẩn cấp', path: '/renter/sos', Icon: IconAmbulance },
   ],
 };
 
@@ -64,7 +68,7 @@ if (!MENUS.renter.some((item) => item.key === 'dashboard')) {
   MENUS.renter.splice(0, 0, {
     key: 'dashboard',
     label: 'Tổng quan tài chính',
-    icon: <FaChartLine aria-hidden="true" />,
+    Icon: IconLayoutDashboard,
     path: '/renter/dashboard',
   });
 }
@@ -73,7 +77,7 @@ if (!MENUS.renter.some((item) => item.key === 'pending-pickups')) {
   MENUS.renter.splice(1, 0, {
     key: 'pending-pickups',
     label: 'Chờ nhận xe',
-    icon: <FaCar aria-hidden="true" />,
+    Icon: IconCar,
     path: '/renter/pending-pickups',
   });
 }
@@ -111,31 +115,72 @@ const PROFILE_PATHS = {
 };
 
 const FALLBACK_TITLES = [
+<<<<<<< HEAD
   { prefix: '/renter/retry-payment', label: 'Thanh toan lai' },
   { prefix: '/renter/checkout', label: 'Thanh toán đặt xe' },
   { prefix: '/renter/transactions', label: 'Lịch sử giao dịch' },
+=======
+  { prefix: '/renter/checkout', label: 'Thanh toán' },
+>>>>>>> 0ae3050dbf544bc22f5b8f8e4bd378c9199a9f54
   { prefix: '/renter/payment-result', label: 'Kết quả thanh toán' },
 ];
 
+function Logo() {
+  return (
+    <Link
+      to="/"
+      className="relative z-20 flex items-center gap-2 py-1 text-sm font-normal text-neutral-900 dark:text-neutral-100"
+      aria-label="SmartRent — Trang chủ"
+    >
+      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-700">
+        <img src="/logo_transparent.png" alt="" className="h-full w-full object-contain p-0.5" />
+      </div>
+      <span className="whitespace-pre font-semibold text-neutral-900 dark:text-white">
+        SmartRent
+      </span>
+    </Link>
+  );
+}
+
+function LogoIcon() {
+  return (
+    <Link
+      to="/"
+      className="relative z-20 flex items-center py-1"
+      aria-label="SmartRent — Trang chủ"
+    >
+      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-700">
+        <img src="/logo_transparent.png" alt="" className="h-full w-full object-contain p-0.5" />
+      </div>
+    </Link>
+  );
+}
+
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
+  const chatWidget = useChatWidget();
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const menus = MENUS[user?.role] || MENUS.renter;
   const roleCfg = ROLE_CONFIG[user?.role] || ROLE_CONFIG.renter;
 
-  const initials = useMemo(
-    () => user?.name?.split(' ').map((word) => word[0]).slice(-2).join('').toUpperCase() || 'U',
-    [user?.name]
-  );
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const handleProfile = () => {
+    setUserDropdownOpen(false);
+    navigate(PROFILE_PATHS[user?.role] || '/');
+  };
+
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const headerTitle = (() => {
     const fromMenu = menus.find((item) => isActive(item.path));
@@ -145,6 +190,26 @@ const DashboardLayout = ({ children }) => {
 
     return FALLBACK_TITLES.find((item) => location.pathname.startsWith(item.prefix))?.label || 'Dashboard';
   })();
+
+  const initials =
+    user?.name
+      ?.split(' ')
+      .map((w) => w[0])
+      .slice(-2)
+      .join('')
+      .toUpperCase() || 'U';
+
+  const profilePath = PROFILE_PATHS[user?.role] || '/';
+
+  const navLinks = useMemo(
+    () =>
+      (MENUS[user?.role] || []).map((item) => ({
+        label: item.label,
+        path: item.path,
+        icon: ic(item.Icon),
+      })),
+    [user?.role]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -158,29 +223,15 @@ const DashboardLayout = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setSidebarOpen(false);
-        setUserDropdownOpen(false);
-      }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
     };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const handleProfile = () => {
-    setUserDropdownOpen(false);
-    navigate(PROFILE_PATHS[user?.role] || '/');
-  };
-
   return (
-    <div className="relative flex min-h-screen bg-[#f4f6f9]">
+    <div className="relative flex min-h-screen bg-[#f4f6f9] dark:bg-neutral-950">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[9999] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
@@ -191,176 +242,66 @@ const DashboardLayout = ({ children }) => {
       {sidebarOpen && (
         <div
           role="presentation"
-          className="fixed inset-0 z-[199] bg-black/45"
+          className="fixed inset-0 z-[199] bg-black/45 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <aside
-        aria-label="Điều hướng chính"
-        className={`fixed bottom-0 left-0 top-0 z-[200] flex flex-col overflow-hidden bg-[#1a1a2e] transition-[width] duration-[250ms] ease-in-out max-md:!w-60 max-md:transition-transform ${
-          collapsed ? 'w-[68px]' : 'w-60'
-        } ${sidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
-      >
-        <div className="flex min-h-[64px] shrink-0 items-center justify-between border-b border-white/[0.08] px-3.5 py-[18px]">
-          {!collapsed ? (
-            <Link to="/" className="min-w-0 flex-1 no-underline" aria-label="SmartRent Car Rental - Trang chu">
-              <img
-                src="/logo_transparent.png"
-                alt="SmartRent Car Rental"
-                width={140}
-                height={36}
-                className="h-9 w-auto object-contain"
-                style={{ filter: 'brightness(0) invert(1)' }}
-              />
-            </Link>
-          ) : (
-            <Link to="/" aria-label="SmartRent Car - Trang chu" className="mx-auto flex w-full items-center justify-center overflow-hidden no-underline">
-              <img
-                src="/logo_transparent.png"
-                alt=""
-                aria-hidden="true"
-                width={52}
-                height={52}
-                className="h-[52px] w-auto object-contain object-top"
-                style={{ filter: 'brightness(0) invert(1)' }}
-              />
-            </Link>
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate>
+        <SidebarBody
+          className={cn(
+            'justify-between gap-6 px-2 py-4',
+            'md:justify-start md:gap-0 md:py-4'
           )}
-
-          <button
-            type="button"
-            aria-label={collapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
-            className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-white/[0.08] text-[0.8rem] text-white/60 transition-colors hover:bg-white/[0.15] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:flex"
-            onClick={() => setCollapsed((current) => !current)}
-          >
-            {collapsed ? <FaAngleRight aria-hidden="true" /> : <FaBars aria-hidden="true" />}
-          </button>
-
-          <button
-            type="button"
-            aria-label="Đóng menu"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-white/[0.08] text-[0.8rem] text-white/60 transition-colors hover:bg-white/[0.15] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <FaTimes aria-hidden="true" />
-          </button>
-        </div>
-
-        {!collapsed && (
-          <div
-            aria-hidden="true"
-            className="mx-3 mb-1 mt-2.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[0.72rem] font-bold"
-            style={{ background: roleCfg.bg, color: roleCfg.color }}
-          >
-            <MdVerifiedUser aria-hidden="true" style={{ fontSize: '0.85rem' }} />
-            {roleCfg.label}
-          </div>
-        )}
-
-        <nav aria-label="Menu trang" className="flex-1 overflow-y-auto py-2 [scrollbar-color:rgba(255,255,255,0.1)_transparent] [scrollbar-width:thin]">
-          {menus.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              aria-label={collapsed ? item.label : undefined}
-              aria-current={isActive(item.path) ? 'page' : undefined}
-              className={`relative flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[0.85rem] font-medium transition-[background-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
-                isActive(item.path)
-                  ? 'bg-[rgba(0,177,79,0.2)] text-white'
-                  : 'text-white/60 hover:bg-white/[0.07] hover:text-white'
-              }`}
-              onClick={() => {
-                navigate(item.path);
-                setSidebarOpen(false);
-              }}
-            >
-              {isActive(item.path) && (
-                <span aria-hidden="true" className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-r-sm bg-primary" />
-              )}
-              <span aria-hidden="true" className="flex w-5 shrink-0 items-center justify-center text-base">
-                {item.icon}
-              </span>
-              {!collapsed && <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{item.label}</span>}
-              {!collapsed && isActive(item.path) && <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
-            </button>
-          ))}
-        </nav>
-
-        <div className="shrink-0 border-t border-white/[0.08] p-3">
-          {!collapsed ? (
-            <div aria-hidden="true" className="mb-2 flex items-center gap-2.5 px-1 py-2">
-              <div
-                className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[0.8rem] font-bold text-white"
-                style={{ background: roleCfg.color }}
-              >
-                {initials}
-              </div>
-              <div className="min-w-0">
-                <div className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.8rem] font-semibold text-white">
-                  {user?.name}
-                </div>
-                <div className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.68rem] text-white/40">
-                  {user?.email}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              aria-hidden="true"
-              className="mx-auto mb-2 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[0.8rem] font-bold text-white"
-              style={{ background: roleCfg.color }}
-            >
-              {initials}
-            </div>
-          )}
-
-          <button
-            type="button"
-            aria-label="Đăng xuất"
-            className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-white/[0.06] px-3 py-2.5 text-[0.82rem] font-medium text-white/60 transition-[background-color,color] hover:bg-red-600/20 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-            onClick={handleLogout}
-          >
-            <FaSignOutAlt aria-hidden="true" />
-            {!collapsed && <span>Đăng xuất</span>}
-          </button>
-        </div>
-      </aside>
+        >
+          <SidebarNavContent
+            navLinks={navLinks}
+            roleCfg={roleCfg}
+            profilePath={profilePath}
+            user={user}
+            initials={initials}
+            onLogout={handleLogout}
+          />
+        </SidebarBody>
+      </Sidebar>
 
       <div
-        className={`flex min-h-screen flex-1 flex-col transition-[margin] duration-[250ms] ease-in-out max-md:ml-0 ${
-          collapsed ? 'ml-[68px]' : 'ml-60'
-        }`}
+        className={cn(
+          'flex min-h-screen flex-1 flex-col transition-[margin] duration-200 ease-out max-md:ml-0',
+          'md:ml-[var(--dashboard-sidebar-width,76px)]'
+        )}
       >
-        <header className="sticky top-0 z-[100] flex h-[60px] shrink-0 items-center justify-between border-b border-[#f0f0f0] bg-white px-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
+        <header className="sticky top-0 z-[100] flex h-[60px] shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
           <div className="flex items-center gap-3">
             <button
               type="button"
               aria-label="Mở menu điều hướng"
-              className="flex rounded-[7px] p-1.5 text-[1.1rem] text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
+              className="flex rounded-lg p-2 text-neutral-700 hover:bg-neutral-100 md:hidden dark:text-neutral-200 dark:hover:bg-neutral-800"
               onClick={() => setSidebarOpen(true)}
             >
-              <FaBars aria-hidden="true" />
+              <IconMenu2 size={22} stroke={stroke} aria-hidden />
             </button>
-            <div className="text-[0.9rem] font-semibold text-gray-900">{headerTitle}</div>
+            <div className="text-[0.9rem] font-semibold text-neutral-900 dark:text-neutral-100">
+              {headerTitle}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               to="/"
-              aria-label="Trang chu"
-              className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-200 bg-white text-[0.95rem] text-gray-500 transition-[border-color,color,background-color] hover:border-primary hover:bg-primary-light hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label="Trang chủ"
+              className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-neutral-200 bg-white text-neutral-500 transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary"
             >
-              <FaStore aria-hidden="true" />
+              <IconHome size={18} stroke={stroke} aria-hidden />
             </Link>
-
-            {(user?.role === 'renter' || user?.role === 'showroom') && (
+            {(user?.role === 'renter' || user?.role === 'showroom') && chatWidget && (
               <button
                 type="button"
-                aria-label="Chat"
-                className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-200 bg-white text-[0.95rem] text-gray-500 transition-[border-color,color,background-color] hover:border-primary hover:bg-primary-light hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Mở chat hỗ trợ"
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-neutral-200 bg-white text-neutral-500 transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary"
+                onClick={() => chatWidget.openChat()}
               >
-                <FaComments aria-hidden="true" />
+                <IconMessageCircle size={18} stroke={stroke} aria-hidden />
               </button>
             )}
 
@@ -373,73 +314,64 @@ const DashboardLayout = ({ children }) => {
                   aria-label={`${user?.name} - mở menu tài khoản`}
                   aria-expanded={userDropdownOpen}
                   aria-haspopup="menu"
-                  className="flex select-none items-center gap-1.5 rounded-[10px] px-2 py-1 transition-[background-color] hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  onClick={() => setUserDropdownOpen((current) => !current)}
+                  className="flex cursor-pointer select-none items-center gap-1.5 rounded-[10px] py-1 pl-1 pr-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  onClick={() => setUserDropdownOpen((o) => !o)}
                 >
                   <div
-                    aria-hidden="true"
+                    aria-hidden
                     className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[0.72rem] font-bold text-white"
                     style={{ background: roleCfg.color }}
                   >
                     {initials}
                   </div>
-                  <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap text-[0.82rem] font-semibold text-gray-700">
+                  <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap text-[0.82rem] font-semibold text-neutral-700 dark:text-neutral-200">
                     {user?.name}
                   </span>
-                  <FaAngleDown
-                    aria-hidden="true"
-                    style={{
-                      fontSize: '0.7rem',
-                      color: '#9ca3af',
-                      transition: 'transform 0.2s',
-                      transform: userDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
+                  <IconChevronDown
+                    size={16}
+                    stroke={stroke}
+                    className={cn('text-neutral-400 transition-transform', userDropdownOpen && 'rotate-180')}
+                    aria-hidden
                   />
                 </button>
 
                 {userDropdownOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 top-[calc(100%+8px)] z-[999] min-w-[210px] rounded-[14px] border border-gray-200 bg-white py-2 shadow-[0_10px_40px_rgba(0,0,0,0.12)]"
+                    className="absolute right-0 top-[calc(100%+8px)] z-[999] min-w-[210px] rounded-[14px] border border-neutral-200 bg-white py-2 shadow-lg dark:border-neutral-700 dark:bg-neutral-900"
                   >
                     <div className="flex items-center gap-2.5 px-3.5 py-2.5">
                       <div
-                        aria-hidden="true"
+                        aria-hidden
                         className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[0.9rem] font-bold text-white"
                         style={{ background: roleCfg.color }}
                       >
                         {initials}
                       </div>
                       <div>
-                        <div className="text-[0.85rem] font-bold text-gray-900">{user?.name}</div>
+                        <div className="text-[0.85rem] font-bold text-neutral-900 dark:text-white">{user?.name}</div>
                         <div className="mt-px text-[0.72rem] font-semibold" style={{ color: roleCfg.color }}>
                           {roleCfg.label}
                         </div>
                       </div>
                     </div>
-
-                    <div role="separator" className="my-1 h-px bg-gray-100" />
-
+                    <div role="separator" className="my-1 h-px bg-neutral-100 dark:bg-neutral-800" />
                     <button
                       type="button"
                       role="menuitem"
-                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[0.83rem] text-gray-700 transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
+                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[0.83rem] text-neutral-700 hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-800"
                       onClick={handleProfile}
                     >
-                      <FaUser aria-hidden="true" />
-                      Hồ sơ cá nhân
+                      <IconUser size={16} stroke={stroke} aria-hidden /> Hồ sơ cá nhân
                     </button>
-
-                    <div role="separator" className="my-1 h-px bg-gray-100" />
-
+                    <div role="separator" className="my-1 h-px bg-neutral-100 dark:bg-neutral-800" />
                     <button
                       type="button"
                       role="menuitem"
-                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[0.83rem] text-red-600 transition-colors hover:bg-red-50 focus-visible:bg-red-50 focus-visible:outline-none"
+                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[0.83rem] text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
                       onClick={handleLogout}
                     >
-                      <FaSignOutAlt aria-hidden="true" />
-                      Đăng xuất
+                      <IconLogout size={16} stroke={stroke} aria-hidden /> Đăng xuất
                     </button>
                   </div>
                 )}
@@ -455,5 +387,59 @@ const DashboardLayout = ({ children }) => {
     </div>
   );
 };
+
+/** Nội dung sidebar: cần `useSidebar` nên tách component con. */
+function SidebarNavContent({ navLinks, roleCfg, profilePath, user, initials, onLogout }) {
+  const { expanded, open, isMobile } = useSidebar();
+  const showFullBrand = isMobile ? open : expanded;
+
+  return (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+        <div className="flex shrink-0 items-center px-1">{showFullBrand ? <Logo /> : <LogoIcon />}</div>
+
+        {showFullBrand && (
+          <div
+            aria-hidden
+            className="mx-1 mt-3 flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[0.72rem] font-bold"
+            style={{ background: roleCfg.bg, color: roleCfg.color }}
+          >
+            <span className="max-w-[200px] truncate">{roleCfg.label}</span>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-0.5 px-0.5">
+          {navLinks.map((link, idx) => (
+            <SidebarLink key={idx} link={link} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-auto shrink-0 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+        <SidebarLink
+          link={{
+            label: user?.name || 'Tài khoản',
+            path: profilePath,
+            icon: (
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-bold text-white"
+                style={{ background: roleCfg.color }}
+              >
+                {initials}
+              </span>
+            ),
+          }}
+        />
+        <SidebarLink
+          link={{
+            label: 'Đăng xuất',
+            onClick: onLogout,
+            icon: <IconLogout className="h-5 w-5 shrink-0 text-neutral-600 dark:text-neutral-300" stroke={stroke} />,
+          }}
+        />
+      </div>
+    </>
+  );
+}
 
 export default DashboardLayout;

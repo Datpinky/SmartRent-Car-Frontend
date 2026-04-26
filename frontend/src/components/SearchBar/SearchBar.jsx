@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FaCalendarAlt,
@@ -8,6 +9,10 @@ import {
   FaSearch,
   FaTimes,
 } from 'react-icons/fa';
+=======
+import React, { useState, useEffect, useMemo } from 'react';
+import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar, FaCalendarAlt } from 'react-icons/fa';
+>>>>>>> 0ae3050dbf544bc22f5b8f8e4bd378c9199a9f54
 import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const CITIES = ['Ha Noi', 'Da Nang', 'Ho Chi Minh'];
@@ -87,9 +92,15 @@ const SearchBar = ({ onSearch }) => {
     if (!showModal) {
       return undefined;
     }
-
     lockPageScroll();
-    return () => unlockPageScroll();
+    const onKey = (e) => {
+      if (e.key === 'Escape') setShowModal(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      unlockPageScroll();
+    };
   }, [showModal]);
 
   useEffect(() => {

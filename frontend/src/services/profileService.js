@@ -70,7 +70,8 @@ export const profileService = {
 
       return mappedProfile;
     } catch (error) {
-      if (error.status === 404) {
+      const status = error?.status ?? error?.response?.status;
+      if (status === 404) {
         return null;
       }
       throw error;
@@ -103,6 +104,9 @@ export const profileService = {
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'phone')) {
       body.phone = payload.phone;
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'address')) {
+      body.address = payload.address;
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'age')) {
       body.age = payload.age;

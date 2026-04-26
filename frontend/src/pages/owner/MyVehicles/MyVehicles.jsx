@@ -6,6 +6,7 @@ import { FaPlus, FaEdit, FaSpinner, FaExclamationCircle, FaChevronDown } from 'r
 import { MdDirectionsCar } from 'react-icons/md';
 import vehicleService, { AMENITY_OPTIONS } from '../../../services/vehicleService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { formatVndPerDay } from '../../../utils/currencyFormat';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -666,7 +667,7 @@ const MyVehicles = () => {
               <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
                 {[
                   ['Showroom', v.showroom || 'Chưa phân bổ'],
-                  ['Giá thuê', v.price ? v.price.toLocaleString('vi-VN') + ' ₫/ngày' : '—'],
+                  ['Giá thuê', v.price ? formatVndPerDay(v.price) : '—'],
                   ['Số chỗ', v.seats || '—'],
                   ['Nhiên liệu', v.fuel || '—'],
                 ].map(([k, val]) => (

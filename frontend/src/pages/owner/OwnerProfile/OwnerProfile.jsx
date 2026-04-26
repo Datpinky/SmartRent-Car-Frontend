@@ -9,29 +9,24 @@ import {
   FaShieldAlt,
   FaUser,
 } from 'react-icons/fa';
-import { MdDirectionsCar, MdVerifiedUser } from 'react-icons/md';
-import { passwordMeetsPolicy } from '../../../components/common/PasswordInput';
+import { MdVerifiedUser, MdDirectionsCar } from 'react-icons/md';
 import { useAuth } from '../../../contexts/AuthContext';
+import { formatVnd } from '../../../utils/currencyFormat';
+
+const passwordMeetsPolicy = (value) => {
+  const password = String(value || '');
+  if (password.length < 8) return false;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  return hasUpper && hasLower && hasDigit && hasSpecial;
+};
 
 const OWNER_STATS = [
-  {
-    label: 'Xe đang ký gửi',
-    value: '3',
-    icon: <MdDirectionsCar aria-hidden="true" />,
-    color: '#6d28d9',
-  },
-  {
-    label: 'Tổng doanh thu',
-    value: '52,400,000₫',
-    icon: <FaMoneyBillWave aria-hidden="true" />,
-    color: '#059669',
-  },
-  {
-    label: 'Chờ rút tiền',
-    value: '8,200,000₫',
-    icon: <FaExclamationCircle aria-hidden="true" />,
-    color: '#d97706',
-  },
+  { label: 'Xe đang ký gửi',  value: '3',          icon: <MdDirectionsCar aria-hidden="true" />, color: '#6d28d9' },
+  { label: 'Tổng doanh thu',   value: formatVnd(52_400_000), icon: <FaMoneyBillWave aria-hidden="true" />, color: '#059669' },
+  { label: 'Chờ rút tiền',     value: formatVnd(8_200_000),  icon: <FaExclamationCircle aria-hidden="true" />, color: '#d97706' },
 ];
 
 const OwnerProfile = () => {

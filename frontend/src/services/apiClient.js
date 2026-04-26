@@ -5,7 +5,7 @@ const AUTH_CLEARED_EVENT = 'smartrent:auth-cleared';
 const BASE_URL =
   process.env.REACT_APP_API_URL ||
   process.env.REACT_APP_API_BASE_URL ||
-  'http://localhost:3000';
+  'http://localhost:5000';
 
 const clearStoredAuth = () => {
   localStorage.removeItem('smartrent_token');

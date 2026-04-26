@@ -7,6 +7,7 @@ import { FaPlus, FaEdit, FaTrash, FaStar, FaRoute, FaSpinner } from 'react-icons
 import { MdDirectionsCar, MdLocalGasStation, MdEventSeat } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { formatVndPerDay } from '../../../utils/currencyFormat';
 
 const STATUS_OPTS = ['available', 'active', 'maintenance'];
 const FUEL_OPTS = ['Xăng', 'Dầu', 'Điện', 'Hybrid'];
@@ -62,7 +63,9 @@ const VehicleManagement = () => {
         vehicle_brand: form.brand,
         vehicle_model: form.name,
         vehicle_type: form.category,
-        vehicle_hire_rate_in_figures: Number(form.price) * 1000,
+        vehicle_hire_rate_in_figures: Number(form.price),
+        vehicle_hire_rate_currency: 'VND',
+        vehicle_hire_charge_per_timing: 'day',
         number_of_seats: Number(form.seats),
         fuel_type: ({ 'Xăng': 'petrol', 'Dầu': 'diesel', 'Điện': 'electric', 'Hybrid': 'hybrid' })[form.fuel] || 'petrol',
         transmission: form.transmission === 'Số sàn' ? 'manual' : 'automatic',
@@ -124,7 +127,7 @@ const VehicleManagement = () => {
         </div>
       </div>
     )},
-    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 700, color: '#00b14f', fontSize: '0.9rem' }}>{Number(row.price).toLocaleString('vi-VN')}đ</span>, sortable: true, accessor: 'price' },
+    { key: 'price', label: 'Giá/ngày', render: row => <span style={{ fontWeight: 700, color: '#00b14f', fontSize: '0.9rem' }}>{formatVndPerDay(row.price)}</span>, sortable: true, accessor: 'price' },
     { key: 'trips', label: 'Chuyến', render: row => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <FaRoute size={12} color="#9ca3af" /><span style={{ fontWeight: 600 }}>{row.trips}</span>
@@ -200,7 +203,7 @@ const VehicleManagement = () => {
           {[
             ['Tên xe', 'name', 'text'], ['Biển số', 'plate', 'text'],
             ['Thương hiệu', 'brand', 'text'], ['Số chỗ ngồi', 'seats', 'number'],
-            ['Giá thuê/ngày (K)', 'price', 'number'],
+            ['Giá thuê (VNĐ/ngày)', 'price', 'number'],
           ].map(([label, key, type]) => (
             <div key={key}>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>{label}</label>

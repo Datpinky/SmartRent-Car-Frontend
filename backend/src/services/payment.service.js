@@ -12,7 +12,8 @@ const BookingService = require('./booking.service');
 const BaseService = require('./base.service');
 const QueryBuilder = require('../utils/queryBuilder');
 
-
+/** Cho phép thanh toán khi chờ showroom (pending), đã xác nhận (confirmed), hoặc đang chờ intent (waiting_payment). */
+const ALLOWED_PAYMENT_STATUSES = ['pending', 'confirmed', 'waiting_payment'];
 const PAYMENTDB_VALID_TRANSITIONS = {
   'pending': ['successful', 'declined', 'failed'],
   'failed': ['pending', 'declined'],
