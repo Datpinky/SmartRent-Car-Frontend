@@ -104,7 +104,9 @@ const CarCard = ({ car, rentalSearch = null }) => {
   const carId = car.id || car._id;
   const imageUrl = useMemo(() => car.image || (Array.isArray(car.images) ? car.images[0] : ''), [car.image, car.images]);
   const locationText = car.address || car.pickupAddress || car.location || '';
-  const hasReviewData = Number(car.rating || 0) > 0 || Number(car.trips || 0) > 0;
+  const displayAddress = locationText || 'Dang cap nhat dia chi nhan xe';
+  const ratingValue = Number(car.rating || 0);
+  const reviewCount = Number(car.reviewCount ?? car.trips ?? 0);
   const fuelIcon =
     normalizeText(car.fuel) === 'dien' ? (
       <BsLightningChargeFill style={{ color: '#2196f3' }} />
@@ -228,13 +230,17 @@ const CarCard = ({ car, rentalSearch = null }) => {
 
         <div className="flex items-center gap-1 text-[0.78rem] text-primary font-medium">
           <FaMapMarkerAlt aria-hidden="true" size={11} />
-          {car.location}
+          {displayAddress}
         </div>
 
         <div className="flex items-center gap-1.5 mt-0.5">
-          <StarRating rating={car.rating} />
-          <span className="text-[0.8rem] font-bold text-gray-800">{car.rating}</span>
-          <span className="text-[0.75rem] text-gray-500">({car.trips} chuyến)</span>
+          <StarRating rating={ratingValue} />
+          {reviewCount > 0 && (
+            <span className="text-[0.8rem] font-bold text-gray-800">{ratingValue.toFixed(1)}</span>
+          )}
+          <span className={`text-[0.75rem] ${reviewCount > 0 ? 'text-gray-500' : 'text-gray-400'}`}>
+            {reviewCount > 0 ? `(${reviewCount} danh gia)` : 'Chua co danh gia'}
+          </span>
         </div>
 
         <div className="flex items-baseline gap-2 mt-1">

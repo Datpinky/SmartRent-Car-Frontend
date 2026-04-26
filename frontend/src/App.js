@@ -27,14 +27,10 @@ import AIReports from './pages/renter/AIReports/AIReports';
 import Checkout from './pages/renter/Checkout/Checkout';
 import MapPage from './pages/renter/Map/MapPage';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
-<<<<<<< HEAD
 import PendingPayments from './pages/renter/PendingPayments/PendingPayments';
 import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
 import PendingShowroomProcessing from './pages/renter/PendingShowroomProcessing/PendingShowroomProcessing';
-=======
->>>>>>> 0ae3050dbf544bc22f5b8f8e4bd378c9199a9f54
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
-import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
 import Profile from './pages/renter/Profile/Profile';
 import RetryPayment from './pages/renter/RetryPayment/RetryPayment';
 import RenterDashboard from './pages/renter/RenterDashboard/RenterDashboard';

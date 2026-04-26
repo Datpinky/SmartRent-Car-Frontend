@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FaCalendarAlt,
@@ -8,12 +7,7 @@ import {
   FaMapMarkerAlt,
   FaSearch,
   FaTimes,
-} from 'react-icons/fa';
-=======
-import React, { useState, useEffect, useMemo } from 'react';
-import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar, FaCalendarAlt } from 'react-icons/fa';
->>>>>>> 0ae3050dbf544bc22f5b8f8e4bd378c9199a9f54
-import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
+} from 'react-icons/fa';import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const CITIES = ['Ha Noi', 'Da Nang', 'Ho Chi Minh'];
 
@@ -411,3 +405,4 @@ const SearchBar = ({ onSearch }) => {
 };
 
 export default SearchBar;
+

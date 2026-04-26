@@ -192,10 +192,10 @@ const RetryPayment = () => {
     setNeedsNewSession(false);
 
     try {
-      const paymentData = await paymentService.createPayment({
-        bookingId: targetBooking.id,
-        amount: Number(targetBooking.totalPrice || 0),
-      });
+      const paymentData = await paymentService.retryPaymentSession(
+        targetBooking.id,
+        Number(targetBooking.totalPrice || 0)
+      );
       const secret = paymentData?.client_secret || paymentData?.clientSecret || '';
 
       if (!secret) {

@@ -1,5 +1,18 @@
 import apiClient from './apiClient';
 
+const normalizeReviewSummary = (response) => {
+  const reviews = Array.isArray(response?.data) ? response.data : [];
+  const reviewCount = Number(response?.pagination?.total ?? reviews.length ?? 0);
+  const rating = reviews.length
+    ? reviews.reduce((sum, review) => sum + Number(review?.rating || 0), 0) / reviews.length
+    : 0;
+
+  return {
+    rating,
+    reviewCount,
+  };
+};
+
 export const reviewService = {
   /**
    * Get paginated reviews for a vehicle.
@@ -42,6 +55,33 @@ export const reviewService = {
   async update(payload) {
     const res = await apiClient.patch('/api/reviews/update', payload);
     return res.data.data;
+  },
+
+  async getSummaryByVehicleId(vehicleId, { limit = 100 } = {}) {
+    const response = await this.getByVehicleId(vehicleId, { page: 1, limit });
+    return normalizeReviewSummary(response);
+  },
+
+  async enrichVehiclesWithSummary(vehicles = [], { limit = 100 } = {}) {
+    if (!Array.isArray(vehicles) || vehicles.length === 0) {
+      return [];
+    }
+
+    const settled = await Promise.allSettled(
+      vehicles.map((vehicle) => this.getSummaryByVehicleId(vehicle.id || vehicle._id, { limit }))
+    );
+
+    return vehicles.map((vehicle, index) => {
+      const summary = settled[index]?.status === 'fulfilled'
+        ? settled[index].value
+        : null;
+
+      return {
+        ...vehicle,
+        rating: summary ? summary.rating : Number(vehicle.rating || 0),
+        reviewCount: summary ? summary.reviewCount : Number(vehicle.reviewCount ?? vehicle.trips ?? 0),
+      };
+    });
   },
 };
 

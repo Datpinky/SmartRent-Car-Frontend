@@ -3,6 +3,7 @@ import CarGrid from '../../CarGrid/CarGrid';
 import FilterBar from '../../FilterBar/FilterBar';
 import SearchBar from '../../SearchBar/SearchBar';
 import bookingService from '../../../services/bookingService';
+import reviewService from '../../../services/reviewService';
 import vehicleService from '../../../services/vehicleService';
 
 const DEFAULT_FILTERS = {
@@ -188,12 +189,13 @@ const Home = () => {
       setLoadingVehicles(true);
       try {
         const { data } = await vehicleService.getList({ limit: 100 });
+        const vehiclesWithReviewSummary = await reviewService.enrichVehiclesWithSummary(data, { limit: 100 });
         if (cancelled) {
           return;
         }
 
-        setAllCars(data);
-        await syncVisibleCars(data);
+        setAllCars(vehiclesWithReviewSummary);
+        await syncVisibleCars(vehiclesWithReviewSummary);
         setApiError('');
       } catch (error) {
         if (cancelled) {

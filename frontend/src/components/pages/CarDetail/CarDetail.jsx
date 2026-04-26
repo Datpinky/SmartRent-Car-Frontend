@@ -21,16 +21,7 @@ import vehicleLocationService from '../../../services/vehicleLocationService';
 import reviewService from '../../../services/reviewService';
 import favoriteService from '../../../services/favoriteService';
 import { useAuth } from '../../../contexts/AuthContext';
-<<<<<<< HEAD
-import {
-  canReviewBooking,
-  resolveBookingVehicleId,
-  resolveReviewBookingId,
-} from '../../../utils/bookingReviewEligibility';
-=======
 import { canReviewBooking, resolveBookingVehicleId } from '../../../utils/bookingReviewEligibility';
-import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
->>>>>>> 0ae3050dbf544bc22f5b8f8e4bd378c9199a9f54
 import { buildRentalWindowQuery, resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const ROLE_DEFAULT_PATHS = {
@@ -254,7 +245,7 @@ const CarDetail = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState('');
   const [reviewAccessLoading, setReviewAccessLoading] = useState(false);
-  const [reviewAccess, setReviewAccess] = useState({ eligibleBookings: [], ownReviews: [] });
+  const [reviewAccess, setReviewAccess] = useState({ canReview: false, eligibleBookings: 0 });
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
@@ -266,13 +257,10 @@ const CarDetail = () => {
   const loadCar = useCallback(async () => {
     setLoading(true);
     try {
-      if (isMongoId(id)) {
-        const apiCar = await vehicleService.getById(id);
-        setCar(apiCar || null);
-      } else {
-        setCar(null);
-      }
-    } catch {
+      const apiCar = await vehicleService.getById(id);
+      setCar(apiCar || null);
+    } catch (error) {
+      console.error('Error loading car:', error.message);
       setCar(null);
     } finally {
       setLoading(false);
@@ -315,27 +303,24 @@ const CarDetail = () => {
 
   const loadReviewAccess = useCallback(async () => {
     if (user?.role !== 'renter' || !isMongoId(id)) {
-      setReviewAccess({ eligibleBookings: [], ownReviews: [] });
+      setReviewAccess({ canReview: false, eligibleBookings: 0 });
       setReviewAccessLoading(false);
       return;
     }
 
     setReviewAccessLoading(true);
     try {
-      const [myBookings, ownReviews] = await Promise.all([
-        bookingService.getCurrentRoleBookings(),
-        reviewService.getMineByVehicleId(id),
-      ]);
+      const myBookings = await bookingService.getMyBookings();
       const eligibleBookings = (myBookings || []).filter(
         (booking) => resolveBookingVehicleId(booking) === id && canReviewBooking(booking)
       );
 
       setReviewAccess({
-        eligibleBookings,
-        ownReviews: ownReviews || [],
+        canReview: eligibleBookings.length > 0,
+        eligibleBookings: eligibleBookings.length,
       });
     } catch {
-      setReviewAccess({ eligibleBookings: [], ownReviews: [] });
+      setReviewAccess({ canReview: false, eligibleBookings: 0 });
     } finally {
       setReviewAccessLoading(false);
     }
@@ -385,11 +370,6 @@ const CarDetail = () => {
       return;
     }
 
-    if (needsBookingScopedReview) {
-      setReviewError('Ban co nhieu don thue hop le cho xe nay. Vui long vao Chuyen di cua toi de danh gia theo tung booking.');
-      return;
-    }
-
     if (!canReviewThisVehicle) {
       setReviewError('Bạn chỉ có thể đánh giá sau khi hoàn tất ít nhất một booking cho chiếc xe này.');
       return;
@@ -401,11 +381,10 @@ const CarDetail = () => {
       if (editingReviewId) {
         await reviewService.update({ review_id: editingReviewId, ...reviewForm });
       } else {
-        await reviewService.create({ booking_id: composerBookingId, vehicle_id: id, ...reviewForm });
+        await reviewService.create({ vehicle_id: id, ...reviewForm });
       }
       resetReviewComposer();
       await loadReviews();
-      await loadReviewAccess();
     } catch (error) {
       setReviewError(error.message);
     } finally {
@@ -440,25 +419,10 @@ const CarDetail = () => {
 
   const activeImage =
     visibleGalleryImages[activeImageIndex] || visibleGalleryImages[0] || '';
-  const nImg = visibleGalleryImages.length;
-  const activeIdx = Math.min(activeImageIndex, Math.max(nImg - 1, 0));
-  const mainSrc = visibleGalleryImages[activeIdx] || '';
 
   const currentUserId = user?._id || user?.id || '';
   const canManageReviews = user?.role === 'renter' && isMongoId(id);
-  const eligibleReviewBookings = reviewAccess.eligibleBookings || [];
-  const ownReviewsByBookingId = useMemo(
-    () => new Map((reviewAccess.ownReviews || []).map((review) => [resolveReviewBookingId(review), review])),
-    [reviewAccess.ownReviews]
-  );
-  const composerBooking = eligibleReviewBookings.length === 1 ? eligibleReviewBookings[0] : null;
-  const composerBookingId = composerBooking?._id || composerBooking?.id || '';
-  const composerExistingReview = composerBookingId
-    ? ownReviewsByBookingId.get(composerBookingId) || null
-    : null;
-  const hasReviewableBookings = canManageReviews && eligibleReviewBookings.length > 0;
-  const needsBookingScopedReview = canManageReviews && eligibleReviewBookings.length > 1;
-  const canReviewThisVehicle = canManageReviews && Boolean(composerBookingId);
+  const canReviewThisVehicle = false;
   const hasReviews = reviews.length > 0;
   const isEditingReview = Boolean(editingReviewId);
 
@@ -489,32 +453,10 @@ const CarDetail = () => {
 
   const openCreateReviewForm = useCallback(() => {
     setReviewError('');
-    if (!composerBookingId) {
-      setShowReviewForm(false);
-      setEditingReviewId('');
-      setReviewForm({ rating: 5, comment: '' });
-      setReviewError(
-        needsBookingScopedReview
-          ? 'Ban co nhieu don thue hop le cho xe nay. Vui long vao Chuyen di cua toi de danh gia theo tung booking.'
-          : 'Ban chi co the danh gia sau khi hoan tat it nhat mot booking cho chiec xe nay.'
-      );
-      return;
-    }
-
-    if (composerExistingReview) {
-      setEditingReviewId(composerExistingReview._id || '');
-      setReviewForm({
-        rating: Number(composerExistingReview.rating) || 5,
-        comment: composerExistingReview.comment || '',
-      });
-      setShowReviewForm(true);
-      return;
-    }
-
     setEditingReviewId('');
     setReviewForm({ rating: 5, comment: '' });
     setShowReviewForm((current) => (isEditingReview ? true : !current));
-  }, [composerBookingId, composerExistingReview, isEditingReview, needsBookingScopedReview]);
+  }, [isEditingReview]);
 
   const openEditReviewForm = useCallback((review) => {
     setReviewError('');
@@ -623,30 +565,6 @@ const CarDetail = () => {
     });
   };
 
-  const handleBookNow = () => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    if (user.role !== 'renter') {
-      navigate(ROLE_DEFAULT_PATHS[user.role] || '/', { replace: true });
-      return;
-    }
-
-    const pickupDate = initialRentalWindow?.pickupDate || createDefaultPickup();
-    const returnDate = initialRentalWindow?.returnDate || createDefaultReturn();
-
-    navigate(`/renter/checkout/${id}${buildRentalWindowQuery(pickupDate, returnDate)}`, {
-      state: {
-        car,
-        rentalSearch: { pickupDate, returnDate },
-        pickupDate,
-        returnDate,
-      },
-    });
-  };
-
   return (
     <div className="mx-auto max-w-[1280px] px-5 py-6">
       <button
@@ -657,35 +575,23 @@ const CarDetail = () => {
         <FaChevronLeft size={12} aria-hidden="true" /> Quay lại danh sách xe
       </button>
 
-      {/*
-        Hai tầng: (1) gallery + thẻ đặt xe cùng hàng — không dùng sticky để tránh thẻ bám viewport và chồng footer.
-        (2) Khối thông tin xe full width bên dưới.
-      */}
-      <div className="flex flex-col gap-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start lg:items-start max-[900px]:gap-6">
-          {/* Cột trái: chỉ gallery + nút chia sẻ */}
-          <div className="min-w-0">
-          {/* Gallery — nhiều ảnh: ảnh lớn + mũi tên + thumbnail (kiểu Shopee) */}
-          <div className="w-full space-y-2">
-            <div
-              className="w-full rounded-2xl overflow-hidden bg-gray-100 relative group"
-              style={{ aspectRatio: '16/9' }}
-            >
-              {mainSrc ? (
-                <img
-                  key={mainSrc}
-                  src={mainSrc}
-                  alt={`${car.name} — ảnh ${activeIdx + 1}/${nImg}`}
-                  width={600}
-                  height={400}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    const el = e.target.nextElementSibling;
-                    if (el) el.style.display = 'flex';
-                  }}
-                />
-              ) : null}
+      <div className="grid grid-cols-[1fr_360px] items-start gap-8 max-[900px]:grid-cols-1">
+        <div>
+          <div className="relative w-full overflow-hidden rounded-2xl bg-gray-100" style={{ aspectRatio: '16/9' }}>
+            {activeImage && !imgError ? (
+              <img
+                src={activeImage}
+                alt={car.name}
+                className="h-full w-full cursor-zoom-in object-cover"
+                onClick={() =>
+                  openGalleryAt(Math.min(activeImageIndex, Math.max(visibleGalleryImages.length - 1, 0)))
+                }
+                onError={() => {
+                  markImageBroken(activeImage);
+                  setImgError(true);
+                }}
+              />
+            ) : (
               <div
                 className="flex h-full w-full items-center justify-center"
                 style={{
@@ -701,7 +607,8 @@ const CarDetail = () => {
                   }}
                 />
               </div>
-              
+            )}
+
             {visibleGalleryImages.length > 1 && (
               <div className="absolute bottom-4 right-4 rounded-full bg-black/55 px-3 py-1.5 text-[0.78rem] font-semibold text-white backdrop-blur-sm">
                 {Math.min(activeImageIndex + 1, visibleGalleryImages.length)}/{visibleGalleryImages.length} ảnh
@@ -769,73 +676,8 @@ const CarDetail = () => {
               </span>
             </button>
           </div>
-          </div>
 
-        {/* Cột phải: đặt xe — luôn ngang hàng gallery trên desktop, không sticky */}
-        <div className="min-w-0 w-full lg:max-w-[360px] lg:justify-self-end">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
-            <div className="mb-4">
-              <span className="text-[1.35rem] font-extrabold text-primary tabular-nums leading-tight block">
-                {formatVndPerDay(car.price)}
-              </span>
-            </div>
-            <div className="h-px bg-gray-100 my-4" />
-
-            {[
-              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
-              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
-            ].map(({ label, id: inputId, def }) => (
-              <div key={inputId} className="mb-3">
-                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
-                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
-              </div>
-            ))}
-
-            <div className="h-px bg-gray-100 my-4" />
-
-            <div className="flex flex-col gap-2 mb-4">
-              {[
-                [`${car.price ? car.price.toLocaleString('vi-VN') : 0} VNĐ × 2 ngày`, formatVnd(car.price ? car.price * 2 : 0)],
-                ['Phí dịch vụ (5%)', formatVnd(car.price ? Math.round(car.price * 2 * 0.05) : 0)],
-              ].map(([label, val]) => (
-                <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
-                  <span>{label}</span>
-                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
-                </div>
-              ))}
-              <div className="h-px bg-gray-100 my-1" />
-              <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
-                <span>Tổng cộng</span>
-                <span className="text-primary tabular-nums">
-                  {formatVnd(car.price ? car.price * 2 + Math.round(car.price * 2 * 0.05) : 0)}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleBookNow}
-              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
-            >
-              Đặt xe ngay
-            </button>
-            <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
-
-            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
-                {car.showroom ? car.showroom[0] : 'C'}
-              </div>
-              <div>
-                <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
-                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-
-          {/* Info card — full width dưới gallery + đặt xe */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+          <div className="flex flex-col gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h1 className="text-2xl font-extrabold text-gray-900">{car.name}</h1>
 
             <div className="flex flex-wrap gap-3">
@@ -958,14 +800,7 @@ const CarDetail = () => {
                 <p className="mb-3 text-[0.8rem] text-gray-400">Đang kiểm tra điều kiện đánh giá...</p>
               )}
 
-              {needsBookingScopedReview && !reviewAccessLoading && (
-                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[0.8rem] leading-6 text-blue-800">
-                  Ban co {eligibleReviewBookings.length} don thue hop le cho chiec xe nay. Moi don thue chi duoc danh gia
-                  1 lan, vi vay vui long vao <strong>Chuyen di cua toi</strong> de danh gia dung theo tung booking.
-                </div>
-              )}
-
-              {canManageReviews && !reviewAccessLoading && !hasReviewableBookings && (
+              {canManageReviews && !reviewAccessLoading && !canReviewThisVehicle && (
                 <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.8rem] leading-6 text-amber-800">
                   Bạn có thể xem đánh giá của những renter khác tại đây. Quyền viết đánh giá chỉ mở sau khi bạn hoàn tất
                   ít nhất một booking cho chiếc xe này.
@@ -1078,7 +913,7 @@ const CarDetail = () => {
                       </div>
                     </div>
 
-                    {canManageReviews && isOwnReview(review) && (
+                    {canReviewThisVehicle && isOwnReview(review) && (
                       <button
                         type="button"
                         onClick={() => openEditReviewForm(review)}

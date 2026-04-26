@@ -20,15 +20,14 @@ import {
 import { MdLocationOn } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import bookingService from '../../../services/bookingService';
-import paymentService from '../../../services/paymentService';
 import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import { resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const DELIVERY_FEE_VND = 50000;
 
 /**
- * Tắt Stripe.js Testing Assistant (UI nổi “stripe” / sandbox assistant trên trang thanh toán).
- * Bật lại khi debug: REACT_APP_STRIPE_TESTING_ASSISTANT=true trong .env
+ * Tat Stripe.js Testing Assistant (UI noi "stripe" / sandbox assistant tren trang thanh toan).
+ * Bat lai khi debug: REACT_APP_STRIPE_TESTING_ASSISTANT=true trong .env
  * @see https://docs.stripe.com/js/initializing#stripe_js_initialize-options-developerTools-assistant-enabled
  */
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY, {
@@ -39,7 +38,7 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY, {
   },
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const defaultPickup = () => {
   const d = new Date();
   d.setHours(10, 0, 0, 0);
@@ -55,7 +54,7 @@ const defaultReturn = () => {
 function formatDateTimeVi(isoLocal) {
   try {
     const d = new Date(isoLocal);
-    if (Number.isNaN(d.getTime())) return '—';
+    if (Number.isNaN(d.getTime())) return '--';
     return d.toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
@@ -64,7 +63,7 @@ function formatDateTimeVi(isoLocal) {
       minute: '2-digit',
     });
   } catch {
-    return '—';
+    return '--';
   }
 }
 
@@ -103,7 +102,7 @@ function normalizeIncomingRentalWindow(pickupValue, returnValue, minPickupValue)
 
 function formatDateTimeInputLabel(isoLocal) {
   const d = parseLocalDateTime(isoLocal);
-  if (!d) return 'Chọn ngày giờ';
+  if (!d) return 'Chon ngay gio';
   const hour12 = d.getHours() % 12 || 12;
   const ampm = d.getHours() >= 12 ? 'CH' : 'SA';
   return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(hour12)}:${pad2(d.getMinutes())} ${ampm}`;
@@ -111,18 +110,18 @@ function formatDateTimeInputLabel(isoLocal) {
 
 const CALENDAR_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const CALENDAR_MONTHS = [
-  'Tháng 1',
-  'Tháng 2',
-  'Tháng 3',
-  'Tháng 4',
-  'Tháng 5',
-  'Tháng 6',
-  'Tháng 7',
-  'Tháng 8',
-  'Tháng 9',
-  'Tháng 10',
-  'Tháng 11',
-  'Tháng 12',
+  'Thang 1',
+  'Thang 2',
+  'Thang 3',
+  'Thang 4',
+  'Thang 5',
+  'Thang 6',
+  'Thang 7',
+  'Thang 8',
+  'Thang 9',
+  'Thang 10',
+  'Thang 11',
+  'Thang 12',
 ];
 
 function DateTimeField({ id, label, value, minValue, onChange }) {
@@ -340,14 +339,14 @@ function DateTimeField({ id, label, value, minValue, onChange }) {
               className="text-xs text-primary hover:underline"
               onClick={() => applyDate(new Date())}
             >
-              Hôm nay
+              Hom nay
             </button>
             <button
               type="button"
               className="text-xs text-gray-500 hover:text-gray-700"
               onClick={() => setOpen(false)}
             >
-              Đóng
+              Dong
             </button>
           </div>
         </div>
@@ -356,7 +355,7 @@ function DateTimeField({ id, label, value, minValue, onChange }) {
   );
 }
 
-// ─── Inner card form (must be inside <Elements>) ─────────────────────────────
+// â”€â”€â”€ Inner card form (must be inside <Elements>) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -374,7 +373,7 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
     });
 
     if (error) {
-      onError(error.message || 'Thanh toán thất bại. Vui lòng thử lại.');
+      onError(error.message || 'Thanh toan that bai. Vui long thu lai.');
       setProcessing(false);
     }
   };
@@ -383,7 +382,7 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
     <form onSubmit={handleSubmit}>
       <div className="mb-5">
         <label className="block text-xs font-semibold text-gray-600 mb-2">
-          Thông tin thẻ Stripe
+          Thong tin the Stripe
         </label>
         <div className="border border-gray-200 rounded-xl p-4 bg-white">
           <PaymentElement
@@ -401,10 +400,10 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
       >
         {processing ? (
           <>
-            <FaSpinner aria-hidden="true" className="animate-spin" /> Đang xử lý…
+            <FaSpinner aria-hidden="true" className="animate-spin" /> Dang xu ly...
           </>
         ) : (
-          'Thanh toán ngay'
+          'Thanh toan ngay'
         )}
       </button>
     </form>
@@ -414,7 +413,7 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
 function StarRow({ rating }) {
   const r = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
   return (
-    <div className="flex items-center gap-0.5" aria-label={`Đánh giá ${r} trên 5`}>
+    <div className="flex items-center gap-0.5" aria-label={`Danh gia ${r} tren 5`}>
       {[1, 2, 3, 4, 5].map((n) => (
         <FaStar
           key={n}
@@ -440,7 +439,7 @@ function OrderSummaryPanel({
     <aside className="lg:sticky lg:top-24 h-fit">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 text-[0.95rem]">Tóm tắt đơn hàng</h3>
+          <h3 className="font-bold text-gray-900 text-[0.95rem]">Tom tat don hang</h3>
         </div>
 
         <div className="p-5 space-y-4">
@@ -458,13 +457,13 @@ function OrderSummaryPanel({
 
           <dl className="space-y-2 text-[0.82rem] text-gray-600">
             <div className="flex justify-between gap-3">
-              <dt className="text-gray-500 shrink-0">Nhận xe</dt>
+              <dt className="text-gray-500 shrink-0">Nhan xe</dt>
               <dd className="tabular-nums text-right text-gray-800 font-medium">
                 {formatDateTimeVi(pickupDate)}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-gray-500 shrink-0">Trả xe</dt>
+              <dt className="text-gray-500 shrink-0">Tra xe</dt>
               <dd className="tabular-nums text-right text-gray-800 font-medium">
                 {formatDateTimeVi(returnDate)}
               </dd>
@@ -476,7 +475,7 @@ function OrderSummaryPanel({
           <div className="space-y-2.5 text-[0.82rem]">
             <div className="flex justify-between gap-3 text-gray-600">
               <span>
-                {formatVndPerDay(vehicle.price)} × {days} ngày
+                {formatVndPerDay(vehicle.price)} x {days} ngay
               </span>
               <span className="tabular-nums font-medium text-gray-800">
                 {formatVnd(subtotal)}
@@ -485,7 +484,7 @@ function OrderSummaryPanel({
             <div className="flex justify-between gap-3 text-gray-600">
               <span className="inline-flex items-center gap-1.5">
                 <FaTag aria-hidden="true" className="opacity-70 text-[0.7rem]" />
-                Phí dịch vụ (5%)
+                Phi dich vu (5%)
               </span>
               <span className="tabular-nums font-medium text-gray-800">
                 {formatVnd(serviceFee)}
@@ -493,7 +492,7 @@ function OrderSummaryPanel({
             </div>
             {deliveryFee > 0 && (
               <div className="flex justify-between gap-3 text-gray-600">
-                <span>Giao tận nơi</span>
+                <span>Giao tan noi</span>
                 <span className="tabular-nums font-medium text-gray-800">
                   +{formatVnd(deliveryFee)}
                 </span>
@@ -502,7 +501,7 @@ function OrderSummaryPanel({
           </div>
 
           <div className="flex justify-between items-baseline pt-1 border-t border-dashed border-gray-200">
-            <span className="font-bold text-gray-900 text-[0.95rem]">Tổng cộng</span>
+            <span className="font-bold text-gray-900 text-[0.95rem]">Tá»•ng cá»™ng</span>
             <span className="tabular-nums text-xl font-bold text-primary">
               {formatVnd(total)}
             </span>
@@ -510,22 +509,22 @@ function OrderSummaryPanel({
 
           <div className="rounded-xl border border-primary/20 bg-primary-light/50 px-3.5 py-3 text-[0.72rem] text-gray-600 leading-relaxed">
             <ul className="list-disc pl-4 space-y-1.5 marker:text-primary">
-              <li>Miễn phí hủy trước 1 giờ so với giờ nhận xe (theo chính sách đơn cụ thể).</li>
-              <li>Thanh toán qua Stripe, thông tin thẻ được mã hóa.</li>
+              <li>Mien phi huy truoc 1 gio so voi gio nhan xe (theo chinh sach don cu the).</li>
+              <li>Thanh toan qua Stripe, thong tin the duoc ma hoa.</li>
               <li>
-                Điều kiện bảo hiểm và trách nhiệm theo hợp đồng thuê — SmartRent không cam kết mức bảo hiểm cụ thể trong chuyến đi.
+                Dieu kien bao hiem va trach nhiem theo hop dong thue - SmartRent khong cam ket muc bao hiem cu the trong chuyen di.
               </li>
             </ul>
           </div>
 
           <p className="text-[0.7rem] text-gray-400 leading-relaxed">
-            Bằng cách đặt xe, bạn đồng ý với{' '}
+            Bang cach dat xe, ban dong y voi{' '}
             <span className="underline text-primary">
-              Điều khoản sử dụng
+              Dieu khoan su dung
             </span>{' '}
-            và{' '}
+            va{' '}
             <span className="underline text-primary">
-              Chính sách bảo mật
+              Chinh sach bao mat
             </span>
             .
           </p>
@@ -535,7 +534,7 @@ function OrderSummaryPanel({
   );
 }
 
-// ─── Main Checkout page ───────────────────────────────────────────────────────
+// â”€â”€â”€ Main Checkout page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Checkout = () => {
   const { carId } = useParams();
   const navigate = useNavigate();
@@ -569,17 +568,17 @@ const Checkout = () => {
 
   const fetchVehicle = useCallback(async () => {
     if (!carId) {
-      setVehError('Không tìm thấy thông tin xe.');
+      setVehError('Khong tim thay thong tin xe.');
       setLoadVeh(false);
       return;
     }
     setLoadVeh(true);
     try {
       const v = await vehicleService.getById(carId);
-      if (!v) throw new Error('Xe không tồn tại');
+      if (!v) throw new Error('Xe khong ton tai');
       setVehicle(v);
     } catch {
-      setVehError('Không thể tải thông tin xe. Vui lòng thử lại.');
+      setVehError('Khong the tai thong tin xe. Vui long thu lai.');
     } finally {
       setLoadVeh(false);
     }
@@ -632,7 +631,7 @@ const Checkout = () => {
   const total = subtotal + serviceFee + deliveryFee;
 
   const priceLine = useMemo(() => {
-    if (!vehicle?.price) return '—';
+    if (!vehicle?.price) return '--';
     return formatVndPerDay(vehicle.price);
   }, [vehicle]);
 
@@ -670,27 +669,27 @@ const Checkout = () => {
         );
       }
 
-      const booking = await bookingService.createBooking({
-        vehicle_id: vehicle._id || vehicle.id,
-        showroom_id: vehicle.addedBy,
-        start_date: pickup.toISOString(),
-        end_date: ret.toISOString(),
-        total_price: total,
-      });
-      const bId = booking?._id || booking?.id || booking;
+      const { booking, bookingId: nextBookingId, clientSecret: secret } =
+        await bookingService.createBookingAndPaymentSession({
+          vehicle_id: vehicle._id || vehicle.id,
+          showroom_id: vehicle.addedBy,
+          start_date: pickup.toISOString(),
+          end_date: ret.toISOString(),
+          total_price: total,
+        });
+      const bId = nextBookingId || booking?._id || booking?.id || booking;
       setBookingId(bId);
 
-      const paymentData = await paymentService.createPayment({
-        bookingId: bId,
-        amount: Number(booking?.total_price || total),
-      });
-      const secret = paymentData?.client_secret || paymentData?.clientSecret;
 
-      if (!secret) throw new Error('Không nhận được thông tin thanh toán từ server.');
+
+
+
+
+      if (!secret) throw new Error('Khong nhan duoc thong tin thanh toan tu server.');
       setClientSecret(secret);
       setStep(2);
     } catch (err) {
-      setPrepError(err?.response?.data?.message || err?.message || 'Đã có lỗi xảy ra.');
+      setPrepError(err?.response?.data?.message || err?.message || 'Da co loi xay ra.');
     } finally {
       setPreparingPay(false);
     }
@@ -700,7 +699,7 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center gap-3 text-gray-500">
         <FaSpinner aria-hidden="true" className="animate-spin text-primary text-xl" />
-        <span>Đang tải thông tin xe…</span>
+        <span>Dang tai thong tin xe...</span>
       </div>
     );
   }
@@ -709,9 +708,9 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4 text-gray-500 px-5">
         <FaExclamationCircle aria-hidden="true" className="text-red-500 text-4xl" />
-        <p className="text-center text-red-600">{vehicleError || 'Không tìm thấy xe.'}</p>
+        <p className="text-center text-red-600">{vehicleError || 'Khong tim thay xe.'}</p>
         <button type="button" className="btn-primary" onClick={() => navigate('/')}>
-          Về trang chủ
+          Ve trang chu
         </button>
       </div>
     );
@@ -735,7 +734,7 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-5">
       <div className="max-w-[1100px] mx-auto">
-        {/* Step indicator — gọn, không lấn layout mockup */}
+        {/* Step indicator - gon, khong lan layout mockup */}
         <div className="mb-8 flex flex-col items-center gap-2">
           <div className="flex items-center justify-center gap-2">
             {[1, 2].map((s, i) => (
@@ -757,7 +756,7 @@ const Checkout = () => {
             ))}
           </div>
           <p className="text-[0.75rem] text-gray-500">
-            {step === 1 ? 'Thông tin đặt xe' : 'Thanh toán'}
+            {step === 1 ? 'Thong tin dat xe' : 'Thanh toan'}
           </p>
         </div>
 
@@ -770,11 +769,11 @@ const Checkout = () => {
                     <FaCar aria-hidden="true" className="text-xl" />
                   </span>
                   <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
-                    Thông tin đặt xe
+                    Thong tin dat xe
                   </h2>
                 </div>
 
-                {/* Vehicle — viền nhạt theo theme */}
+                {/* Vehicle - vien nhat theo theme */}
                 <div className="rounded-xl border-2 border-primary/25 bg-primary-light/35 p-4 sm:p-5 mb-8">
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
                     <div className="shrink-0 mx-auto sm:mx-0">
@@ -796,7 +795,7 @@ const Checkout = () => {
                       <StarRow rating={vehicle.rating} />
                       <div className="flex flex-wrap gap-2 mt-1">
                         <span className="inline-flex items-center rounded-full border border-white/80 bg-white/90 px-2.5 py-0.5 text-[0.72rem] font-medium text-gray-700 shadow-sm">
-                          {vehicle.seats} chỗ
+                          {vehicle.seats} cho
                         </span>
                         <span className="inline-flex items-center rounded-full border border-white/80 bg-white/90 px-2.5 py-0.5 text-[0.72rem] font-medium text-gray-700 shadow-sm">
                           {vehicle.transmission}
@@ -821,18 +820,18 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Thời gian thuê</p>
+                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Thoi gian thue</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                   <DateTimeField
                     id="pickup-date"
-                    label="Thời gian nhận xe"
+                    label="Thoi gian nhan xe"
                     value={pickupDate}
                     minValue={minPickupDateTime}
                     onChange={setPickupDate}
                   />
                   <DateTimeField
                     id="return-date"
-                    label="Thời gian trả xe"
+                    label="Thoi gian tra xe"
                     value={returnDate}
                     minValue={pickupDate}
                     onChange={setReturnDate}
@@ -840,15 +839,15 @@ const Checkout = () => {
                 </div>
                 <div className="mb-8">
                   <span className="inline-flex items-center rounded-full bg-primary-light px-3 py-1 text-[0.75rem] font-semibold text-primary border border-primary/20">
-                    Tổng thuê: {days} ngày
+                    Tong thue: {days} ngay
                   </span>
                 </div>
 
-                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Hình thức nhận xe</p>
+                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Hinh thuc nhan xe</p>
                 <div
                   className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8"
                   role="radiogroup"
-                  aria-label="Hình thức nhận xe"
+                  aria-label="Hinh thuc nhan xe"
                 >
                   <button
                     type="button"
@@ -861,8 +860,8 @@ const Checkout = () => {
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <p className="font-bold text-gray-900 text-[0.9rem]">Tự đến lấy</p>
-                    <p className="text-primary font-semibold text-[0.85rem] mt-1">Miễn phí</p>
+                    <p className="font-bold text-gray-900 text-[0.9rem]">Tu den lay</p>
+                    <p className="text-primary font-semibold text-[0.85rem] mt-1">Mien phi</p>
                   </button>
                   <button
                     type="button"
@@ -875,7 +874,7 @@ const Checkout = () => {
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <p className="font-bold text-gray-900 text-[0.9rem]">Giao tận nơi</p>
+                    <p className="font-bold text-gray-900 text-[0.9rem]">Giao tan noi</p>
                     <p className="text-gray-600 font-semibold text-[0.85rem] mt-1">
                       + {formatVnd(DELIVERY_FEE_VND)}
                     </p>
@@ -899,11 +898,11 @@ const Checkout = () => {
                 >
                   {preparingPay ? (
                     <>
-                      <FaSpinner aria-hidden="true" className="animate-spin" /> Đang chuẩn bị…
+                      <FaSpinner aria-hidden="true" className="animate-spin" /> Dang chuan bi...
                     </>
                   ) : (
                     <>
-                      Tiếp tục
+                      Tiep tuc
                       <FaArrowRight aria-hidden="true" />
                     </>
                   )}
@@ -913,9 +912,9 @@ const Checkout = () => {
 
             {step === 2 && clientSecret && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Thanh toán qua Stripe</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Thanh toan qua Stripe</h2>
                 <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                  Thông tin thẻ được bảo mật bởi Stripe — chúng tôi không lưu dữ liệu thẻ của bạn.
+                  Thong tin the duoc bao mat boi Stripe - chung toi khong luu du lieu the cua ban.
                 </p>
 
                 {payError && (
@@ -944,7 +943,7 @@ const Checkout = () => {
                     setClientSecret('');
                   }}
                 >
-                  ← Quay lại chỉnh thông tin
+                  Quay lai chinh thong tin
                 </button>
               </div>
             )}
@@ -958,3 +957,4 @@ const Checkout = () => {
 };
 
 export default Checkout;
+
