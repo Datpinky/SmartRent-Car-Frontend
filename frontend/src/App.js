@@ -27,6 +27,7 @@ import MapPage from './pages/renter/Map/MapPage';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
 import PendingPayments from './pages/renter/PendingPayments/PendingPayments';
 import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
+import PendingShowroomProcessing from './pages/renter/PendingShowroomProcessing/PendingShowroomProcessing';
 import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import Profile from './pages/renter/Profile/Profile';
 import RetryPayment from './pages/renter/RetryPayment/RetryPayment';
@@ -115,6 +116,7 @@ const App = () => {
           <Route path="/renter/dashboard" element={<RenterPage><RenterDashboard /></RenterPage>} />
           <Route path="/renter/profile" element={<RenterPage><Profile /></RenterPage>} />
           <Route path="/renter/pending-payments" element={<RenterPage><PendingPayments /></RenterPage>} />
+          <Route path="/renter/pending-showroom-processing" element={<RenterPage><PendingShowroomProcessing /></RenterPage>} />
           <Route path="/renter/pending-pickups" element={<RenterPage><PendingPickups /></RenterPage>} />
           <Route path="/renter/bookings" element={<RenterPage><MyBookings /></RenterPage>} />
           <Route path="/renter/ai-reports" element={<RenterPage><AIReports /></RenterPage>} />

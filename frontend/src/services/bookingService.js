@@ -206,6 +206,15 @@ export const bookingService = {
     return extractBookingList(res.data);
   },
 
+  async getCurrentRoleBookingsDetailed() {
+    const bookings = await this.getCurrentRoleBookings();
+    const detailResults = await Promise.allSettled(bookings.map((booking) => enrichBooking(booking)));
+
+    return detailResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
+  },
+
   async getMyBookingsDetailed(filters = {}) {
     const bookings = await this.getMyBookings(filters);
     const detailResults = await Promise.allSettled(bookings.map((booking) => enrichBooking(booking)));

@@ -8,7 +8,8 @@ const parseDate = (value) => {
 export const UPCOMING_STATUSES = ['pending', 'confirmed', 'waiting_payment', 'paid', 'waiting_handover'];
 export const ACTIVE_STATUSES = ['handed_over', 'in_use', 'waiting_return_confirmation'];
 export const AWAITING_PAYMENT_STATUSES = ['pending', 'waiting_payment'];
-export const AWAITING_PICKUP_STATUSES = ['confirmed', 'paid', 'waiting_handover'];
+export const SHOWROOM_PROCESSING_STATUSES = ['confirmed', 'paid'];
+export const AWAITING_PICKUP_STATUSES = ['waiting_handover'];
 export const CANCELLABLE_STATUSES = ['pending', 'confirmed', 'waiting_payment', 'paid', 'waiting_handover'];
 export const RENTAL_FLOW_STATUSES = ['waiting_handover', 'handed_over', 'in_use', 'waiting_return_confirmation', 'completed'];
 
@@ -40,10 +41,18 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
     && AWAITING_PAYMENT_STATUSES.includes(status)
     && !hasSuccessfulPayment
     && paymentStatus !== 'refunded';
+  const isAwaitingShowroomProcessing =
+    !isCancelled
+    && !isCompleted
+    && !isAwaitingPayment
+    && paymentStatus !== 'refunded'
+    && hasSuccessfulPayment
+    && SHOWROOM_PROCESSING_STATUSES.includes(status);
   const isAwaitingPickup =
     !isCancelled
     && !isCompleted
     && !isAwaitingPayment
+    && !isAwaitingShowroomProcessing
     && paymentStatus !== 'refunded'
     && hasSuccessfulPayment
     && AWAITING_PICKUP_STATUSES.includes(status);
@@ -94,14 +103,14 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
       ? 'Da qua han tra xe. Ban co the mo giao dien tra xe ngay.'
       : 'Da den lich thue. Ban co the mo quy trinh nhan / tra xe.'
     : '';
-  const pickupConfirmationHint = !isAwaitingPickup
+  const pickupConfirmationHint = !(isAwaitingPickup || isAwaitingShowroomProcessing)
     ? ''
     : requiresRetryPayment
       ? 'Thanh toan truoc do chua thanh cong. Vui long thanh toan lai de tiep tuc quy trinh nhan xe.'
       : !hasSuccessfulPayment
         ? 'Booking dang cho thanh toan. Sau khi payment thanh cong, showroom moi co the ban giao xe.'
-        : status !== 'waiting_handover'
-          ? 'Dang cho showroom ban giao xe. Nut xac nhan se mo khi booking chuyen sang Cho ban giao.'
+        : isAwaitingShowroomProcessing
+          ? 'Showroom dang xu ly booking va chuan bi ban giao xe. Nut xac nhan se mo khi booking chuyen sang Cho ban giao.'
           : !pickupReadyByTime && startAt
             ? `Nut xac nhan se mo tu ${startAt.toLocaleString('vi-VN')}.`
             : 'Sau khi xac nhan da nhan xe, booking se duoc chuyen sang Chuyen di cua toi.';
@@ -117,6 +126,7 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
     hasSuccessfulPayment,
     isActive,
     isAwaitingPayment,
+    isAwaitingShowroomProcessing,
     isAwaitingPickup,
     isCancelled,
     isCompleted,

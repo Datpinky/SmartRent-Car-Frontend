@@ -11,8 +11,10 @@ import {
   FaArrowLeft,
   FaCheckCircle,
   FaCreditCard,
+  FaEnvelope,
   FaMoneyBillWave,
   FaSpinner,
+  FaSyncAlt,
 } from 'react-icons/fa';
 import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
@@ -31,7 +33,22 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY, {
   },
 });
 
-const StripeRetryForm = ({ bookingId, onError }) => {
+const buildRetrySessionError = (message = '') => {
+  const normalized = String(message || '').toLowerCase();
+  const looksExpiredSession =
+    normalized.includes('client secret')
+    || normalized.includes('payment intent')
+    || normalized.includes('elements session')
+    || normalized.includes('invalid')
+    || normalized.includes('expired')
+    || normalized.includes('loaderror');
+
+  return looksExpiredSession
+    ? 'Phien thanh toan hien tai khong con hop le tren Stripe. Vui long tao lai phien thanh toan moi.'
+    : 'Cong thanh toan Stripe khong tai duoc day du. Vui long tao lai phien thanh toan va thu lai.';
+};
+
+const StripeRetryForm = ({ bookingId, onError, onSessionBroken }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +84,11 @@ const StripeRetryForm = ({ bookingId, onError }) => {
     }
   };
 
+  const handleLoadError = (event) => {
+    setPaymentElementReady(false);
+    onSessionBroken(buildRetrySessionError(event?.error?.message || event?.message || ''));
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <div
@@ -85,6 +107,7 @@ const StripeRetryForm = ({ bookingId, onError }) => {
           }}
           onLoaderStart={() => setPaymentElementReady(false)}
           onReady={() => setPaymentElementReady(true)}
+          onLoaderror={handleLoadError}
         />
       </div>
 
@@ -117,6 +140,7 @@ const RetryPayment = () => {
   const [preparing, setPreparing] = useState(false);
   const [clientSecret, setClientSecret] = useState('');
   const [error, setError] = useState('');
+  const [needsNewSession, setNeedsNewSession] = useState(false);
 
   const autoPreparedRef = useRef('');
 
@@ -149,6 +173,14 @@ const RetryPayment = () => {
     loadBooking();
   }, [loadBooking]);
 
+  const handleRefreshBooking = useCallback(async () => {
+    autoPreparedRef.current = '';
+    setClientSecret('');
+    setNeedsNewSession(false);
+    setError('');
+    await loadBooking();
+  }, [loadBooking]);
+
   const prepareRetryPayment = useCallback(async (targetBooking = renterBooking) => {
     if (!targetBooking?.id) {
       setError('Khong tim thay booking de tao lai phien thanh toan.');
@@ -157,6 +189,7 @@ const RetryPayment = () => {
 
     setPreparing(true);
     setError('');
+    setNeedsNewSession(false);
 
     try {
       const paymentData = await paymentService.createPayment({
@@ -172,6 +205,7 @@ const RetryPayment = () => {
       setClientSecret(secret);
     } catch (err) {
       setClientSecret('');
+      setNeedsNewSession(true);
       setError(err.message || 'Khong the tao lai phien thanh toan cho booking nay.');
     } finally {
       setPreparing(false);
@@ -212,6 +246,10 @@ const RetryPayment = () => {
         ? 'Booking da bi huy, khong the thanh toan lai.'
         : 'Booking nay khong o trang thai cho phep thanh toan lai.';
 
+  const sessionRecoveryHint = needsNewSession
+    ? 'Stripe khong the dung phien hien tai. Ban can tao lai phien thanh toan moi cho booking nay.'
+    : 'Chua khoi tao duoc phien thanh toan moi. Ban co the thu tao lai phien Stripe cho booking nay.';
+
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', color: '#6b7280', gap: 10 }}>
@@ -227,10 +265,10 @@ const RetryPayment = () => {
         <div className="page-header" style={{ marginBottom: 20 }}>
           <div>
             <h1 className="page-title">Thanh toan lai</h1>
-            <p className="page-subtitle">Mo lai phien Stripe cho booking dang cho thanh toan</p>
+            <p className="page-subtitle">Mo lai phien Stripe cho booking dang cho thanh toan hoac can retry</p>
           </div>
-          <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-pickups')}>
-            <FaArrowLeft /> Cho nhan xe
+          <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-payments')}>
+            <FaArrowLeft /> Cho thanh toan
           </button>
         </div>
 
@@ -293,6 +331,30 @@ const RetryPayment = () => {
                   </div>
                 ))}
               </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                }}
+              >
+                <div style={{ fontWeight: 800, color: '#111827', marginBottom: 8 }}>{renterBooking.statusHeadline}</div>
+                <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.65, marginBottom: 8 }}>
+                  {renterBooking.waitingForLabel}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#334155', fontWeight: 700, marginBottom: 6 }}>
+                  {renterBooking.waitingOwnerLabel}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>
+                  Buoc tiep theo: {renterBooking.nextStepLabel}
+                </div>
+                <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#0f766e', lineHeight: 1.6 }}>
+                  Viec ban nen lam: {renterBooking.renterActionHint}
+                </div>
+              </div>
             </div>
 
             <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', padding: 22 }}>
@@ -303,7 +365,7 @@ const RetryPayment = () => {
                 <div>
                   <div style={{ fontWeight: 800, color: '#111827' }}>Phien thanh toan Stripe</div>
                   <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
-                    FE se mo lai phien thanh toan cho booking dang cho xu ly
+                    FE se mo lai phien thanh toan cho chinh booking nay. Neu Stripe bao phien khong hop le, ban co the tao lai phien moi ngay tai day.
                   </div>
                 </div>
               </div>
@@ -337,12 +399,17 @@ const RetryPayment = () => {
                     }}
                   >
                     <FaCheckCircle style={{ marginRight: 6 }} />
-                    Da san sang mo lai cong thanh toan cho booking nay.
+                    Da san sang mo lai cong thanh toan cho booking nay. Neu cong Stripe khong tai duoc, FE se dua ban ve thao tac tao lai phien moi.
                   </div>
                   <Elements stripe={stripePromise} options={stripeOptions} key={clientSecret}>
                     <StripeRetryForm
                       bookingId={renterBooking.id}
                       onError={setError}
+                      onSessionBroken={(message) => {
+                        setClientSecret('');
+                        setNeedsNewSession(true);
+                        setError(message);
+                      }}
                     />
                   </Elements>
                 </>
@@ -353,13 +420,13 @@ const RetryPayment = () => {
                       background: '#fffbeb',
                       border: '1px solid #fcd34d',
                       color: '#92400e',
-                      borderRadius: 12,
-                      padding: '12px 14px',
-                      fontSize: '0.82rem',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Chua khoi tao duoc phien thanh toan moi. Ban co the thu tao lai phien Stripe cho booking nay.
+                    borderRadius: 12,
+                    padding: '12px 14px',
+                    fontSize: '0.82rem',
+                    lineHeight: 1.6,
+                  }}
+                >
+                    {sessionRecoveryHint}
                   </div>
                   <button
                     className="btn-primary"
@@ -381,6 +448,17 @@ const RetryPayment = () => {
               )}
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+                <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-payments')}>
+                  <FaArrowLeft /> Quay ve Cho thanh toan
+                </button>
+                <button className="renter-btn-soft" onClick={handleRefreshBooking} disabled={loading || preparing}>
+                  <FaSyncAlt /> Kiem tra lai trang thai booking
+                </button>
+                {renterBooking.showroomEmail && (
+                  <a className="renter-btn-soft" href={`mailto:${renterBooking.showroomEmail}`}>
+                    <FaEnvelope /> Lien he showroom
+                  </a>
+                )}
                 <button className="renter-btn-soft" onClick={() => navigate(`/renter/payment-result?bookingId=${renterBooking.id}&status=pending`)}>
                   Xem payment result
                 </button>

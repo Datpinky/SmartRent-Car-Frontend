@@ -87,6 +87,15 @@ if (!MENUS.renter.some((item) => item.key === 'pending-payments')) {
   });
 }
 
+if (!MENUS.renter.some((item) => item.key === 'pending-showroom-processing')) {
+  MENUS.renter.splice(2, 0, {
+    key: 'pending-showroom-processing',
+    label: 'Cho showroom xu ly',
+    icon: <FaStore aria-hidden="true" />,
+    path: '/renter/pending-showroom-processing',
+  });
+}
+
 const ROLE_CONFIG = {
   admin: { label: 'Quản trị viên', color: '#6d28d9', bg: '#f5f3ff' },
   showroom: { label: 'Showroom', color: '#00b14f', bg: '#f0fdf4' },

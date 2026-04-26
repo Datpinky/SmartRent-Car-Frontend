@@ -315,7 +315,7 @@ const CarDetail = () => {
     setReviewAccessLoading(true);
     try {
       const [myBookings, ownReviews] = await Promise.all([
-        bookingService.getMyBookings(),
+        bookingService.getCurrentRoleBookings(),
         reviewService.getMineByVehicleId(id),
       ]);
       const eligibleBookings = (myBookings || []).filter(

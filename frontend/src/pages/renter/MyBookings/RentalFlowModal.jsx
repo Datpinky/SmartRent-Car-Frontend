@@ -728,9 +728,26 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                     <FaRobot />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 800, color: '#111827' }}>Thiệt hại phát sinh</div>
+                    <div style={{ fontWeight: 800, color: '#111827' }}>Bao cao AI thiet hai phat sinh</div>
                     <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                      FE sử dụng chính bộ ảnh trả xe này để tạo báo cáo AI, không cần upload lại ở màn hình khác.
+                      FE renter dung bo anh nhan / tra xe da luu trong trinh duyet nay de tao bao cao AI.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        borderRadius: 999,
+                        padding: '6px 10px',
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        color: '#1d4ed8',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      Luu cuc bo tren trinh duyet nay
                     </div>
                   </div>
                 </div>
@@ -758,8 +775,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   </>
                 ) : (
                   <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.65 }}>
-                    Báo cáo thiệt hại sẽ được tạo ngay sau khi bạn gửi yêu cầu trả xe. Hệ thống hiện dùng ảnh nhận xe đầu tiên
-                    và ảnh trả xe đầu tiên để đối chiếu.
+                    Bao cao AI se duoc tao sau khi ban gui yeu cau tra xe. Du lieu nay hien duoc FE renter luu local,
+                    vi vay doi may, doi trinh duyet hoac xoa local data co the lam mat report.
                   </div>
                 )}
               </div>
@@ -1076,7 +1093,10 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
           <FileUpload
             key={`${saveKey}-${workflow.updatedAt || 'empty'}-${booking?.id || 'booking'}`}
             label="Ảnh đối chiếu"
-            hint={options.uploadHint || 'Ảnh này được upload lên storage, sau đó frontend lưu link theo booking trong localStorage.'}
+            hint={
+              options.uploadHint ||
+              'Anh nay duoc upload len storage. Workflow renter van dang luu local tren trinh duyet hien tai, nen doi trinh duyet hoac xoa local data co the lam mat lich su doi chieu.'
+            }
             multiple
             autoUpload={false}
             onFiles={filesSetter}
@@ -1142,8 +1162,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               lineHeight: 1.6,
             }}
           >
-            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va gui trang thai tra xe cho showroom
-            theo dung trang thai booking hien co tren he thong.
+            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va gui trang thai tra xe cho showroom.
+            Bien ban renter va bao cao AI trong modal nay hien van duoc FE luu local tren trinh duyet hien tai.
           </div>
 
           {false && (
