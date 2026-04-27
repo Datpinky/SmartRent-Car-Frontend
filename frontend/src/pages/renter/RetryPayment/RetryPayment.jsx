@@ -44,8 +44,8 @@ const buildRetrySessionError = (message = '') => {
     || normalized.includes('loaderror');
 
   return looksExpiredSession
-    ? 'Phien thanh toan hien tai khong con hop le tren Stripe. Vui long tao lai phien thanh toan moi.'
-    : 'Cong thanh toan Stripe khong tai duoc day du. Vui long tao lai phien thanh toan va thu lai.';
+    ? 'Phiên thanh toán hiện tại không còn hợp lệ trên Stripe. Vui lòng tạo lại phiên thanh toán mới.'
+    : 'Cổng thanh toán Stripe không tải được đầy đủ. Vui lòng tạo lại phiên thanh toán và thử lại.';
 };
 
 const StripeRetryForm = ({ bookingId, onError, onSessionBroken }) => {
@@ -60,7 +60,7 @@ const StripeRetryForm = ({ bookingId, onError, onSessionBroken }) => {
 
     const paymentElement = elements.getElement(PaymentElement);
     if (!paymentElement || !paymentElementReady) {
-      onError('Cong thanh toan chua san sang. Vui long doi trong giay lat roi thu lai.');
+      onError('Cổng thanh toán chưa sẵn sàng. Vui lòng đợi trong giây lát rồi thử lại.');
       return;
     }
 
@@ -75,11 +75,11 @@ const StripeRetryForm = ({ bookingId, onError, onSessionBroken }) => {
       });
 
       if (error) {
-        onError(error.message || 'Khong the tiep tuc thanh toan luc nay.');
+        onError(error.message || 'Không thể tiếp tục thanh toán lúc này.');
         setSubmitting(false);
       }
     } catch (error) {
-      onError(error?.message || 'Khong the tiep tuc thanh toan luc nay.');
+      onError(error?.message || 'Không thể tiếp tục thanh toán lúc này.');
       setSubmitting(false);
     }
   };
@@ -119,11 +119,11 @@ const StripeRetryForm = ({ bookingId, onError, onSessionBroken }) => {
       >
         {submitting ? (
           <>
-            <FaSpinner className="animate-spin" /> Dang xu ly...
+            <FaSpinner className="animate-spin" /> Đang xử lý...
           </>
         ) : (
           <>
-            <FaCreditCard /> {paymentElementReady ? 'Thanh toan lai ngay' : 'Dang tai cong thanh toan...'}
+            <FaCreditCard /> {paymentElementReady ? 'Thanh toán lại ngay' : 'Đang tải cổng thanh toán...'}
           </>
         )}
       </button>
@@ -151,7 +151,7 @@ const RetryPayment = () => {
 
   const loadBooking = useCallback(async () => {
     if (!bookingId) {
-      setError('Khong tim thay booking de thanh toan lai.');
+      setError('Không tìm thấy booking để thanh toán lại.');
       setLoading(false);
       return;
     }
@@ -163,7 +163,7 @@ const RetryPayment = () => {
       setError('');
     } catch (err) {
       setBooking(null);
-      setError(err.message || 'Khong the tai thong tin booking.');
+      setError(err.message || 'Không thể tải thông tin booking.');
     } finally {
       setLoading(false);
     }
@@ -183,7 +183,7 @@ const RetryPayment = () => {
 
   const prepareRetryPayment = useCallback(async (targetBooking = renterBooking) => {
     if (!targetBooking?.id) {
-      setError('Khong tim thay booking de tao lai phien thanh toan.');
+      setError('Không tìm thấy booking để tạo lại phiên thanh toán.');
       return;
     }
 
@@ -199,14 +199,14 @@ const RetryPayment = () => {
       const secret = paymentData?.client_secret || paymentData?.clientSecret || '';
 
       if (!secret) {
-        throw new Error('Khong nhan duoc client secret de tiep tuc thanh toan.');
+        throw new Error('Không nhận được client secret để tiếp tục thanh toán.');
       }
 
       setClientSecret(secret);
     } catch (err) {
       setClientSecret('');
       setNeedsNewSession(true);
-      setError(err.message || 'Khong the tao lai phien thanh toan cho booking nay.');
+      setError(err.message || 'Không thể tạo lại phiên thanh toán cho booking này.');
     } finally {
       setPreparing(false);
     }
@@ -241,20 +241,20 @@ const RetryPayment = () => {
   const retryBlockedMessage = !renterBooking
     ? ''
     : renterBooking.paymentStatus === 'successful'
-      ? 'Booking nay da thanh toan thanh cong, khong can tao lai phien thanh toan.'
+      ? 'Booking này đã thanh toán thành công, không cần tạo lại phiên thanh toán.'
       : renterBooking.status === 'cancelled'
-        ? 'Booking da bi huy, khong the thanh toan lai.'
-        : 'Booking nay khong o trang thai cho phep thanh toan lai.';
+        ? 'Booking đã bị hủy, không thể thanh toán lại.'
+        : 'Booking này không ở trạng thái cho phép thanh toán lại.';
 
   const sessionRecoveryHint = needsNewSession
-    ? 'Stripe khong the dung phien hien tai. Ban can tao lai phien thanh toan moi cho booking nay.'
-    : 'Chua khoi tao duoc phien thanh toan moi. Ban co the thu tao lai phien Stripe cho booking nay.';
+    ? 'Stripe không thể dùng phiên hiện tại. Bạn cần tạo lại phiên thanh toán mới cho booking này.'
+    : 'Chưa khởi tạo được phiên thanh toán mới. Bạn có thể thử tạo lại phiên Stripe cho booking này.';
 
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', color: '#6b7280', gap: 10 }}>
         <FaSpinner className="animate-spin" />
-        Dang tai thong tin thanh toan...
+        Đang tải thông tin thanh toán...
       </div>
     );
   }
@@ -264,11 +264,11 @@ const RetryPayment = () => {
       <div style={{ width: '100%', maxWidth: 760 }}>
         <div className="page-header" style={{ marginBottom: 20 }}>
           <div>
-            <h1 className="page-title">Thanh toan lai</h1>
-            <p className="page-subtitle">Mo lai phien Stripe cho booking dang cho thanh toan hoac can retry</p>
+            <h1 className="page-title">Thanh toán lại</h1>
+            <p className="page-subtitle">Mở lại phiên Stripe cho booking đang chờ thanh toán hoặc cần retry</p>
           </div>
           <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-payments')}>
-            <FaArrowLeft /> Cho thanh toan
+            <FaArrowLeft /> Chờ thanh toán
           </button>
         </div>
 
@@ -290,7 +290,7 @@ const RetryPayment = () => {
 
         {!renterBooking ? (
           <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', padding: 24 }}>
-            Khong tim thay booking de thanh toan lai.
+            Không tìm thấy booking để thanh toán lại.
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 18 }}>
@@ -304,17 +304,17 @@ const RetryPayment = () => {
                   <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#00b14f' }}>
                     {formatMoney(renterBooking.totalPrice)}
                   </div>
-                  <div style={{ marginTop: 6, fontSize: '0.78rem', color: '#6b7280' }}>Ma booking: {renterBooking.id}</div>
+                  <div style={{ marginTop: 6, fontSize: '0.78rem', color: '#6b7280' }}>Mã booking: {renterBooking.id}</div>
                 </div>
               </div>
 
               <div style={{ marginTop: 18, display: 'grid', gap: 10 }}>
                 {[
-                  ['Trang thai booking', renterBooking.status],
-                  ['Trang thai thanh toan', PAYMENT_LABELS[renterBooking.paymentStatus] || renterBooking.paymentStatus],
-                  ['Thoi gian nhan xe', formatDateTime(renterBooking.startDate)],
-                  ['Thoi gian tra xe', formatDateTime(renterBooking.endDate)],
-                  ['Phuong thuc', renterBooking.paymentMethod],
+                  ['Trạng thái booking', renterBooking.status],
+                  ['Trạng thái thanh toán', PAYMENT_LABELS[renterBooking.paymentStatus] || renterBooking.paymentStatus],
+                  ['Thời gian nhận xe', formatDateTime(renterBooking.startDate)],
+                  ['Thời gian trả xe', formatDateTime(renterBooking.endDate)],
+                  ['Phương thức', renterBooking.paymentMethod],
                 ].map(([label, value]) => (
                   <div
                     key={label}
@@ -349,10 +349,10 @@ const RetryPayment = () => {
                   {renterBooking.waitingOwnerLabel}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>
-                  Buoc tiep theo: {renterBooking.nextStepLabel}
+                  Bước tiếp theo: {renterBooking.nextStepLabel}
                 </div>
                 <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#0f766e', lineHeight: 1.6 }}>
-                  Viec ban nen lam: {renterBooking.renterActionHint}
+                  Việc bạn nên làm: {renterBooking.renterActionHint}
                 </div>
               </div>
             </div>
@@ -363,9 +363,9 @@ const RetryPayment = () => {
                   <FaMoneyBillWave />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>Phien thanh toan Stripe</div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>Phiên thanh toán Stripe</div>
                   <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 2 }}>
-                    FE se mo lai phien thanh toan cho chinh booking nay. Neu Stripe bao phien khong hop le, ban co the tao lai phien moi ngay tai day.
+                    FE sẽ mở lại phiên thanh toán cho chính booking này. Nếu Stripe báo phiên không hợp lệ, bạn có thể tạo lại phiên mới ngay tại đây.
                   </div>
                 </div>
               </div>
@@ -399,7 +399,7 @@ const RetryPayment = () => {
                     }}
                   >
                     <FaCheckCircle style={{ marginRight: 6 }} />
-                    Da san sang mo lai cong thanh toan cho booking nay. Neu cong Stripe khong tai duoc, FE se dua ban ve thao tac tao lai phien moi.
+                    Đã sẵn sàng mở lại cổng thanh toán cho booking này. Nếu cổng Stripe không tải được, FE sẽ đưa bạn về thao tác tạo lại phiên mới.
                   </div>
                   <Elements stripe={stripePromise} options={stripeOptions} key={clientSecret}>
                     <StripeRetryForm
@@ -420,12 +420,12 @@ const RetryPayment = () => {
                       background: '#fffbeb',
                       border: '1px solid #fcd34d',
                       color: '#92400e',
-                    borderRadius: 12,
-                    padding: '12px 14px',
-                    fontSize: '0.82rem',
-                    lineHeight: 1.6,
-                  }}
-                >
+                      borderRadius: 12,
+                      padding: '12px 14px',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.6,
+                    }}
+                  >
                     {sessionRecoveryHint}
                   </div>
                   <button
@@ -436,11 +436,11 @@ const RetryPayment = () => {
                   >
                     {preparing ? (
                       <>
-                        <FaSpinner className="animate-spin" /> Dang tao lai phien thanh toan...
+                        <FaSpinner className="animate-spin" /> Đang tạo lại phiên thanh toán...
                       </>
                     ) : (
                       <>
-                        <FaCreditCard /> Tao lai phien thanh toan
+                        <FaCreditCard /> Tạo lại phiên thanh toán
                       </>
                     )}
                   </button>
@@ -449,21 +449,21 @@ const RetryPayment = () => {
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
                 <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-payments')}>
-                  <FaArrowLeft /> Quay ve Cho thanh toan
+                  <FaArrowLeft /> Quay về Chờ thanh toán
                 </button>
                 <button className="renter-btn-soft" onClick={handleRefreshBooking} disabled={loading || preparing}>
-                  <FaSyncAlt /> Kiem tra lai trang thai booking
+                  <FaSyncAlt /> Kiểm tra lại trạng thái booking
                 </button>
                 {renterBooking.showroomEmail && (
                   <a className="renter-btn-soft" href={`mailto:${renterBooking.showroomEmail}`}>
-                    <FaEnvelope /> Lien he showroom
+                    <FaEnvelope /> Liên hệ showroom
                   </a>
                 )}
                 <button className="renter-btn-soft" onClick={() => navigate(`/renter/payment-result?bookingId=${renterBooking.id}&status=pending`)}>
-                  Xem payment result
+                  Xem kết quả thanh toán
                 </button>
                 <button className="renter-btn-soft" onClick={() => navigate('/renter/transactions')}>
-                  Lich su giao dich
+                  Lịch sử giao dịch
                 </button>
               </div>
             </div>

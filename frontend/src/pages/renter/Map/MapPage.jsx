@@ -59,14 +59,14 @@ const MapPage = () => {
           setCars(mappedCars);
           setError(
             mappedCars.length === 0
-              ? 'Khong co xe nao co du lieu dia chi va toa do hop le de hien thi tren map.'
+              ? 'Không có xe nào có dữ liệu địa chỉ và tọa độ hợp lệ để hiển thị trên bản đồ.'
               : ''
           );
         }
       } catch (err) {
         if (!cancelled) {
           setCars([]);
-          setError(err.message || 'Khong the tai du lieu ban do tu backend.');
+          setError(err.message || 'Không thể tải dữ liệu bản đồ từ backend.');
         }
       } finally {
         if (!cancelled) {
@@ -96,16 +96,16 @@ const MapPage = () => {
         <div className="map-page-header-left">
           <h1 className="map-page-title">
             <span className="map-page-title-icon">Map</span>
-            Ban do xe cho thue
+            Bản đồ xe cho thuê
           </h1>
           <p className="map-page-subtitle">
-            Chi dung du lieu vehicle co san tu backend, khong goi them user_location hay route auth-only khac.
+            Chỉ dùng dữ liệu vehicle có sẵn từ backend, không gọi thêm user_location hay route auth-only khác.
           </p>
         </div>
 
         <div className="map-page-header-badges">
           <span className="map-badge map-badge--green">
-            {loading ? 'Dang tai...' : `${stats.total} xe`}
+            {loading ? 'Đang tải...' : `${stats.total} xe`}
           </span>
           <span className="map-badge map-badge--blue">
             {loading ? '...' : `${stats.verified} da xac minh`}
@@ -142,7 +142,7 @@ const MapPage = () => {
               color: '#6b7280',
             }}
           >
-            Dang tai du lieu vehicle tu backend...
+            Đang tải dữ liệu vehicle từ backend...
           </div>
         ) : (
           <MapView cars={cars} height="620px" />
@@ -156,7 +156,7 @@ const MapPage = () => {
         </div>
         <div className="map-tip-item">
           <span className="map-tip-icon">2</span>
-          <span>Trang nay khong goi `user_location` va khong dung route vehicle location auth-only de tranh lech contract.</span>
+          <span>Trang này không gọi `user_location` và không dùng route vehicle location auth-only để tránh lệch contract.</span>
         </div>
         <div className="map-tip-item">
           <span className="map-tip-icon">3</span>

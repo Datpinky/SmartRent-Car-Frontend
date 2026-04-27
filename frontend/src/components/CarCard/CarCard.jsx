@@ -104,7 +104,7 @@ const CarCard = ({ car, rentalSearch = null }) => {
   const carId = car.id || car._id;
   const imageUrl = useMemo(() => car.image || (Array.isArray(car.images) ? car.images[0] : ''), [car.image, car.images]);
   const locationText = car.address || car.pickupAddress || car.location || '';
-  const displayAddress = locationText || 'Dang cap nhat dia chi nhan xe';
+  const displayAddress = locationText || 'Xe chưa có vị trí';
   const ratingValue = Number(car.rating || 0);
   const reviewCount = Number(car.reviewCount ?? car.trips ?? 0);
   const fuelIcon =
@@ -198,9 +198,8 @@ const CarCard = ({ car, rentalSearch = null }) => {
 
         <button
           type="button"
-          className={`absolute right-3 top-3 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform hover:scale-110 ${
-            liked === true ? 'text-red-500' : liked === false ? 'text-gray-400' : 'text-gray-300'
-          } ${likeLoading ? 'cursor-wait opacity-50' : ''}`}
+          className={`absolute right-3 top-3 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform hover:scale-110 ${liked === true ? 'text-red-500' : liked === false ? 'text-gray-400' : 'text-gray-300'
+            } ${likeLoading ? 'cursor-wait opacity-50' : ''}`}
           onClick={handleLike}
           disabled={likeLoading}
           aria-label="Yêu thích"
@@ -259,9 +258,8 @@ const CarCard = ({ car, rentalSearch = null }) => {
           ].map(({ icon, label }, index, all) => (
             <div
               key={`${label}-${index}`}
-              className={`flex flex-1 flex-col items-center gap-[3px] text-center text-[0.72rem] font-medium text-gray-500 ${
-                index < all.length - 1 ? 'border-r border-gray-100' : ''
-              }`}
+              className={`flex flex-1 flex-col items-center gap-[3px] text-center text-[0.72rem] font-medium text-gray-500 ${index < all.length - 1 ? 'border-r border-gray-100' : ''
+                }`}
             >
               <span className="text-primary">{icon}</span>
               <span>{label}</span>

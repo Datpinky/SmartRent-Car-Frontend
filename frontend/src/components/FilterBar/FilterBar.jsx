@@ -4,24 +4,24 @@ import { FaCar, FaGasPump, FaMoneyBillWave } from 'react-icons/fa';
 import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const FILTERS = [
-  { id: 'all', label: 'Tat ca', icon: <MdFilterList />, hasPopup: false },
-  { id: 'seats', label: 'So cho', icon: <MdPeople />, hasPopup: true },
-  { id: 'brand', label: 'Hang xe', icon: <FaCar />, hasPopup: true },
-  { id: 'model', label: 'Mau xe', icon: <MdDirectionsCar />, hasPopup: true },
-  { id: 'category', label: 'Loai xe', icon: <MdDirectionsCar />, hasPopup: true },
-  { id: 'fuel', label: 'Nhien lieu', icon: <FaGasPump />, hasPopup: true },
-  { id: 'price', label: 'Gia', icon: <FaMoneyBillWave />, hasPopup: true },
+  { id: 'all', label: 'Tất cả', icon: <MdFilterList />, hasPopup: false },
+  { id: 'seats', label: 'Số chỗ', icon: <MdPeople />, hasPopup: true },
+  { id: 'brand', label: 'Hãng xe', icon: <FaCar />, hasPopup: true },
+  { id: 'model', label: 'Mẫu xe', icon: <MdDirectionsCar />, hasPopup: true },
+  { id: 'category', label: 'Loại xe', icon: <MdDirectionsCar />, hasPopup: true },
+  { id: 'fuel', label: 'Nhiên liệu', icon: <FaGasPump />, hasPopup: true },
+  { id: 'price', label: 'Giá', icon: <FaMoneyBillWave />, hasPopup: true },
 ];
 
 const POPUP_OPTIONS = {
   seats: [
-    { value: 'all', label: 'Tat ca' },
-    { value: '4', label: '4 cho' },
-    { value: '5', label: '5 cho' },
-    { value: '7', label: '7 cho' },
+    { value: 'all', label: 'Tất cả' },
+    { value: '4', label: '4 chỗ' },
+    { value: '5', label: '5 chỗ' },
+    { value: '7', label: '7 chỗ' },
   ],
   brand: [
-    { value: 'all', label: 'Tat ca' },
+    { value: 'all', label: 'Tất cả' },
     { value: 'Toyota', label: 'Toyota' },
     { value: 'Honda', label: 'Honda' },
     { value: 'Hyundai', label: 'Hyundai' },
@@ -32,12 +32,12 @@ const POPUP_OPTIONS = {
     { value: 'MG', label: 'MG' },
   ],
   model: [
-    { value: 'all', label: 'Tat ca' },
-    { value: 'So tu dong', label: 'So tu dong' },
-    { value: 'So san', label: 'So san' },
+    { value: 'all', label: 'Tất cả' },
+    { value: 'So tu dong', label: 'Số tự động' },
+    { value: 'So san', label: 'Số sàn' },
   ],
   category: [
-    { value: 'all', label: 'Tat ca' },
+    { value: 'all', label: 'Tất cả' },
     { value: 'Sedan', label: 'Sedan' },
     { value: 'Hatchback', label: 'Hatchback' },
     { value: 'SUV', label: 'SUV' },
@@ -48,26 +48,26 @@ const POPUP_OPTIONS = {
     { value: 'Limousine', label: 'Limousine' },
   ],
   fuel: [
-    { value: 'all', label: 'Tat ca' },
-    { value: 'Xang', label: 'Xang' },
-    { value: 'Dien', label: 'Dien' },
-    { value: 'Dau', label: 'Dau' },
+    { value: 'all', label: 'Tất cả' },
+    { value: 'Xang', label: 'Xăng' },
+    { value: 'Dien', label: 'Điện' },
+    { value: 'Dau', label: 'Dầu' },
   ],
   sort: [
-    { value: 'all', label: 'Mac dinh' },
-    { value: 'price_asc', label: 'Gia tu thap toi cao' },
-    { value: 'price_desc', label: 'Gia tu cao toi thap' },
+    { value: 'all', label: 'Mặc định' },
+    { value: 'price_asc', label: 'Giá từ thấp đến cao' },
+    { value: 'price_desc', label: 'Giá từ cao đến thấp' },
   ],
 };
 
 const POPUP_TITLES = {
-  seats: 'So cho',
-  brand: 'Hang xe',
-  model: 'Mau xe',
-  category: 'Loai xe',
-  fuel: 'Nhien lieu',
-  price: 'Khoang gia',
-  sort: 'Sap xep',
+  seats: 'Số chỗ',
+  brand: 'Hãng xe',
+  model: 'Mẫu xe',
+  category: 'Loại xe',
+  fuel: 'Nhiên liệu',
+  price: 'Khoảng giá',
+  sort: 'Sắp xếp',
 };
 
 const DEFAULT_SELECTIONS = {
@@ -251,7 +251,7 @@ const FilterBar = ({ onFilter, onSort }) => {
           onClick={handleSortClick}
         >
           <MdSort />
-          Sap xep
+          Sắp xếp
         </button>
       </div>
 
@@ -283,7 +283,7 @@ const FilterBar = ({ onFilter, onSort }) => {
                       value={tempPrice.priceMin}
                       onChange={(event) => setTempPrice((current) => ({ ...current, priceMin: event.target.value }))}
                       className="w-full border border-gray-200 rounded-xl px-3 py-3 outline-none focus:border-primary"
-                      placeholder="Vi du: 500"
+                      placeholder="Ví dụ: 500"
                     />
                   </div>
                   <div>
@@ -294,7 +294,7 @@ const FilterBar = ({ onFilter, onSort }) => {
                       value={tempPrice.priceMax}
                       onChange={(event) => setTempPrice((current) => ({ ...current, priceMax: event.target.value }))}
                       className="w-full border border-gray-200 rounded-xl px-3 py-3 outline-none focus:border-primary"
-                      placeholder="Vi du: 1500"
+                      placeholder="Ví dụ: 1500"
                     />
                   </div>
                 </div>
@@ -307,8 +307,8 @@ const FilterBar = ({ onFilter, onSort }) => {
                       key={option.value}
                       type="button"
                       className={`w-full flex items-center gap-4 rounded-[18px] border px-4 py-4 text-left transition-all ${tempSelection === option.value
-                          ? 'border-[#4fd1a5] bg-[#ecfbf5] text-gray-900 shadow-[0_8px_24px_rgba(0,177,79,0.10)]'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40'
+                        ? 'border-[#4fd1a5] bg-[#ecfbf5] text-gray-900 shadow-[0_8px_24px_rgba(0,177,79,0.10)]'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40'
                         }`}
                       onClick={() => setTempSelection(option.value)}
                     >
@@ -331,14 +331,14 @@ const FilterBar = ({ onFilter, onSort }) => {
                 className="flex-1 rounded-2xl border border-gray-200 py-3 font-semibold text-gray-600 hover:border-gray-300"
                 onClick={handleClearCurrent}
               >
-                Xoa chon
+                Bỏ chọn
               </button>
               <button
                 type="button"
                 className="flex-1 rounded-2xl bg-primary py-3 font-bold text-white shadow-[0_12px_28px_rgba(0,177,79,0.25)]"
                 onClick={handleApply}
               >
-                Ap dung
+                Áp dụng
               </button>
             </div>
           </div>

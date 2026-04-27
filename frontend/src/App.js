@@ -9,6 +9,7 @@ import CarDetail from './components/pages/CarDetail/CarDetail';
 import Home from './components/pages/Home/Home';
 import Login from './components/pages/Login/Login';
 import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
+import ShowroomPublic from './components/pages/ShowroomPublic/ShowroomPublic';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -74,6 +75,7 @@ const PublicSite = () => (
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/xe/:id" element={<CarDetail />} />
+        <Route path="/showrooms/:userId" element={<ShowroomPublic />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
