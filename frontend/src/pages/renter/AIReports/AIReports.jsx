@@ -21,7 +21,7 @@ const mapReportBooking = (booking) => {
 
   return {
     id: booking._id,
-    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe khong ten',
+    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe không tên',
     showroomName: booking.showroom?.name || booking.showroom_id?.name || 'SmartRent',
     startDate: booking.start_date,
     endDate: booking.end_date,
@@ -79,7 +79,7 @@ const AIReports = () => {
         }
 
         setReports([]);
-        setError(err.message || 'Khong the tai bao cao AI luc nay.');
+        setError(err.message || 'Không thể tải báo cáo AI lúc này.');
       } finally {
         if (mounted) {
           setLoading(false);
@@ -142,27 +142,27 @@ const AIReports = () => {
       );
       setError('');
     } catch (err) {
-      setError(err.message || 'Khong the export bao cao AI luc nay.');
+      setError(err.message || 'Không thể export báo cáo AI lúc này.');
     }
   };
 
   const downloadEvidenceImage = async (imageUrl, fileName) => {
     if (!imageUrl) {
-      setError('Khong tim thay anh doi chieu de tai xuong.');
+      setError('Không tìm thấy ảnh đối chiếu để tải xuống.');
       return;
     }
 
     try {
       const response = await fetch(imageUrl);
       if (!response.ok) {
-        throw new Error('Khong the tai anh doi chieu tu storage hien tai.');
+        throw new Error('Không thể tải ảnh đối chiếu từ storage hiện tại.');
       }
 
       const blob = await response.blob();
       downloadBlob(blob, fileName);
       setError('');
     } catch (err) {
-      setError(err.message || 'Khong the tai anh doi chieu luc nay.');
+      setError(err.message || 'Không thể tải ảnh đối chiếu lúc này.');
     }
   };
 
@@ -170,11 +170,11 @@ const AIReports = () => {
     <div className="ai-inspection">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Bao cao AI thiet hai phat sinh</h1>
-          <p className="page-subtitle">Danh sach ket qua doi chieu anh truoc va sau thue tren trinh duyet hien tai</p>
+          <h1 className="page-title">Báo cáo AI thiệt hại phát sinh</h1>
+          <p className="page-subtitle">Danh sách kết quả đối chiếu ảnh trước và sau thuê trên trình duyệt hiện tại</p>
         </div>
         <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
-          Ve Chuyen di cua toi
+          Về Chuyến đi của tôi
         </button>
       </div>
 
@@ -190,8 +190,8 @@ const AIReports = () => {
           lineHeight: 1.65,
         }}
       >
-        Bao cao trong muc nay duoc tao tu workflow renter luu cuc bo tren trinh duyet hien tai. Neu doi may, doi
-        trinh duyet hoac xoa local data, bao cao va bo anh doi chieu co the bien mat.
+        Báo cáo trong mục này được tạo từ workflow renter lưu cục bộ trên trình duyệt hiện tại. Nếu đổi máy, đổi
+        trình duyệt hoặc xóa local data, báo cáo và bộ ảnh đối chiếu có thể biến mất.
       </div>
 
       {error && (
@@ -202,9 +202,9 @@ const AIReports = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Tong bao cao', value: summary.total, color: '#111827' },
-          { label: 'Khong thay hu hong moi', value: summary.clean, color: '#059669' },
-          { label: 'Can doi chieu them', value: summary.warning, color: '#d97706' },
+          { label: 'Tổng báo cáo', value: summary.total, color: '#111827' },
+          { label: 'Không thấy hư hỏng mới', value: summary.clean, color: '#059669' },
+          { label: 'Cần đối chiếu thêm', value: summary.warning, color: '#d97706' },
         ].map((item) => (
           <div key={item.label} style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', padding: '12px 18px', minWidth: 150 }}>
             <div style={{ fontSize: '1.35rem', fontWeight: 800, color: item.color }}>{item.value}</div>
@@ -214,19 +214,19 @@ const AIReports = () => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '64px 0', color: '#6b7280' }}>Dang tai bao cao AI...</div>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: '#6b7280' }}>Đang tải báo cáo AI...</div>
       ) : reports.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', padding: 28, textAlign: 'center' }}>
           <div style={{ width: 70, height: 70, borderRadius: '50%', margin: '0 auto 14px', display: 'grid', placeItems: 'center', background: '#eff6ff', color: '#2563eb', fontSize: '1.6rem' }}>
             <FaRobot />
           </div>
-          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Chua co bao cao AI nao tren trinh duyet nay</div>
+          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Chưa có báo cáo AI nào trên trình duyệt này</div>
           <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, maxWidth: 580, margin: '0 auto 16px' }}>
-            Bao cao AI se duoc tao sau khi ban gui bo anh tra xe co anh doi chieu truoc thue trong quy trinh nhan / tra xe.
-            Du lieu nay hien chi ton tai tren trinh duyet hien tai cua ban.
+            Báo cáo AI sẽ được tạo sau khi bạn gửi bộ ảnh trả xe có ảnh đối chiếu trước thuê trong quy trình nhận / trả xe.
+            Dữ liệu này hiện chỉ tồn tại trên trình duyệt hiện tại của bạn.
           </div>
           <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
-            Mo quy trinh tra xe
+            Mở quy trình trả xe
           </button>
         </div>
       ) : (
@@ -279,10 +279,10 @@ const AIReports = () => {
                     {formatDateTime(reportItem.startDate)} - {formatDateTime(reportItem.endDate)}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 6 }}>
-                    Cap nhat tren trinh duyet nay: {formatDateTime(reportItem.workflowUpdatedAt)}
+                    Cập nhật trên trình duyệt này: {formatDateTime(reportItem.workflowUpdatedAt)}
                   </div>
                   <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, color: selected ? '#2563eb' : '#6b7280', fontSize: '0.76rem', fontWeight: 700 }}>
-                    Xem chi tiet <FaArrowRight />
+                      Xem chi tiết <FaArrowRight />
                   </div>
                 </button>
               );
@@ -321,7 +321,7 @@ const AIReports = () => {
                         }}
                       >
                         <FaLaptop />
-                        Luu cuc bo tren trinh duyet nay
+                        Lưu cục bộ trên trình duyệt này
                       </div>
 
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -332,7 +332,7 @@ const AIReports = () => {
                           style={{ justifyContent: 'center' }}
                         >
                           <FaDownload />
-                          Export bao cao JSON
+                          Export báo cáo JSON
                         </button>
                         <button
                           type="button"
@@ -350,7 +350,7 @@ const AIReports = () => {
                           }}
                         >
                           <FaImage />
-                          Tai anh truoc thue
+                          Tải ảnh trước thuê
                         </button>
                         <button
                           type="button"
@@ -368,14 +368,14 @@ const AIReports = () => {
                           }}
                         >
                           <FaImage />
-                          Tai anh tra xe
+                          Tải ảnh trả xe
                         </button>
                       </div>
                     </div>
 
                     <div style={{ marginTop: 10, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.65 }}>
-                      Report nay duoc FE renter tao tu workflow luu local. Export JSON hoac tai bo anh doi chieu de giu lai ban sao
-                      truoc khi doi trinh duyet hoac xoa du lieu local.
+                      Report này được FE renter tạo từ workflow lưu local. Export JSON hoặc tải bộ ảnh đối chiếu để giữ lại bản sao
+                      trước khi đổi trình duyệt hoặc xóa dữ liệu local.
                     </div>
                   </div>
                 }

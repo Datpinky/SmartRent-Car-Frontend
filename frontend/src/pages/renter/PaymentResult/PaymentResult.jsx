@@ -133,7 +133,7 @@ const PaymentResult = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}>
         <FaSpinner className="animate-spin" style={{ fontSize: '3rem', color: '#00b14f' }} />
-        <p style={{ marginTop: 16, color: '#6b7280' }}>Dang tai thong tin giao dich...</p>
+        <p style={{ marginTop: 16, color: '#6b7280' }}>Đang tải thông tin giao dịch...</p>
       </div>
     );
   }
@@ -146,9 +146,9 @@ const PaymentResult = () => {
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', animation: 'popIn 0.4s ease' }}>
               <FaCheckCircle style={{ fontSize: '3rem', color: '#059669' }} />
             </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan thanh cong</h2>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thành công</h2>
             <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Booking cua ban da duoc ghi nhan thanh toan thanh cong tren he thong.
+              Booking của bạn đã được ghi nhận thanh toán thành công trên hệ thống.
             </p>
           </>
         ) : isPending ? (
@@ -156,9 +156,9 @@ const PaymentResult = () => {
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <FaSpinner className="animate-spin" style={{ fontSize: '2.4rem', color: '#d97706' }} />
             </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan dang cho xu ly</h2>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán đang chờ xử lý</h2>
             <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Backend da tao booking va payment record, nhung giao dich chua o trang thai thanh cong.
+              Backend đã tạo booking và payment record, nhưng giao dịch chưa ở trạng thái thành công.
             </p>
           </>
         ) : (
@@ -166,24 +166,24 @@ const PaymentResult = () => {
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <FaTimesCircle style={{ fontSize: '3rem', color: '#dc2626' }} />
             </div>
-            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toan that bai</h2>
+            <h2 style={{ fontWeight: 800, fontSize: '1.3rem', color: '#111827', marginBottom: 8 }}>Thanh toán thất bại</h2>
             <p style={{ color: '#6b7280', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-              Giao dich khong the thuc hien hoac chua duoc ghi nhan thanh cong.
+              Giao dịch không thể thực hiện hoặc chưa được ghi nhận thành công.
             </p>
           </>
         )}
 
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 24, textAlign: 'left' }}>
           {[
-            ['Ma booking', bookingCode],
-            ['Xe', booking?.vehicle?.name || booking?.vehicle_id?.vehicle_name || 'Dang tai...'],
-            ['Thoi gian thue', booking ? `${formatDate(booking.start_date)} -> ${formatDate(booking.end_date)}` : 'N/A'],
-            ['Tong tien', totalPrice],
-            ['Payment method', booking?.payment?.payment_method || 'Chua co'],
+            ['Mã booking', bookingCode],
+            ['Xe', booking?.vehicle?.name || booking?.vehicle_id?.vehicle_name || 'Đang tải...'],
+            ['Thời gian thuê', booking ? `${formatDate(booking.start_date)} -> ${formatDate(booking.end_date)}` : 'N/A'],
+            ['Tổng tiền', totalPrice],
+            ['Payment method', booking?.payment?.payment_method || 'Chưa có'],
             ['Payment status', booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || 'pending'],
             ['Booking status', booking?.paymentState?.bookingStatus || booking?.status || 'N/A'],
             ['Paid at', formatDate(booking?.payment?.paid_at)],
-            ['Transaction code', booking?.payment?.transaction_code || booking?.payment?.stripe_payment_intent_id || 'Chua co'],
+            ['Transaction code', booking?.payment?.transaction_code || booking?.payment?.stripe_payment_intent_id || 'Chưa có'],
           ].map(([label, value]) => (
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8, fontSize: '0.82rem' }}>
               <span style={{ color: '#9ca3af' }}>{label}</span>
@@ -197,7 +197,7 @@ const PaymentResult = () => {
             onClick={() => navigate('/')}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
           >
-            <FaHome /> Trang chu
+            <FaHome /> Trang chủ
           </button>
 
           {isSuccess ? (
@@ -205,21 +205,21 @@ const PaymentResult = () => {
               onClick={() => navigate('/renter/pending-pickups')}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
             >
-              <FaList /> Cho nhan xe
+              <FaList /> Chờ nhận xe
             </button>
           ) : isPending ? (
             <button
               onClick={() => navigate(canRetryPayment ? `/renter/retry-payment/${bookingId}` : '/renter/pending-pickups')}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#d97706', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
             >
-              <FaMoneyBillWave /> Thanh toan lai
+              <FaMoneyBillWave /> Thanh toán lại
             </button>
           ) : (
             <button
               onClick={() => navigate(canRetryPayment ? `/renter/retry-payment/${bookingId}` : '/renter/transactions')}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
             >
-              Thanh toan lai
+              Thanh toán lại
             </button>
           )}
         </div>
@@ -229,7 +229,7 @@ const PaymentResult = () => {
           onClick={() => navigate('/renter/transactions')}
           style={{ width: '100%', marginTop: 10 }}
         >
-          <FaMoneyBillWave /> Lich su giao dich
+          <FaMoneyBillWave /> Lịch sử giao dịch
         </button>
       </div>
       <style>{`@keyframes popIn { from { transform: scale(0.5); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>

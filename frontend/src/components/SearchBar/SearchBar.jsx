@@ -7,22 +7,22 @@ import {
   FaMapMarkerAlt,
   FaSearch,
   FaTimes,
-} from 'react-icons/fa';import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
+} from 'react-icons/fa'; import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
-const CITIES = ['Ha Noi', 'Da Nang', 'Ho Chi Minh'];
+const CITIES = ['Hà Nội', 'Đà Nẵng', 'Hồ Chí Minh'];
 
 const CITY_DISTRICTS = {
-  'Da Nang': {
-    Quan: ['Hai Chau', 'Thanh Khe', 'Son Tra', 'Ngu Hanh Son', 'Lien Chieu', 'Cam Le'],
-    Huyen: ['Hoa Vang'],
+  'Đà Nẵng': {
+    Quan: ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'],
+    Huyen: ['Hòa Vang'],
   },
-  'Ho Chi Minh': {
-    Quan: ['Quan 1', 'Quan 3', 'Quan 4', 'Quan 5', 'Quan 6', 'Quan 7', 'Quan 8', 'Quan 10', 'Quan 11', 'Quan 12', 'Binh Thanh', 'Go Vap', 'Tan Binh', 'Tan Phu', 'Phu Nhuan', 'Binh Tan'],
-    Huyen: ['Binh Chanh', 'Cu Chi', 'Hoc Mon', 'Nha Be', 'Can Gio'],
+  'Hồ Chí Minh': {
+    Quan: ['Quận 1', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7', 'Quận 8', 'Quận 10', 'Quận 11', 'Quận 12', 'Bình Thạnh', 'Gò Vấp', 'Tân Bình', 'Tân Phú', 'Phú Nhuận', 'Bình Tân'],
+    Huyen: ['Bình Chánh', 'Củ Chi', 'Hóc Môn', 'Nhà Bè', 'Cần Giờ'],
   },
-  'Ha Noi': {
-    Quan: ['Ba Dinh', 'Hoan Kiem', 'Hai Ba Trung', 'Dong Da', 'Cau Giay', 'Thanh Xuan', 'Hoang Mai', 'Long Bien', 'Nam Tu Liem', 'Bac Tu Liem', 'Tay Ho', 'Ha Dong'],
-    Huyen: ['Dong Anh', 'Gia Lam', 'Soc Son', 'Thanh Tri', 'Hoai Duc'],
+  'Hà Nội': {
+    Quan: ['Ba Đình', 'Hoàn Kiếm', 'Hai Bà Trưng', 'Đống Đa', 'Cầu Giấy', 'Thanh Xuân', 'Hoàng Mai', 'Long Biên', 'Nam Từ Liêm', 'Bắc Từ Liêm', 'Tây Hồ', 'Hà Đông'],
+    Huyen: ['Đông Anh', 'Gia Lâm', 'Sóc Sơn', 'Thanh Trì', 'Hoài Đức'],
   },
 };
 
@@ -121,7 +121,7 @@ const SearchBar = ({ onSearch }) => {
     const returnLabel = formatDateTimeShort(returnDate);
 
     if (!pickupLabel || !returnLabel) {
-      return 'Chon ngay nhan va tra xe';
+      return 'Chọn ngày nhận và trả xe';
     }
 
     return `${pickupLabel} - ${returnLabel}`;
@@ -132,12 +132,12 @@ const SearchBar = ({ onSearch }) => {
     const ret = parseDateTime(returnDate);
 
     if (!pickup || !ret) {
-      setSearchError('Vui long chon day du ngay nhan xe va ngay tra xe.');
+      setSearchError('Vui lòng chọn đầy đủ ngày nhận và trả xe.');
       return;
     }
 
     if (ret <= pickup) {
-      setSearchError('Ngay tra xe phai sau ngay nhan xe.');
+      setSearchError('Ngày trả xe phải sau ngày nhận xe.');
       return;
     }
 
@@ -165,7 +165,7 @@ const SearchBar = ({ onSearch }) => {
     <>
       <section className="bg-gradient-to-br from-[#f0fdf4] to-[#e8f8ef] px-5 py-10">
         <h1 className="mb-6 text-center text-[2rem] font-extrabold text-gray-900 max-[600px]:text-[1.4rem]">
-          Tim xe tu lai
+          Tìm xe tự lái
         </h1>
 
         <button
@@ -176,9 +176,9 @@ const SearchBar = ({ onSearch }) => {
           <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[860px]:border-b max-[860px]:border-r-0">
             <FaMapMarkerAlt className="shrink-0 text-base text-primary" />
             <div className="min-w-0">
-              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Dia diem</div>
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Địa điểm</div>
               <div className={`truncate text-[0.92rem] font-medium ${locationLabel ? 'text-gray-800' : 'text-gray-400'}`}>
-                {locationLabel || 'Chon dia diem tim xe'}
+                {locationLabel || 'Chọn địa điểm tìm xe'}
               </div>
             </div>
           </div>
@@ -186,9 +186,9 @@ const SearchBar = ({ onSearch }) => {
           <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[860px]:border-b max-[860px]:border-r-0">
             <FaCar className="shrink-0 text-base text-gray-400" />
             <div className="min-w-0">
-              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Tim theo ten xe</div>
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Tìm theo tên xe</div>
               <div className={`truncate text-[0.92rem] font-medium ${carName ? 'text-gray-800' : 'text-gray-400'}`}>
-                {carName || 'Mazda, Vios, VF e34...'}
+                {carName || 'Ferrari, Lamborghini, Bugatti...'}
               </div>
             </div>
           </div>
@@ -196,7 +196,7 @@ const SearchBar = ({ onSearch }) => {
           <div className="flex flex-1 items-center gap-3 px-5 py-3.5 max-[860px]:border-b max-[860px]:border-gray-100">
             <FaCalendarAlt className="shrink-0 text-base text-gray-400" />
             <div className="min-w-0">
-              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Thoi gian thue</div>
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Thời gian thuê</div>
               <div className="truncate text-[0.92rem] font-medium text-gray-800">
                 {rentalWindowLabel}
               </div>
@@ -205,7 +205,7 @@ const SearchBar = ({ onSearch }) => {
 
           <div className="flex shrink-0 items-center justify-center gap-2 bg-primary px-7 py-3.5 text-[0.85rem] font-bold uppercase tracking-wide text-white max-[860px]:py-4">
             <FaSearch />
-            Tim kiem
+            Tìm kiếm
           </div>
         </button>
       </section>
@@ -220,7 +220,7 @@ const SearchBar = ({ onSearch }) => {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-              <span className="text-base font-bold text-gray-900">Tim xe</span>
+              <span className="text-base font-bold text-gray-900">Tìm xe</span>
               <button
                 type="button"
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
@@ -233,19 +233,19 @@ const SearchBar = ({ onSearch }) => {
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
               <div>
                 <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
-                  Dia diem
+                  Địa điểm
                 </label>
                 <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
                   <FaMapMarkerAlt className="shrink-0 text-primary" />
                   <span className={`text-[0.9rem] ${locationLabel ? 'font-medium text-gray-800' : 'text-gray-400'}`}>
-                    {locationLabel || 'Chon thanh pho hoac quan huyen'}
+                    {locationLabel || 'Chọn thành phố hoặc quận huyện'}
                   </span>
                 </div>
               </div>
 
               <div>
                 <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
-                  Ten xe
+                  Tên xe
                 </label>
                 <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
                   <FaCar className="shrink-0 text-gray-400" />
@@ -262,7 +262,7 @@ const SearchBar = ({ onSearch }) => {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
-                    Ngay nhan xe
+                    Ngày nhận xe
                   </label>
                   <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
                     <input
@@ -277,7 +277,7 @@ const SearchBar = ({ onSearch }) => {
 
                 <div>
                   <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
-                    Ngay tra xe
+                    Ngày trả xe
                   </label>
                   <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
                     <input
@@ -299,7 +299,7 @@ const SearchBar = ({ onSearch }) => {
 
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[0.75rem] font-bold uppercase tracking-wide text-gray-600">Chon thanh pho</span>
+                  <span className="text-[0.75rem] font-bold uppercase tracking-wide text-gray-600">Chọn thành phố</span>
                   {selectedCity && (
                     <button
                       type="button"
@@ -309,7 +309,7 @@ const SearchBar = ({ onSearch }) => {
                         setSelectedDistrict('');
                       }}
                     >
-                      Bo chon
+                      Bỏ chọn
                     </button>
                   )}
                 </div>
@@ -321,9 +321,8 @@ const SearchBar = ({ onSearch }) => {
                       <button
                         key={city}
                         type="button"
-                        className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-b-0 ${
-                          isActive ? 'bg-primary-light' : 'bg-white hover:bg-gray-50'
-                        }`}
+                        className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-b-0 ${isActive ? 'bg-primary-light' : 'bg-white hover:bg-gray-50'
+                          }`}
                         onClick={() => {
                           setSelectedCity(city);
                           setSelectedDistrict('');
@@ -343,7 +342,7 @@ const SearchBar = ({ onSearch }) => {
               {districts && (
                 <div>
                   <div className="mb-2 text-[0.75rem] font-bold uppercase tracking-wide text-gray-600">
-                    Quan / huyen - {selectedCity}
+                    Quận / Huyện - {selectedCity}
                   </div>
 
                   <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-gray-100">
@@ -358,9 +357,8 @@ const SearchBar = ({ onSearch }) => {
                             <button
                               key={district}
                               type="button"
-                              className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-left transition-colors last:border-b-0 ${
-                                isActive ? 'bg-primary-light' : 'bg-white hover:bg-gray-50'
-                              }`}
+                              className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-left transition-colors last:border-b-0 ${isActive ? 'bg-primary-light' : 'bg-white hover:bg-gray-50'
+                                }`}
                               onClick={() => setSelectedDistrict((current) => (current === district ? '' : district))}
                             >
                               <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${isActive ? 'border-primary' : 'border-gray-300'}`}>
@@ -386,14 +384,14 @@ const SearchBar = ({ onSearch }) => {
                   className="flex-1 rounded-xl border border-gray-200 py-3 text-[0.92rem] font-semibold text-gray-600 hover:border-gray-300"
                   onClick={handleReset}
                 >
-                  Xoa
+                  Bỏ chọn
                 </button>
                 <button
                   type="button"
                   className="flex-1 rounded-xl bg-primary py-3 text-[0.95rem] font-bold text-white transition-colors hover:bg-primary-dark"
                   onClick={handleSearch}
                 >
-                  Xac nhan
+                  Xác nhận
                 </button>
               </div>
             </div>

@@ -28,47 +28,47 @@ import { useAuth } from '../contexts/AuthContext';
 
 const MENUS = {
   admin: [
-    { key: 'dashboard', label: 'Tong quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/admin/dashboard' },
-    { key: 'users', label: 'Quan ly nguoi dung', icon: <FaUsers aria-hidden="true" />, path: '/admin/users' },
-    { key: 'showrooms', label: 'Xac minh showroom', icon: <FaStore aria-hidden="true" />, path: '/admin/showrooms' },
-    { key: 'transactions', label: 'Giao dich', icon: <FaExchangeAlt aria-hidden="true" />, path: '/admin/transactions' },
-    { key: 'profile', label: 'Ho so', icon: <FaUser aria-hidden="true" />, path: '/admin/profile' },
+    { key: 'dashboard', label: 'Tổng quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/admin/dashboard' },
+    { key: 'users', label: 'Quản lý người dùng', icon: <FaUsers aria-hidden="true" />, path: '/admin/users' },
+    { key: 'showrooms', label: 'Xác minh showroom', icon: <FaStore aria-hidden="true" />, path: '/admin/showrooms' },
+    { key: 'transactions', label: 'Giao dịch', icon: <FaExchangeAlt aria-hidden="true" />, path: '/admin/transactions' },
+    { key: 'profile', label: 'Hồ sơ', icon: <FaUser aria-hidden="true" />, path: '/admin/profile' },
   ],
   showroom: [
-    { key: 'dashboard', label: 'Tong quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/showroom/dashboard' },
-    { key: 'vehicles', label: 'Quan ly xe', icon: <FaCar aria-hidden="true" />, path: '/showroom/vehicles' },
-    { key: 'bookings', label: 'Quan ly dat xe', icon: <FaCalendarAlt aria-hidden="true" />, path: '/showroom/bookings' },
-    { key: 'contracts', label: 'Hop dong', icon: <FaFileContract aria-hidden="true" />, path: '/showroom/contracts' },
-    { key: 'customers', label: 'Khach hang', icon: <FaUsers aria-hidden="true" />, path: '/showroom/customers' },
+    { key: 'dashboard', label: 'Tổng quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/showroom/dashboard' },
+    { key: 'vehicles', label: 'Quản lý xe', icon: <FaCar aria-hidden="true" />, path: '/showroom/vehicles' },
+    { key: 'bookings', label: 'Quản lý đặt xe', icon: <FaCalendarAlt aria-hidden="true" />, path: '/showroom/bookings' },
+    { key: 'contracts', label: 'Hợp đồng', icon: <FaFileContract aria-hidden="true" />, path: '/showroom/contracts' },
+    { key: 'customers', label: 'Khách hàng', icon: <FaUsers aria-hidden="true" />, path: '/showroom/customers' },
     { key: 'revenue', label: 'Doanh thu', icon: <FaChartLine aria-hidden="true" />, path: '/showroom/revenue' },
-    { key: 'ai-inspection', label: 'Kiem tra AI', icon: <FaRobot aria-hidden="true" />, path: '/showroom/ai-inspection' },
-    { key: 'profile', label: 'Ho so showroom', icon: <FaBuilding aria-hidden="true" />, path: '/showroom/profile' },
+    { key: 'ai-inspection', label: 'Kiểm tra AI', icon: <FaRobot aria-hidden="true" />, path: '/showroom/ai-inspection' },
+    { key: 'profile', label: 'Hồ sơ showroom', icon: <FaBuilding aria-hidden="true" />, path: '/showroom/profile' },
   ],
   owner: [
-    { key: 'dashboard', label: 'Tong quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/owner/dashboard' },
-    { key: 'vehicles', label: 'Xe cua toi', icon: <FaCar aria-hidden="true" />, path: '/owner/vehicles' },
-    { key: 'tracking', label: 'Theo doi xe', icon: <FaMapMarkerAlt aria-hidden="true" />, path: '/owner/tracking' },
-    { key: 'revenue', label: 'Doanh thu va rut tien', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/owner/revenue' },
-    { key: 'profile', label: 'Ho so', icon: <FaUser aria-hidden="true" />, path: '/owner/profile' },
+    { key: 'dashboard', label: 'Tổng quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/owner/dashboard' },
+    { key: 'vehicles', label: 'Xe của tôi', icon: <FaCar aria-hidden="true" />, path: '/owner/vehicles' },
+    { key: 'tracking', label: 'Theo dõi xe', icon: <FaMapMarkerAlt aria-hidden="true" />, path: '/owner/tracking' },
+    { key: 'revenue', label: 'Doanh thu và rút tiền', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/owner/revenue' },
+    { key: 'profile', label: 'Hồ sơ', icon: <FaUser aria-hidden="true" />, path: '/owner/profile' },
   ],
   renter: [
-    { key: 'dashboard', label: 'Tong quan tai chinh', icon: <FaChartLine aria-hidden="true" />, path: '/renter/dashboard' },
-    { key: 'pending-payments', label: 'Cho thanh toan', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/renter/pending-payments' },
-    { key: 'pending-showroom-processing', label: 'Cho showroom xu ly', icon: <FaStore aria-hidden="true" />, path: '/renter/pending-showroom-processing' },
-    { key: 'pending-pickups', label: 'Cho nhan xe', icon: <FaCar aria-hidden="true" />, path: '/renter/pending-pickups' },
-    { key: 'bookings', label: 'Chuyen di cua toi', icon: <FaCalendarAlt aria-hidden="true" />, path: '/renter/bookings' },
-    { key: 'profile', label: 'Ho so ca nhan', icon: <FaUser aria-hidden="true" />, path: '/renter/profile' },
-    { key: 'ai-reports', label: 'Bao cao AI', icon: <FaRobot aria-hidden="true" />, path: '/renter/ai-reports' },
-    { key: 'transactions', label: 'Lich su giao dich', icon: <FaExchangeAlt aria-hidden="true" />, path: '/renter/transactions' },
-    { key: 'sos', label: 'Ho tro khan cap', icon: <FaAmbulance aria-hidden="true" />, path: '/renter/sos' },
+    { key: 'dashboard', label: 'Tổng quan tài chính', icon: <FaChartLine aria-hidden="true" />, path: '/renter/dashboard' },
+    { key: 'pending-payments', label: 'Chờ thanh toán', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/renter/pending-payments' },
+    { key: 'pending-showroom-processing', label: 'Chờ showroom xử lý', icon: <FaStore aria-hidden="true" />, path: '/renter/pending-showroom-processing' },
+    { key: 'pending-pickups', label: 'Chờ nhận xe', icon: <FaCar aria-hidden="true" />, path: '/renter/pending-pickups' },
+    { key: 'bookings', label: 'Chuyến đi của tôi', icon: <FaCalendarAlt aria-hidden="true" />, path: '/renter/bookings' },
+    { key: 'profile', label: 'Hồ sơ cá nhân', icon: <FaUser aria-hidden="true" />, path: '/renter/profile' },
+    { key: 'ai-reports', label: 'Báo cáo AI', icon: <FaRobot aria-hidden="true" />, path: '/renter/ai-reports' },
+    { key: 'transactions', label: 'Lịch sử giao dịch', icon: <FaExchangeAlt aria-hidden="true" />, path: '/renter/transactions' },
+    { key: 'sos', label: 'Hỗ trợ khẩn cấp', icon: <FaAmbulance aria-hidden="true" />, path: '/renter/sos' },
   ],
 };
 
 const ROLE_CONFIG = {
-  admin: { label: 'Quan tri vien', color: '#6d28d9', bg: '#f5f3ff' },
+  admin: { label: 'Quản trị viên', color: '#6d28d9', bg: '#f5f3ff' },
   showroom: { label: 'Showroom', color: '#00b14f', bg: '#f0fdf4' },
-  owner: { label: 'Chu xe', color: '#0891b2', bg: '#ecfeff' },
-  renter: { label: 'Khach thue', color: '#d97706', bg: '#fffbeb' },
+  owner: { label: 'Chủ xe', color: '#0891b2', bg: '#ecfeff' },
+  renter: { label: 'Khách thuê', color: '#d97706', bg: '#fffbeb' },
 };
 
 const PROFILE_PATHS = {
@@ -79,10 +79,10 @@ const PROFILE_PATHS = {
 };
 
 const FALLBACK_TITLES = [
-  { prefix: '/renter/retry-payment', label: 'Thanh toan lai' },
-  { prefix: '/renter/checkout', label: 'Thanh toan dat xe' },
-  { prefix: '/renter/transactions', label: 'Lich su giao dich' },
-  { prefix: '/renter/payment-result', label: 'Ket qua thanh toan' },
+  { prefix: '/renter/retry-payment', label: 'Thanh toán lại' },
+  { prefix: '/renter/checkout', label: 'Thanh toán đặt xe' },
+  { prefix: '/renter/transactions', label: 'Lịch sử giao dịch' },
+  { prefix: '/renter/payment-result', label: 'Kết quả thanh toán' },
 ];
 
 const DashboardLayout = ({ children }) => {
@@ -101,31 +101,31 @@ const DashboardLayout = ({ children }) => {
 
   const sidebarTheme = isRenter
     ? {
-        shell: 'border-r border-[#dbe7f5] bg-[#f7fbff] text-[#0f172a] shadow-[0_16px_40px_rgba(15,23,42,0.08)]',
-        topBorder: 'border-[#dbe7f5]',
-        panel: 'border border-[#e2ebf7] bg-white text-[#0f172a] shadow-[0_10px_26px_rgba(148,163,184,0.14)]',
-        toggle: 'border border-[#dbe7f5] bg-white text-[#475569] hover:bg-[#eef5ff] hover:text-primary',
-        navActive: 'bg-[#e8f2ff] text-[#0f172a] shadow-[0_12px_30px_rgba(37,99,235,0.12)]',
-        navIdle: 'text-[#475569] hover:bg-[#eef5ff] hover:text-[#0f172a]',
-        iconActive: 'text-primary',
-        iconIdle: 'text-[#64748b] group-hover:text-primary',
-        footerBorder: 'border-[#dbe7f5]',
-        footerBtn: 'border border-[#dbe7f5] bg-white text-[#0f172a] hover:bg-[#eef5ff]',
-        logoutBtn: 'border border-red-200 bg-red-50 text-red-600 hover:bg-red-100',
-      }
+      shell: 'border-r border-[#dbe7f5] bg-[#f7fbff] text-[#0f172a] shadow-[0_16px_40px_rgba(15,23,42,0.08)]',
+      topBorder: 'border-[#dbe7f5]',
+      panel: 'border border-[#e2ebf7] bg-white text-[#0f172a] shadow-[0_10px_26px_rgba(148,163,184,0.14)]',
+      toggle: 'border border-[#dbe7f5] bg-white text-[#475569] hover:bg-[#eef5ff] hover:text-primary',
+      navActive: 'bg-[#e8f2ff] text-[#0f172a] shadow-[0_12px_30px_rgba(37,99,235,0.12)]',
+      navIdle: 'text-[#475569] hover:bg-[#eef5ff] hover:text-[#0f172a]',
+      iconActive: 'text-primary',
+      iconIdle: 'text-[#64748b] group-hover:text-primary',
+      footerBorder: 'border-[#dbe7f5]',
+      footerBtn: 'border border-[#dbe7f5] bg-white text-[#0f172a] hover:bg-[#eef5ff]',
+      logoutBtn: 'border border-red-200 bg-red-50 text-red-600 hover:bg-red-100',
+    }
     : {
-        shell: 'bg-[#1a1a2e] text-white',
-        topBorder: 'border-white/[0.08]',
-        panel: 'border border-white/10 bg-white/5 text-white',
-        toggle: 'border border-white/10 bg-white/10 text-white hover:bg-white/20',
-        navActive: 'bg-white text-[#1a1a2e] shadow-[0_10px_30px_rgba(255,255,255,0.12)]',
-        navIdle: 'text-white/75 hover:bg-white/10 hover:text-white',
-        iconActive: 'text-primary',
-        iconIdle: 'text-white/80 group-hover:text-white',
-        footerBorder: 'border-white/10',
-        footerBtn: 'border border-white/10 bg-white/5 text-white hover:bg-white/10',
-        logoutBtn: 'border border-red-400/20 bg-red-500/10 text-red-100 hover:bg-red-500/20',
-      };
+      shell: 'bg-[#1a1a2e] text-white',
+      topBorder: 'border-white/[0.08]',
+      panel: 'border border-white/10 bg-white/5 text-white',
+      toggle: 'border border-white/10 bg-white/10 text-white hover:bg-white/20',
+      navActive: 'bg-white text-[#1a1a2e] shadow-[0_10px_30px_rgba(255,255,255,0.12)]',
+      navIdle: 'text-white/75 hover:bg-white/10 hover:text-white',
+      iconActive: 'text-primary',
+      iconIdle: 'text-white/80 group-hover:text-white',
+      footerBorder: 'border-white/10',
+      footerBtn: 'border border-white/10 bg-white/5 text-white hover:bg-white/10',
+      logoutBtn: 'border border-red-400/20 bg-red-500/10 text-red-100 hover:bg-red-500/20',
+    };
 
   const initials = useMemo(
     () => user?.name?.split(' ').map((word) => word[0]).slice(-2).join('').toUpperCase() || 'U',
@@ -182,7 +182,7 @@ const DashboardLayout = ({ children }) => {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[9999] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
       >
-        Chuyen den noi dung chinh
+        Chuyển đến nội dung chính
       </a>
 
       {sidebarOpen && (
@@ -194,10 +194,9 @@ const DashboardLayout = ({ children }) => {
       )}
 
       <aside
-        aria-label="Dieu huong chinh"
-        className={`fixed bottom-0 left-0 top-0 z-[200] flex flex-col overflow-hidden transition-[width] duration-[250ms] ease-in-out max-md:!w-60 max-md:transition-transform ${sidebarTheme.shell} ${
-          collapsed ? 'w-[68px]' : 'w-60'
-        } ${sidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
+        aria-label="Điều hướng chính"
+        className={`fixed bottom-0 left-0 top-0 z-[200] flex flex-col overflow-hidden transition-[width] duration-[250ms] ease-in-out max-md:!w-60 max-md:transition-transform ${sidebarTheme.shell} ${collapsed ? 'w-[68px]' : 'w-60'
+          } ${sidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
       >
         <div className={`flex min-h-[64px] shrink-0 items-center justify-between border-b px-3.5 py-[18px] ${sidebarTheme.topBorder}`}>
           {!collapsed ? (
@@ -226,7 +225,7 @@ const DashboardLayout = ({ children }) => {
             type="button"
             onClick={() => setCollapsed((prev) => !prev)}
             className={`hidden h-9 w-9 items-center justify-center rounded-lg transition md:inline-flex ${sidebarTheme.toggle}`}
-            aria-label={collapsed ? 'Mo rong menu' : 'Thu gon menu'}
+            aria-label={collapsed ? 'Mở rộng' : 'Thu gọn'}
             aria-pressed={collapsed}
           >
             {collapsed ? <FaAngleRight aria-hidden="true" /> : <FaAngleDown className="-rotate-90" aria-hidden="true" />}
@@ -236,7 +235,7 @@ const DashboardLayout = ({ children }) => {
             type="button"
             onClick={() => setSidebarOpen(false)}
             className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition md:hidden ${sidebarTheme.toggle}`}
-            aria-label="Dong menu"
+            aria-label="Đóng menu"
           >
             <FaTimes aria-hidden="true" />
           </button>
@@ -269,11 +268,10 @@ const DashboardLayout = ({ children }) => {
                 <Link
                   key={item.key}
                   to={item.path}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium no-underline transition ${
-                    active
-                      ? sidebarTheme.navActive
-                      : sidebarTheme.navIdle
-                  } ${collapsed ? 'justify-center px-2' : ''}`}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium no-underline transition ${active
+                    ? sidebarTheme.navActive
+                    : sidebarTheme.navIdle
+                    } ${collapsed ? 'justify-center px-2' : ''}`}
                   title={collapsed ? item.label : undefined}
                 >
                   <span className={`text-base ${active ? sidebarTheme.iconActive : sidebarTheme.iconIdle}`}>{item.icon}</span>
@@ -288,19 +286,19 @@ const DashboardLayout = ({ children }) => {
               type="button"
               onClick={handleProfile}
               className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition ${sidebarTheme.footerBtn} ${collapsed ? 'justify-center px-2' : ''}`}
-              title={collapsed ? 'Ho so' : undefined}
+              title={collapsed ? 'Hồ sơ' : undefined}
             >
               <FaUser aria-hidden="true" />
-              {!collapsed && <span className="truncate">Ho so</span>}
+              {!collapsed && <span className="truncate">Hồ sơ</span>}
             </button>
             <button
               type="button"
               onClick={handleLogout}
               className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition ${sidebarTheme.logoutBtn} ${collapsed ? 'justify-center px-2' : ''}`}
-              title={collapsed ? 'Dang xuat' : undefined}
+              title={collapsed ? 'Đăng xuất' : undefined}
             >
               <FaSignOutAlt aria-hidden="true" />
-              {!collapsed && <span className="truncate">Dang xuat</span>}
+              {!collapsed && <span className="truncate">Đăng xuất</span>}
             </button>
           </div>
         </div>
@@ -332,7 +330,7 @@ const DashboardLayout = ({ children }) => {
                 className="hidden items-center gap-2 rounded-xl border border-[#dfe7f3] bg-white px-3 py-2 text-sm font-medium text-[#0f172a] no-underline transition hover:border-primary hover:text-primary lg:inline-flex"
               >
                 <FaComments aria-hidden="true" className="text-primary" />
-                Trang chu
+                Trang chủ
               </Link>
 
               <div className="relative" ref={dropdownRef}>
@@ -369,7 +367,7 @@ const DashboardLayout = ({ children }) => {
                       className="flex items-center gap-3 px-4 py-3 text-sm text-[#0f172a] no-underline transition hover:bg-[#f8fafc] lg:hidden"
                     >
                       <FaComments className="text-[#64748b]" aria-hidden="true" />
-                      Trang chu
+                      Trang chủ
                     </Link>
                     <button
                       type="button"
@@ -377,7 +375,7 @@ const DashboardLayout = ({ children }) => {
                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
                     >
                       <FaSignOutAlt aria-hidden="true" />
-                      Dang xuat
+                      Đăng xuất
                     </button>
                   </div>
                 )}

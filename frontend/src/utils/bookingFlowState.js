@@ -87,33 +87,33 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
       : 'waiting_handover';
 
   const rentalActionLabel = isCompleted
-    ? 'Xem bien ban'
+    ? 'Xem biên bản'
     : status === 'waiting_return_confirmation'
-      ? 'Dang cho xac nhan'
+      ? 'Đang chờ xác nhận'
       : canHandleReturn && hasEnded
-        ? 'Tra xe ngay'
+        ? 'Trả xe ngay'
         : status === 'waiting_handover'
-          ? 'Nhan xe'
+          ? 'Nhận xe'
           : canOpenRentalFlow
-            ? 'Nhan / Tra xe'
+            ? 'Nhận / Trả xe'
             : '';
 
   const rentalAccessHint = timeBasedRentalAccess
     ? hasEnded
-      ? 'Da qua han tra xe. Ban co the mo giao dien tra xe ngay.'
-      : 'Da den lich thue. Ban co the mo quy trinh nhan / tra xe.'
+      ? 'Đã quá hạn trả xe. Bạn có thể mở giao diện trả xe ngay.'
+      : 'Đã đến lịch thuê. Bạn có thể mở quy trình nhận / trả xe.'
     : '';
   const pickupConfirmationHint = !(isAwaitingPickup || isAwaitingShowroomProcessing)
     ? ''
     : requiresRetryPayment
-      ? 'Thanh toan truoc do chua thanh cong. Vui long thanh toan lai de tiep tuc quy trinh nhan xe.'
+      ? 'Thanh toán trước đó chưa thành công. Vui lòng thanh toán lại để tiếp tục quy trình nhận xe.'
       : !hasSuccessfulPayment
-        ? 'Booking dang cho thanh toan. Sau khi payment thanh cong, showroom moi co the ban giao xe.'
+        ? 'Booking đang chờ thanh toán. Sau khi payment thành công, showroom mới có thể bàn giao xe.'
         : isAwaitingShowroomProcessing
-          ? 'Showroom dang xu ly booking va chuan bi ban giao xe. Nut xac nhan se mo khi booking chuyen sang Cho ban giao.'
+          ? 'Showroom đang xử lý booking và chuẩn bị bàn giao xe. Nút xác nhận sẽ mở khi booking chuyển sang Chờ bàn giao.'
           : !pickupReadyByTime && startAt
-            ? `Nut xac nhan se mo tu ${startAt.toLocaleString('vi-VN')}.`
-            : 'Sau khi xac nhan da nhan xe, booking se duoc chuyen sang Chuyen di cua toi.';
+            ? `Nút xác nhận sẽ mở từ ${startAt.toLocaleString('vi-VN')}.`
+            : 'Sau khi xác nhận đã nhận xe, booking sẽ được chuyển sang Chuyến đi của tôi.';
 
   return {
     canConfirmPickup,
