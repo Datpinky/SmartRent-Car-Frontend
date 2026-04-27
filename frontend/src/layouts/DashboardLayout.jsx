@@ -1,92 +1,74 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useChatWidget } from '../contexts/ChatWidgetContext';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import NotificationBell from '../components/common/NotificationBell';
-import { Sidebar, SidebarBody, SidebarLink, useSidebar } from '../components/ui/sidebar';
-import { cn } from '../lib/utils';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  IconLayoutDashboard,
-  IconUsers,
-  IconBuildingStore,
-  IconReceipt,
-  IconUserCircle,
-  IconCar,
-  IconCalendarEvent,
-  IconFileDescription,
-  IconChartBar,
-  IconRobot,
-  IconBuildingCommunity,
-  IconMap2,
-  IconCashBanknote,
-  IconAmbulance,
-  IconMenu2,
-  IconLogout,
-  IconHome,
-  IconMessageCircle,
-  IconChevronDown,
-  IconUser,
-} from '@tabler/icons-react';
-
-const stroke = 1.5;
-const ic = (Icon) => <Icon className="h-5 w-5 shrink-0 text-neutral-600 dark:text-neutral-300" stroke={stroke} />;
+  FaAmbulance,
+  FaAngleDown,
+  FaAngleRight,
+  FaBars,
+  FaBuilding,
+  FaCalendarAlt,
+  FaCar,
+  FaChartLine,
+  FaComments,
+  FaExchangeAlt,
+  FaFileContract,
+  FaMapMarkerAlt,
+  FaMoneyBillWave,
+  FaRobot,
+  FaSignOutAlt,
+  FaStore,
+  FaTachometerAlt,
+  FaTimes,
+  FaUser,
+  FaUsers,
+} from 'react-icons/fa';
+import { MdVerifiedUser } from 'react-icons/md';
+import NotificationBell from '../components/common/NotificationBell';
+import { useAuth } from '../contexts/AuthContext';
 
 const MENUS = {
   admin: [
-    { key: 'dashboard', label: 'Tổng quan', path: '/admin/dashboard', Icon: IconLayoutDashboard },
-    { key: 'users', label: 'Quản lý người dùng', path: '/admin/users', Icon: IconUsers },
-    { key: 'showrooms', label: 'Xác minh Showroom', path: '/admin/showrooms', Icon: IconBuildingStore },
-    { key: 'transactions', label: 'Giao dịch', path: '/admin/transactions', Icon: IconReceipt },
-    { key: 'profile', label: 'Hồ sơ', path: '/admin/profile', Icon: IconUserCircle },
+    { key: 'dashboard', label: 'Tong quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/admin/dashboard' },
+    { key: 'users', label: 'Quan ly nguoi dung', icon: <FaUsers aria-hidden="true" />, path: '/admin/users' },
+    { key: 'showrooms', label: 'Xac minh showroom', icon: <FaStore aria-hidden="true" />, path: '/admin/showrooms' },
+    { key: 'transactions', label: 'Giao dich', icon: <FaExchangeAlt aria-hidden="true" />, path: '/admin/transactions' },
+    { key: 'profile', label: 'Ho so', icon: <FaUser aria-hidden="true" />, path: '/admin/profile' },
   ],
   showroom: [
-    { key: 'dashboard', label: 'Tổng quan', path: '/showroom/dashboard', Icon: IconLayoutDashboard },
-    { key: 'vehicles', label: 'Quản lý xe', path: '/showroom/vehicles', Icon: IconCar },
-    { key: 'bookings', label: 'Quản lý đặt xe', path: '/showroom/bookings', Icon: IconCalendarEvent },
-    { key: 'contracts', label: 'Hợp đồng', path: '/showroom/contracts', Icon: IconFileDescription },
-    { key: 'customers', label: 'Khách hàng', path: '/showroom/customers', Icon: IconUsers },
-    { key: 'revenue', label: 'Doanh thu', path: '/showroom/revenue', Icon: IconChartBar },
-    { key: 'ai-inspection', label: 'Kiểm tra AI', path: '/showroom/ai-inspection', Icon: IconRobot },
-    { key: 'profile', label: 'Hồ sơ Showroom', path: '/showroom/profile', Icon: IconBuildingCommunity },
+    { key: 'dashboard', label: 'Tong quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/showroom/dashboard' },
+    { key: 'vehicles', label: 'Quan ly xe', icon: <FaCar aria-hidden="true" />, path: '/showroom/vehicles' },
+    { key: 'bookings', label: 'Quan ly dat xe', icon: <FaCalendarAlt aria-hidden="true" />, path: '/showroom/bookings' },
+    { key: 'contracts', label: 'Hop dong', icon: <FaFileContract aria-hidden="true" />, path: '/showroom/contracts' },
+    { key: 'customers', label: 'Khach hang', icon: <FaUsers aria-hidden="true" />, path: '/showroom/customers' },
+    { key: 'revenue', label: 'Doanh thu', icon: <FaChartLine aria-hidden="true" />, path: '/showroom/revenue' },
+    { key: 'ai-inspection', label: 'Kiem tra AI', icon: <FaRobot aria-hidden="true" />, path: '/showroom/ai-inspection' },
+    { key: 'profile', label: 'Ho so showroom', icon: <FaBuilding aria-hidden="true" />, path: '/showroom/profile' },
   ],
   owner: [
-    { key: 'dashboard', label: 'Tổng quan', path: '/owner/dashboard', Icon: IconLayoutDashboard },
-    { key: 'vehicles', label: 'Xe của tôi', path: '/owner/vehicles', Icon: IconCar },
-    { key: 'tracking', label: 'Theo dõi xe', path: '/owner/tracking', Icon: IconMap2 },
-    { key: 'revenue', label: 'Doanh thu & Rút tiền', path: '/owner/revenue', Icon: IconCashBanknote },
-    { key: 'profile', label: 'Hồ sơ', path: '/owner/profile', Icon: IconUserCircle },
+    { key: 'dashboard', label: 'Tong quan', icon: <FaTachometerAlt aria-hidden="true" />, path: '/owner/dashboard' },
+    { key: 'vehicles', label: 'Xe cua toi', icon: <FaCar aria-hidden="true" />, path: '/owner/vehicles' },
+    { key: 'tracking', label: 'Theo doi xe', icon: <FaMapMarkerAlt aria-hidden="true" />, path: '/owner/tracking' },
+    { key: 'revenue', label: 'Doanh thu va rut tien', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/owner/revenue' },
+    { key: 'profile', label: 'Ho so', icon: <FaUser aria-hidden="true" />, path: '/owner/profile' },
   ],
   renter: [
-    { key: 'profile', label: 'Hồ sơ cá nhân', path: '/renter/profile', Icon: IconUser },
-    { key: 'bookings', label: 'Chuyến đi của tôi', path: '/renter/bookings', Icon: IconCalendarEvent },
-    { key: 'transactions', label: 'Lịch sử giao dịch', path: '/renter/transactions', Icon: IconReceipt },
-    { key: 'sos', label: 'Hỗ trợ khẩn cấp', path: '/renter/sos', Icon: IconAmbulance },
+    { key: 'dashboard', label: 'Tong quan tai chinh', icon: <FaChartLine aria-hidden="true" />, path: '/renter/dashboard' },
+    { key: 'pending-payments', label: 'Cho thanh toan', icon: <FaMoneyBillWave aria-hidden="true" />, path: '/renter/pending-payments' },
+    { key: 'pending-showroom-processing', label: 'Cho showroom xu ly', icon: <FaStore aria-hidden="true" />, path: '/renter/pending-showroom-processing' },
+    { key: 'pending-pickups', label: 'Cho nhan xe', icon: <FaCar aria-hidden="true" />, path: '/renter/pending-pickups' },
+    { key: 'bookings', label: 'Chuyen di cua toi', icon: <FaCalendarAlt aria-hidden="true" />, path: '/renter/bookings' },
+    { key: 'profile', label: 'Ho so ca nhan', icon: <FaUser aria-hidden="true" />, path: '/renter/profile' },
+    { key: 'ai-reports', label: 'Bao cao AI', icon: <FaRobot aria-hidden="true" />, path: '/renter/ai-reports' },
+    { key: 'transactions', label: 'Lich su giao dich', icon: <FaExchangeAlt aria-hidden="true" />, path: '/renter/transactions' },
+    { key: 'sos', label: 'Ho tro khan cap', icon: <FaAmbulance aria-hidden="true" />, path: '/renter/sos' },
   ],
 };
 
-if (!MENUS.renter.some((item) => item.key === 'dashboard')) {
-  MENUS.renter.splice(0, 0, {
-    key: 'dashboard',
-    label: 'Tổng quan tài chính',
-    Icon: IconLayoutDashboard,
-    path: '/renter/dashboard',
-  });
-}
-
-if (!MENUS.renter.some((item) => item.key === 'pending-pickups')) {
-  MENUS.renter.splice(1, 0, {
-    key: 'pending-pickups',
-    label: 'Chờ nhận xe',
-    Icon: IconCar,
-    path: '/renter/pending-pickups',
-  });
-}
-
 const ROLE_CONFIG = {
-  admin: { label: 'Quản trị viên', color: '#6d28d9', bg: '#f5f3ff' },
+  admin: { label: 'Quan tri vien', color: '#6d28d9', bg: '#f5f3ff' },
   showroom: { label: 'Showroom', color: '#00b14f', bg: '#f0fdf4' },
-  owner: { label: 'Chủ xe', color: '#0891b2', bg: '#ecfeff' },
-  renter: { label: 'Khách thuê', color: '#d97706', bg: '#fffbeb' },
+  owner: { label: 'Chu xe', color: '#0891b2', bg: '#ecfeff' },
+  renter: { label: 'Khach thue', color: '#d97706', bg: '#fffbeb' },
 };
 
 const PROFILE_PATHS = {
@@ -97,66 +79,60 @@ const PROFILE_PATHS = {
 };
 
 const FALLBACK_TITLES = [
-  { prefix: '/renter/checkout', label: 'Thanh toán' },
-  { prefix: '/renter/payment-result', label: 'Kết quả thanh toán' },
+  { prefix: '/renter/retry-payment', label: 'Thanh toan lai' },
+  { prefix: '/renter/checkout', label: 'Thanh toan dat xe' },
+  { prefix: '/renter/transactions', label: 'Lich su giao dich' },
+  { prefix: '/renter/payment-result', label: 'Ket qua thanh toan' },
 ];
-
-function Logo() {
-  return (
-    <Link
-      to="/"
-      className="relative z-20 flex items-center gap-2 py-1 text-sm font-normal text-neutral-900 dark:text-neutral-100"
-      aria-label="SmartRent — Trang chủ"
-    >
-      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-700">
-        <img src="/logo_transparent.png" alt="" className="h-full w-full object-contain p-0.5" />
-      </div>
-      <span className="whitespace-pre font-semibold text-neutral-900 dark:text-white">
-        SmartRent
-      </span>
-    </Link>
-  );
-}
-
-function LogoIcon() {
-  return (
-    <Link
-      to="/"
-      className="relative z-20 flex items-center py-1"
-      aria-label="SmartRent — Trang chủ"
-    >
-      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-700">
-        <img src="/logo_transparent.png" alt="" className="h-full w-full object-contain p-0.5" />
-      </div>
-    </Link>
-  );
-}
 
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
-  const chatWidget = useChatWidget();
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const menus = MENUS[user?.role] || MENUS.renter;
   const roleCfg = ROLE_CONFIG[user?.role] || ROLE_CONFIG.renter;
+  const isRenter = user?.role === 'renter';
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const sidebarTheme = isRenter
+    ? {
+        shell: 'border-r border-[#dbe7f5] bg-[#f7fbff] text-[#0f172a] shadow-[0_16px_40px_rgba(15,23,42,0.08)]',
+        topBorder: 'border-[#dbe7f5]',
+        panel: 'border border-[#e2ebf7] bg-white text-[#0f172a] shadow-[0_10px_26px_rgba(148,163,184,0.14)]',
+        toggle: 'border border-[#dbe7f5] bg-white text-[#475569] hover:bg-[#eef5ff] hover:text-primary',
+        navActive: 'bg-[#e8f2ff] text-[#0f172a] shadow-[0_12px_30px_rgba(37,99,235,0.12)]',
+        navIdle: 'text-[#475569] hover:bg-[#eef5ff] hover:text-[#0f172a]',
+        iconActive: 'text-primary',
+        iconIdle: 'text-[#64748b] group-hover:text-primary',
+        footerBorder: 'border-[#dbe7f5]',
+        footerBtn: 'border border-[#dbe7f5] bg-white text-[#0f172a] hover:bg-[#eef5ff]',
+        logoutBtn: 'border border-red-200 bg-red-50 text-red-600 hover:bg-red-100',
+      }
+    : {
+        shell: 'bg-[#1a1a2e] text-white',
+        topBorder: 'border-white/[0.08]',
+        panel: 'border border-white/10 bg-white/5 text-white',
+        toggle: 'border border-white/10 bg-white/10 text-white hover:bg-white/20',
+        navActive: 'bg-white text-[#1a1a2e] shadow-[0_10px_30px_rgba(255,255,255,0.12)]',
+        navIdle: 'text-white/75 hover:bg-white/10 hover:text-white',
+        iconActive: 'text-primary',
+        iconIdle: 'text-white/80 group-hover:text-white',
+        footerBorder: 'border-white/10',
+        footerBtn: 'border border-white/10 bg-white/5 text-white hover:bg-white/10',
+        logoutBtn: 'border border-red-400/20 bg-red-500/10 text-red-100 hover:bg-red-500/20',
+      };
 
-  const handleProfile = () => {
-    setUserDropdownOpen(false);
-    navigate(PROFILE_PATHS[user?.role] || '/');
-  };
+  const initials = useMemo(
+    () => user?.name?.split(' ').map((word) => word[0]).slice(-2).join('').toUpperCase() || 'U',
+    [user?.name]
+  );
 
-  const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const headerTitle = (() => {
     const fromMenu = menus.find((item) => isActive(item.path));
@@ -166,26 +142,6 @@ const DashboardLayout = ({ children }) => {
 
     return FALLBACK_TITLES.find((item) => location.pathname.startsWith(item.prefix))?.label || 'Dashboard';
   })();
-
-  const initials =
-    user?.name
-      ?.split(' ')
-      .map((w) => w[0])
-      .slice(-2)
-      .join('')
-      .toUpperCase() || 'U';
-
-  const profilePath = PROFILE_PATHS[user?.role] || '/';
-
-  const navLinks = useMemo(
-    () =>
-      (MENUS[user?.role] || []).map((item) => ({
-        label: item.label,
-        path: item.path,
-        icon: ic(item.Icon),
-      })),
-    [user?.role]
-  );
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -199,223 +155,243 @@ const DashboardLayout = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') setSidebarOpen(false);
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+        setUserDropdownOpen(false);
+      }
     };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleProfile = () => {
+    setUserDropdownOpen(false);
+    navigate(PROFILE_PATHS[user?.role] || '/');
+  };
+
   return (
-    <div className="relative flex min-h-screen bg-[#f4f6f9] dark:bg-neutral-950">
+    <div className="relative flex min-h-screen bg-[#f4f6f9]">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[9999] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
       >
-        Chuyển đến nội dung chính
+        Chuyen den noi dung chinh
       </a>
 
       {sidebarOpen && (
         <div
           role="presentation"
-          className="fixed inset-0 z-[199] bg-black/45 md:hidden"
+          className="fixed inset-0 z-[199] bg-black/45"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} animate>
-        <SidebarBody
-          className={cn(
-            'justify-between gap-6 px-2 py-4',
-            'md:justify-start md:gap-0 md:py-4'
-          )}
-        >
-          <SidebarNavContent
-            navLinks={navLinks}
-            roleCfg={roleCfg}
-            profilePath={profilePath}
-            user={user}
-            initials={initials}
-            onLogout={handleLogout}
-          />
-        </SidebarBody>
-      </Sidebar>
-
-      <div
-        className={cn(
-          'flex min-h-screen flex-1 flex-col transition-[margin] duration-200 ease-out max-md:ml-0',
-          'md:ml-[var(--dashboard-sidebar-width,76px)]'
-        )}
+      <aside
+        aria-label="Dieu huong chinh"
+        className={`fixed bottom-0 left-0 top-0 z-[200] flex flex-col overflow-hidden transition-[width] duration-[250ms] ease-in-out max-md:!w-60 max-md:transition-transform ${sidebarTheme.shell} ${
+          collapsed ? 'w-[68px]' : 'w-60'
+        } ${sidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
       >
-        <header className="sticky top-0 z-[100] flex h-[60px] shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label="Mở menu điều hướng"
-              className="flex rounded-lg p-2 text-neutral-700 hover:bg-neutral-100 md:hidden dark:text-neutral-200 dark:hover:bg-neutral-800"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <IconMenu2 size={22} stroke={stroke} aria-hidden />
-            </button>
-            <div className="text-[0.9rem] font-semibold text-neutral-900 dark:text-neutral-100">
-              {headerTitle}
+        <div className={`flex min-h-[64px] shrink-0 items-center justify-between border-b px-3.5 py-[18px] ${sidebarTheme.topBorder}`}>
+          {!collapsed ? (
+            <Link to="/" className="min-w-0 flex-1 no-underline" aria-label="SmartRent Car Rental - Trang chu">
+              <img
+                src="/logo_transparent.png"
+                alt="SmartRent Car Rental"
+                width={140}
+                height={36}
+                className="h-9 w-auto object-contain"
+              />
+            </Link>
+          ) : (
+            <Link to="/" className="mx-auto block" aria-label="SmartRent Car Rental - Trang chu">
+              <img
+                src="/logo_transparent.png"
+                alt="SmartRent Car Rental"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
+            </Link>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setCollapsed((prev) => !prev)}
+            className={`hidden h-9 w-9 items-center justify-center rounded-lg transition md:inline-flex ${sidebarTheme.toggle}`}
+            aria-label={collapsed ? 'Mo rong menu' : 'Thu gon menu'}
+            aria-pressed={collapsed}
+          >
+            {collapsed ? <FaAngleRight aria-hidden="true" /> : <FaAngleDown className="-rotate-90" aria-hidden="true" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition md:hidden ${sidebarTheme.toggle}`}
+            aria-label="Dong menu"
+          >
+            <FaTimes aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-4">
+          <div
+            className={`rounded-2xl px-3 py-3 transition-all ${sidebarTheme.panel} ${collapsed ? 'items-center text-center' : ''}`}
+          >
+            <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold ${isRenter ? 'bg-[#e0f2fe] text-[#0369a1]' : 'bg-white text-[#1a1a2e]'}`}>
+                {initials}
+              </div>
+              {!collapsed && (
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{user?.name || 'Tai khoan'}</div>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ color: roleCfg.color, backgroundColor: roleCfg.bg }}>
+                    <MdVerifiedUser aria-hidden="true" />
+                    <span>{roleCfg.label}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              to="/"
-              aria-label="Trang chủ"
-              className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-neutral-200 bg-white text-neutral-500 transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary"
+          <nav className="flex flex-1 flex-col gap-1" aria-label="Menu vai tro">
+            {menus.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.key}
+                  to={item.path}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium no-underline transition ${
+                    active
+                      ? sidebarTheme.navActive
+                      : sidebarTheme.navIdle
+                  } ${collapsed ? 'justify-center px-2' : ''}`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <span className={`text-base ${active ? sidebarTheme.iconActive : sidebarTheme.iconIdle}`}>{item.icon}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className={`mt-auto flex flex-col gap-2 border-t pt-3 ${sidebarTheme.footerBorder}`}>
+            <button
+              type="button"
+              onClick={handleProfile}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition ${sidebarTheme.footerBtn} ${collapsed ? 'justify-center px-2' : ''}`}
+              title={collapsed ? 'Ho so' : undefined}
             >
-              <IconHome size={18} stroke={stroke} aria-hidden />
-            </Link>
-            {(user?.role === 'renter' || user?.role === 'showroom') && chatWidget && (
+              <FaUser aria-hidden="true" />
+              {!collapsed && <span className="truncate">Ho so</span>}
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition ${sidebarTheme.logoutBtn} ${collapsed ? 'justify-center px-2' : ''}`}
+              title={collapsed ? 'Dang xuat' : undefined}
+            >
+              <FaSignOutAlt aria-hidden="true" />
+              {!collapsed && <span className="truncate">Dang xuat</span>}
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className={`flex min-h-screen flex-1 flex-col transition-[margin] duration-[250ms] ${collapsed ? 'md:ml-[68px]' : 'md:ml-60'}`}>
+        <header className="sticky top-0 z-[120] border-b border-[#e8edf5] bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.04)] backdrop-blur">
+          <div className="flex min-h-[72px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                aria-label="Mở chat hỗ trợ"
-                className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] border border-neutral-200 bg-white text-neutral-500 transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary"
-                onClick={() => chatWidget.openChat()}
+                onClick={() => setSidebarOpen(true)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#dfe7f3] bg-white text-[#1a1a2e] transition hover:bg-[#f7f9fc] md:hidden"
+                aria-label="Mo menu"
               >
-                <IconMessageCircle size={18} stroke={stroke} aria-hidden />
+                <FaBars aria-hidden="true" />
               </button>
-            )}
+              <div>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#94a3b8]">SmartRent workspace</p>
+                <h1 className="text-lg font-semibold text-[#0f172a] sm:text-[1.35rem]">{headerTitle}</h1>
+              </div>
+            </div>
 
-            <NotificationBell />
+            <div className="flex items-center gap-2 sm:gap-3">
+              {user?.role === 'renter' && <NotificationBell />}
 
-            {user?.role !== 'renter' && (
+              <Link
+                to="/"
+                className="hidden items-center gap-2 rounded-xl border border-[#dfe7f3] bg-white px-3 py-2 text-sm font-medium text-[#0f172a] no-underline transition hover:border-primary hover:text-primary lg:inline-flex"
+              >
+                <FaComments aria-hidden="true" className="text-primary" />
+                Trang chu
+              </Link>
+
               <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
-                  aria-label={`${user?.name} - mở menu tài khoản`}
-                  aria-expanded={userDropdownOpen}
+                  onClick={() => setUserDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-3 rounded-2xl border border-[#dfe7f3] bg-white px-3 py-2.5 shadow-sm transition hover:border-primary/40 hover:shadow-md"
                   aria-haspopup="menu"
-                  className="flex cursor-pointer select-none items-center gap-1.5 rounded-[10px] py-1 pl-1 pr-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                  onClick={() => setUserDropdownOpen((o) => !o)}
+                  aria-expanded={userDropdownOpen}
                 >
-                  <div
-                    aria-hidden
-                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[0.72rem] font-bold text-white"
-                    style={{ background: roleCfg.color }}
-                  >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-white">
                     {initials}
                   </div>
-                  <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap text-[0.82rem] font-semibold text-neutral-700 dark:text-neutral-200">
-                    {user?.name}
-                  </span>
-                  <IconChevronDown
-                    size={16}
-                    stroke={stroke}
-                    className={cn('text-neutral-400 transition-transform', userDropdownOpen && 'rotate-180')}
-                    aria-hidden
-                  />
+                  <div className="hidden min-w-0 text-left sm:block">
+                    <div className="truncate text-sm font-semibold text-[#0f172a]">{user?.name || 'Tai khoan'}</div>
+                    <div className="truncate text-xs text-[#64748b]">{roleCfg.label}</div>
+                  </div>
+                  <FaAngleDown className={`text-xs text-[#64748b] transition ${userDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
 
                 {userDropdownOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-[calc(100%+8px)] z-[999] min-w-[210px] rounded-[14px] border border-neutral-200 bg-white py-2 shadow-lg dark:border-neutral-700 dark:bg-neutral-900"
-                  >
-                    <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-                      <div
-                        aria-hidden
-                        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[0.9rem] font-bold text-white"
-                        style={{ background: roleCfg.color }}
-                      >
-                        {initials}
-                      </div>
-                      <div>
-                        <div className="text-[0.85rem] font-bold text-neutral-900 dark:text-white">{user?.name}</div>
-                        <div className="mt-px text-[0.72rem] font-semibold" style={{ color: roleCfg.color }}>
-                          {roleCfg.label}
-                        </div>
-                      </div>
-                    </div>
-                    <div role="separator" className="my-1 h-px bg-neutral-100 dark:bg-neutral-800" />
+                  <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white py-2 shadow-[0_20px_45px_rgba(15,23,42,0.14)]">
                     <button
                       type="button"
-                      role="menuitem"
-                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[0.83rem] text-neutral-700 hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-800"
                       onClick={handleProfile}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[#0f172a] transition hover:bg-[#f8fafc]"
                     >
-                      <IconUser size={16} stroke={stroke} aria-hidden /> Hồ sơ cá nhân
+                      <FaUser className="text-[#64748b]" aria-hidden="true" />
+                      Trang ca nhan
                     </button>
-                    <div role="separator" className="my-1 h-px bg-neutral-100 dark:bg-neutral-800" />
+                    <Link
+                      to="/"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-[#0f172a] no-underline transition hover:bg-[#f8fafc] lg:hidden"
+                    >
+                      <FaComments className="text-[#64748b]" aria-hidden="true" />
+                      Trang chu
+                    </Link>
                     <button
                       type="button"
-                      role="menuitem"
-                      className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-[0.83rem] text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
                       onClick={handleLogout}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
                     >
-                      <IconLogout size={16} stroke={stroke} aria-hidden /> Đăng xuất
+                      <FaSignOutAlt aria-hidden="true" />
+                      Dang xuat
                     </button>
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
         </header>
 
-        <main id="main-content" className="flex-1 overflow-y-auto p-6 max-md:p-4" tabIndex={-1}>
-          {children}
+        <main id="main-content" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
   );
 };
-
-/** Nội dung sidebar: cần `useSidebar` nên tách component con. */
-function SidebarNavContent({ navLinks, roleCfg, profilePath, user, initials, onLogout }) {
-  const { expanded, open, isMobile } = useSidebar();
-  const showFullBrand = isMobile ? open : expanded;
-
-  return (
-    <>
-      <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-        <div className="flex shrink-0 items-center px-1">{showFullBrand ? <Logo /> : <LogoIcon />}</div>
-
-        {showFullBrand && (
-          <div
-            aria-hidden
-            className="mx-1 mt-3 flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[0.72rem] font-bold"
-            style={{ background: roleCfg.bg, color: roleCfg.color }}
-          >
-            <span className="max-w-[200px] truncate">{roleCfg.label}</span>
-          </div>
-        )}
-
-        <div className="mt-6 flex flex-col gap-0.5 px-0.5">
-          {navLinks.map((link, idx) => (
-            <SidebarLink key={idx} link={link} />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-auto shrink-0 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-        <SidebarLink
-          link={{
-            label: user?.name || 'Tài khoản',
-            path: profilePath,
-            icon: (
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-bold text-white"
-                style={{ background: roleCfg.color }}
-              >
-                {initials}
-              </span>
-            ),
-          }}
-        />
-        <SidebarLink
-          link={{
-            label: 'Đăng xuất',
-            onClick: onLogout,
-            icon: <IconLogout className="h-5 w-5 shrink-0 text-neutral-600 dark:text-neutral-300" stroke={stroke} />,
-          }}
-        />
-      </div>
-    </>
-  );
-}
 
 export default DashboardLayout;

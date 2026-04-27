@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaArrowRight, FaRobot } from 'react-icons/fa';
+import { FaArrowRight, FaDownload, FaImage, FaLaptop, FaRobot } from 'react-icons/fa';
 import AIInspectionReportView from '../../../components/common/AIInspectionReportView';
 import StatusBadge from '../../../components/common/StatusBadge';
 import bookingService from '../../../services/bookingService';
@@ -31,6 +31,17 @@ const mapReportBooking = (booking) => {
   };
 };
 
+const downloadBlob = (blob, fileName) => {
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(objectUrl);
+};
+
 const AIReports = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -47,7 +58,7 @@ const AIReports = () => {
     const loadReports = async () => {
       setLoading(true);
       try {
-        const bookings = await bookingService.getMyBookingsDetailed();
+        const bookings = await bookingService.getCurrentRoleBookingsDetailed();
         if (!mounted) {
           return;
         }
@@ -113,6 +124,48 @@ const AIReports = () => {
     [reports]
   );
 
+  const exportReportJson = (reportItem) => {
+    try {
+      const payload = {
+        bookingId: reportItem.id,
+        vehicleName: reportItem.vehicleName,
+        showroomName: reportItem.showroomName,
+        startDate: reportItem.startDate,
+        endDate: reportItem.endDate,
+        workflowUpdatedAt: reportItem.workflowUpdatedAt,
+        report: reportItem.report,
+      };
+
+      downloadBlob(
+        new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' }),
+        `ai-report-${reportItem.id}.json`
+      );
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Khong the export bao cao AI luc nay.');
+    }
+  };
+
+  const downloadEvidenceImage = async (imageUrl, fileName) => {
+    if (!imageUrl) {
+      setError('Khong tim thay anh doi chieu de tai xuong.');
+      return;
+    }
+
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error('Khong the tai anh doi chieu tu storage hien tai.');
+      }
+
+      const blob = await response.blob();
+      downloadBlob(blob, fileName);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Khong the tai anh doi chieu luc nay.');
+    }
+  };
+
   return (
     <div className="ai-inspection">
       <div className="page-header" style={{ marginBottom: 20 }}>
@@ -137,8 +190,8 @@ const AIReports = () => {
           lineHeight: 1.65,
         }}
       >
-        Bao cao trong muc nay duoc tao tu anh doi chieu renter da luu trong quy trinh nhan / tra xe tren trinh duyet hien tai.
-        Neu doi trinh duyet hoac xoa du lieu local, bao cao co the khong con hien thi day du.
+        Bao cao trong muc nay duoc tao tu workflow renter luu cuc bo tren trinh duyet hien tai. Neu doi may, doi
+        trinh duyet hoac xoa local data, bao cao va bo anh doi chieu co the bien mat.
       </div>
 
       {error && (
@@ -169,7 +222,8 @@ const AIReports = () => {
           </div>
           <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Chua co bao cao AI nao tren trinh duyet nay</div>
           <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, maxWidth: 580, margin: '0 auto 16px' }}>
-            Bao cao AI se duoc tao sau khi ban gui bo anh tra xe co anh doi chieu truoc thue trong quy trinh nhan / tra xe, va duoc luu tren trinh duyet hien tai.
+            Bao cao AI se duoc tao sau khi ban gui bo anh tra xe co anh doi chieu truoc thue trong quy trinh nhan / tra xe.
+            Du lieu nay hien chi ton tai tren trinh duyet hien tai cua ban.
           </div>
           <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
             Mo quy trinh tra xe
@@ -242,6 +296,89 @@ const AIReports = () => {
                 bookingCode={selectedReport.id}
                 vehicleName={selectedReport.vehicleName}
                 showroomName={selectedReport.showroomName}
+                footer={
+                  <div
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 18,
+                      padding: 16,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 12px',
+                          borderRadius: 999,
+                          background: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          color: '#1d4ed8',
+                          fontSize: '0.76rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        <FaLaptop />
+                        Luu cuc bo tren trinh duyet nay
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="renter-btn-soft"
+                          onClick={() => exportReportJson(selectedReport)}
+                          style={{ justifyContent: 'center' }}
+                        >
+                          <FaDownload />
+                          Export bao cao JSON
+                        </button>
+                        <button
+                          type="button"
+                          className="renter-btn-soft"
+                          onClick={() =>
+                            downloadEvidenceImage(
+                              selectedReport.report?.beforeImageUrl,
+                              `ai-before-rental-${selectedReport.id}.jpg`
+                            )
+                          }
+                          disabled={!selectedReport.report?.beforeImageUrl}
+                          style={{
+                            justifyContent: 'center',
+                            opacity: selectedReport.report?.beforeImageUrl ? 1 : 0.55,
+                          }}
+                        >
+                          <FaImage />
+                          Tai anh truoc thue
+                        </button>
+                        <button
+                          type="button"
+                          className="renter-btn-soft"
+                          onClick={() =>
+                            downloadEvidenceImage(
+                              selectedReport.report?.afterImageUrl,
+                              `ai-return-image-${selectedReport.id}.jpg`
+                            )
+                          }
+                          disabled={!selectedReport.report?.afterImageUrl}
+                          style={{
+                            justifyContent: 'center',
+                            opacity: selectedReport.report?.afterImageUrl ? 1 : 0.55,
+                          }}
+                        >
+                          <FaImage />
+                          Tai anh tra xe
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 10, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.65 }}>
+                      Report nay duoc FE renter tao tu workflow luu local. Export JSON hoac tai bo anh doi chieu de giu lai ban sao
+                      truoc khi doi trinh duyet hoac xoa du lieu local.
+                    </div>
+                  </div>
+                }
               />
             )}
           </div>

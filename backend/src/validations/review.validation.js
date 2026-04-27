@@ -2,49 +2,54 @@ const { body } = require("express-validator");
 
 class ReviewValidation {
     createReview = [
+        body("booking_id")
+            .notEmpty()
+            .withMessage("booking_id la bat buoc")
+            .isMongoId()
+            .withMessage("booking_id phai la MongoId hop le"),
         body("vehicle_id")
             .notEmpty()
-            .withMessage("vehicle_id là bắt buộc")
+            .withMessage("vehicle_id la bat buoc")
             .isMongoId()
-            .withMessage("vehicle_id phải là MongoId hợp lệ"),
+            .withMessage("vehicle_id phai la MongoId hop le"),
         body("rating")
             .notEmpty()
-            .withMessage("rating là bắt buộc")
+            .withMessage("rating la bat buoc")
             .isInt({ min: 1, max: 5 })
-            .withMessage("rating phải từ 1 đến 5"),
+            .withMessage("rating phai tu 1 den 5"),
         body("comment")
             .optional()
             .trim()
             .isLength({ max: 1000 })
-            .withMessage("comment tối đa 1000 ký tự"),
+            .withMessage("comment toi da 1000 ky tu"),
     ];
 
     updateReview = [
         body("review_id")
             .notEmpty()
-            .withMessage("review_id là bắt buộc")
+            .withMessage("review_id la bat buoc")
             .isMongoId()
-            .withMessage("review_id phải là MongoId hợp lệ"),
+            .withMessage("review_id phai la MongoId hop le"),
         body("rating")
             .notEmpty()
-            .withMessage("rating là bắt buộc")
+            .withMessage("rating la bat buoc")
             .isInt({ min: 1, max: 5 })
-            .withMessage("rating phải từ 1 đến 5"),
+            .withMessage("rating phai tu 1 den 5"),
         body("comment")
             .optional()
             .trim()
             .isLength({ max: 1000 })
-            .withMessage("comment tối đa 1000 ký tự"),
+            .withMessage("comment toi da 1000 ky tu"),
     ];
 
     getReviewsByVehicleId = [
         body("vehicle_id")
             .notEmpty()
-            .withMessage("vehicle_id là bắt buộc")
+            .withMessage("vehicle_id la bat buoc")
             .isMongoId()
-            .withMessage("vehicle_id phải là MongoId hợp lệ"),
-        body("page").optional().isInt({ min: 1 }).withMessage("page phải là số nguyên >= 1"),
-        body("limit").optional().isInt({ min: 1, max: 100 }).withMessage("limit phải từ 1 đến 100"),
+            .withMessage("vehicle_id phai la MongoId hop le"),
+        body("page").optional().isInt({ min: 1 }).withMessage("page phai la so nguyen >= 1"),
+        body("limit").optional().isInt({ min: 1, max: 100 }).withMessage("limit phai tu 1 den 100"),
     ];
 }
 

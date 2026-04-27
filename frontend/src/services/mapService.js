@@ -1,8 +1,6 @@
-import { LOCATIONIQ_API_KEY } from '../components/Map/mapConfig';
+import apiClient from './apiClient';
 
-const GEOCODE_BASE_URL = 'https://us1.locationiq.com/v1/search';
 const geocodeCache = new Map();
-let rateLimitedUntil = 0;
 
 const normalizeQuery = (value) => String(value || '').trim().replace(/\s+/g, ' ');
 
@@ -21,50 +19,34 @@ export const mapService = {
       return [];
     }
 
-    if (!LOCATIONIQ_API_KEY) {
-      throw new Error('Chua cau hinh LOCATIONIQ_API_KEY cho geocoding.');
-    }
-
     const cacheKey = `${trimmedQuery.toLowerCase()}|${limit}|${countrycodes}`;
     if (geocodeCache.has(cacheKey)) {
       return geocodeCache.get(cacheKey);
     }
 
-    if (Date.now() < rateLimitedUntil) {
-      throw new Error('Dich vu geocode dang tam gioi han. Vui long doi it phut roi thu lai.');
+    try {
+      const response = await apiClient.get('/api/map/forwardGeocode', {
+        params: {
+          address: trimmedQuery,
+          limit,
+          countrycodes,
+        },
+      });
+
+      const data = Array.isArray(response.data?.data) ? response.data.data : [];
+      const results = data
+        .map(normalizeResult)
+        .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng));
+
+      geocodeCache.set(cacheKey, results);
+      return results;
+    } catch (error) {
+      if (error.status === 404) {
+        return [];
+      }
+
+      throw new Error(error.message || 'Khong the geocode dia chi luc nay.');
     }
-
-    const url = new URL(GEOCODE_BASE_URL);
-    url.searchParams.set('key', LOCATIONIQ_API_KEY);
-    url.searchParams.set('q', trimmedQuery);
-    url.searchParams.set('format', 'json');
-    url.searchParams.set('limit', String(limit));
-    url.searchParams.set('accept-language', 'vi');
-    if (countrycodes) {
-      url.searchParams.set('countrycodes', countrycodes);
-    }
-
-    const response = await fetch(url.toString());
-    if (response.status === 429) {
-      rateLimitedUntil = Date.now() + 60 * 1000;
-      throw new Error('Dich vu geocode dang tam gioi han. Vui long doi it phut roi thu lai.');
-    }
-
-    if (!response.ok) {
-      throw new Error('Khong the geocode dia chi luc nay.');
-    }
-
-    const data = await response.json();
-    if (!Array.isArray(data)) {
-      return [];
-    }
-
-    const results = data
-      .map(normalizeResult)
-      .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng));
-
-    geocodeCache.set(cacheKey, results);
-    return results;
   },
 };
 

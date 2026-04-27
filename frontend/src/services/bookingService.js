@@ -147,10 +147,10 @@ const runStatusTransitions = async (bookingId, transitions = []) => {
 };
 
 const PICKUP_CONFIRMATION_PATHS = {
-  pending: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
-  waiting_payment: ['paid', 'confirmed', 'waiting_handover', 'handed_over'],
-  paid: ['confirmed', 'waiting_handover', 'handed_over'],
-  confirmed: ['waiting_handover', 'handed_over'],
+  pending: [],
+  waiting_payment: [],
+  paid: [],
+  confirmed: [],
   waiting_handover: ['handed_over'],
   handed_over: [],
 };
@@ -164,8 +164,6 @@ const RETURN_REQUEST_PATHS = {
 
 export const bookingService = {
   async createBooking(payload = {}) {
-    const currentUser = readStoredUser();
-    const userId = resolveId(payload.user_id) || resolveId(currentUser);
     const vehicleId = resolveId(payload.vehicle_id) || resolveId(payload.vehicleId);
     const showroomId =
       resolveId(payload.showroom_id)
@@ -174,8 +172,8 @@ export const bookingService = {
       || resolveId(payload.car?.addedBy)
       || resolveId(payload.vehicle?.addedBy);
 
-    if (!userId || !vehicleId || !showroomId) {
-      throw new Error('Thieu user_id, vehicle_id hoac showroom_id de tao booking.');
+    if (!vehicleId || !showroomId) {
+      throw new Error('Thieu vehicle_id hoac showroom_id de tao booking.');
     }
 
     const note = String(
@@ -186,7 +184,6 @@ export const bookingService = {
     ).slice(0, 500);
 
     const body = {
-      user_id: userId,
       vehicle_id: vehicleId,
       showroom_id: showroomId,
       start_date: payload.start_date,
@@ -195,32 +192,43 @@ export const bookingService = {
       note,
     };
 
+
     const res = await apiClient.post('/api/booking/createBooking', body);
     return res.data.data;
   },
 
   async getMyBookings(filters = {}) {
-    const currentUser = readStoredUser();
-    const userId = resolveId(filters.user_id) || resolveId(currentUser);
+    const bookings = await this.getCurrentRoleBookings();
 
-    if (!userId) {
-      throw new Error('Khong tim thay user id de tai bookings.');
-    }
+    return (bookings || []).filter((booking) => {
+      if (filters.status && booking?.status !== filters.status) {
+        return false;
+      }
 
-    const res = await apiClient.post('/api/booking/getListBookings', {
-      page: 1,
-      limit: 100,
-      sort_by: -1,
-      user_id: userId,
-      ...filters,
+      if (filters.vehicle_id && resolveId(booking?.vehicle_id) !== resolveId(filters.vehicle_id)) {
+        return false;
+      }
+
+      if (filters.showroom_id && resolveId(booking?.showroom_id) !== resolveId(filters.showroom_id)) {
+        return false;
+      }
+
+      return true;
     });
-
-    return extractBookingList(res.data);
   },
 
   async getCurrentRoleBookings() {
     const res = await apiClient.get('/api/booking/getMyBooking');
     return extractBookingList(res.data);
+  },
+
+  async getCurrentRoleBookingsDetailed() {
+    const bookings = await this.getCurrentRoleBookings();
+    const detailResults = await Promise.allSettled(bookings.map((booking) => enrichBooking(booking)));
+
+    return detailResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
   },
 
   async getListBookings(filters = {}) {
@@ -231,8 +239,7 @@ export const bookingService = {
       limit: safeLimit,
       page: safePage,
     });
-    return normalizeListPayload(res.data?.data ?? res.data);
-  },
+    return normalizeListPayload(res.data?.data ?? res.data);  },
 
   async getMyBookingsDetailed(filters = {}) {
     const bookings = await this.getMyBookings(filters);
@@ -273,6 +280,23 @@ export const bookingService = {
     return res.data.data;
   },
 
+  async createBookingAndPaymentSession(payload = {}) {
+    const booking = await this.createBooking(payload);
+    const bookingId = resolveId(booking);
+    const amount = Number(booking?.total_price || payload.total_price || 0);
+    const paymentData = await paymentService.createPaymentSession({
+      bookingId,
+      amount,
+    });
+
+    return {
+      booking,
+      bookingId,
+      paymentData,
+      clientSecret: paymentData?.client_secret || paymentData?.clientSecret || '',
+    };
+  },
+
   async getShowroomBookings(filters = {}) {
     const currentUser = readStoredUser();
     const showroomId = resolveId(filters.showroom_id) || resolveId(currentUser);
@@ -292,7 +316,9 @@ export const bookingService = {
     return res.data.data;
   },
 
-  async confirmPickupForRenter(id, currentStatus) {
+  async confirmPickup(id) {
+    const booking = await this.getBookingById(id);
+    const currentStatus = booking?.status || '';
     const transitions = PICKUP_CONFIRMATION_PATHS[currentStatus];
 
     if (!transitions) {
@@ -300,13 +326,15 @@ export const bookingService = {
     }
 
     if (transitions.length === 0) {
-      return null;
+      return booking;
     }
 
     return runStatusTransitions(id, transitions);
   },
 
-  async requestReturnForRenter(id, currentStatus) {
+  async requestReturn(id) {
+    const booking = await this.getBookingById(id);
+    const currentStatus = booking?.status || '';
     const transitions = RETURN_REQUEST_PATHS[currentStatus];
 
     if (!transitions) {
@@ -314,11 +342,21 @@ export const bookingService = {
     }
 
     if (transitions.length === 0) {
-      return null;
+      return booking;
     }
 
     return runStatusTransitions(id, transitions);
   },
+
+  async confirmPickupForRenter(id) {
+    return this.confirmPickup(id);
+  },
+
+  async requestReturnForRenter(id) {
+    return this.requestReturn(id);
+  },
 };
 
 export default bookingService;
+
+

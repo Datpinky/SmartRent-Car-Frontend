@@ -3,6 +3,7 @@ import CarGrid from '../../CarGrid/CarGrid';
 import FilterBar from '../../FilterBar/FilterBar';
 import SearchBar from '../../SearchBar/SearchBar';
 import bookingService from '../../../services/bookingService';
+import reviewService from '../../../services/reviewService';
 import vehicleService from '../../../services/vehicleService';
 
 const DEFAULT_FILTERS = {
@@ -104,7 +105,6 @@ const Home = () => {
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [apiError, setApiError] = useState('');
   const [availabilityError, setAvailabilityError] = useState('');
-  const [availabilityNotice, setAvailabilityNotice] = useState('');
 
   const currentFilters = useRef(DEFAULT_FILTERS);
   const currentSearch = useRef({ location: '', carName: '', pickupDate: '', returnDate: '' });
@@ -128,7 +128,6 @@ const Home = () => {
 
       setFilteredCars(locallyFiltered);
       setAvailabilityError('');
-      setAvailabilityNotice('');
       setCheckingAvailability(false);
       return;
     }
@@ -149,7 +148,6 @@ const Home = () => {
       return;
     }
 
-    let hiddenCount = 0;
     let failedCount = 0;
 
     const availableCars = locallyFiltered.filter((vehicle, index) => {
@@ -161,7 +159,6 @@ const Home = () => {
       }
 
       if (result.value?.isAvailable === false) {
-        hiddenCount += 1;
         return false;
       }
 
@@ -172,11 +169,6 @@ const Home = () => {
     setAvailabilityError(
       failedCount > 0
         ? 'Khong the kiem tra lich thue cua mot so xe. Danh sach dang hien thi theo ket qua du phong.'
-        : ''
-    );
-    setAvailabilityNotice(
-      hiddenCount > 0
-        ? `Da an ${hiddenCount} xe da co booking trung lich trong khung thoi gian ban chon.`
         : ''
     );
     setCheckingAvailability(false);
@@ -197,12 +189,13 @@ const Home = () => {
       setLoadingVehicles(true);
       try {
         const { data } = await vehicleService.getList({ limit: 100 });
+        const vehiclesWithReviewSummary = await reviewService.enrichVehiclesWithSummary(data, { limit: 100 });
         if (cancelled) {
           return;
         }
 
-        setAllCars(data);
-        await syncVisibleCars(data);
+        setAllCars(vehiclesWithReviewSummary);
+        await syncVisibleCars(vehiclesWithReviewSummary);
         setApiError('');
       } catch (error) {
         if (cancelled) {
@@ -264,14 +257,6 @@ const Home = () => {
         <div className="mx-auto max-w-[1280px] px-5 pt-3">
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[0.82rem] text-amber-800">
             <span className="font-semibold">Khong the kiem tra trung lich cho mot so xe.</span> {availabilityError}
-          </div>
-        </div>
-      )}
-
-      {availabilityNotice && (
-        <div className="mx-auto max-w-[1280px] px-5 pt-3">
-          <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-[0.82rem] text-blue-800">
-            {availabilityNotice}
           </div>
         </div>
       )}
