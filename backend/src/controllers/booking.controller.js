@@ -37,7 +37,15 @@ class BookingController {
 
   async getListBookings(req, res, next) {
     try {
-        const filters = req.body;
+        const filters = { ...(req.body || {}) };
+
+        if (req.user?.role !== "admin" && req.user?.role !== "showroom") {
+          filters.user_id = req.user.userId;
+        }
+        if (req.user?.role === "showroom") {
+          filters.showroom_id = req.user.userId;
+        }
+
         const result = await bookingService.getListBookings(filters);
 
         return res.status(200).json({
@@ -54,14 +62,24 @@ class BookingController {
     try {
       const { bookingId } = req.params;
       const result = await bookingService.getBookingById(bookingId);
-      console.log(result);
-
 
       if (!result) {
         return res.status(404).json({
           message: "Không tìm thấy booking",
         });
       }
+
+      const showroomId = result.showroom_id?._id?.toString() || result.showroom_id?.toString();
+      const renterId = result.user_id?._id?.toString() || result.user_id?.toString();
+      const actorId = String(req.user?.userId || '');
+      const isAdmin = req.user?.role === "admin";
+      const isRenter = !["showroom", "admin"].includes(req.user?.role) && renterId === actorId;
+      const isShowroom = req.user?.role === "showroom" && showroomId === actorId;
+
+      if (!isAdmin && !isRenter && !isShowroom) {
+        return res.status(403).json({ message: "Không có quyền xem booking này" });
+      }
+
       return res.status(200).json({
         message: "Lấy thông tin booking thành công",
         data: result,
@@ -101,6 +119,32 @@ class BookingController {
           message: "Trạng thái không được để trống",
         });
       }
+      const existing = await bookingService.getBookingById(bookingId);
+      if (!existing) {
+        return res.status(404).json({ message: "Không tìm thấy booking để cập nhật" });
+      }
+
+      const actorId = String(req.user?.userId || '');
+      const showroomId = existing.showroom_id?.toString();
+      const renterId = existing.user_id?._id?.toString() || existing.user_id?.toString();
+      const isAdmin = req.user?.role === 'admin';
+      const isShowroom = req.user?.role === 'showroom';
+      const isRenter = !isAdmin && !isShowroom;
+
+      if (isShowroom && showroomId !== actorId) {
+        return res.status(403).json({ message: "Không có quyền cập nhật booking này" });
+      }
+
+      if (isRenter) {
+        if (renterId !== actorId) {
+          return res.status(403).json({ message: "Không có quyền cập nhật booking này" });
+        }
+
+        if (status !== 'cancelled') {
+          return res.status(403).json({ message: "Khách thuê chỉ có thể hủy booking" });
+        }
+      }
+
       const result = await bookingService.updateBookingStatus(bookingId, status);
       if (!result) {
         return res.status(404).json({
@@ -134,12 +178,28 @@ class BookingController {
   async cancelBooking(req, res, next) {
     try {
       const { bookingId } = req.params;
-      const result = await bookingService.cancelBooking(bookingId);
-      if (!result) {
+      const existing = await bookingService.getBookingById(bookingId);
+      if (!existing) {
         return res.status(404).json({
           message: "Không tìm thấy booking để hủy",
         });
       }
+
+      const actorId = String(req.user?.userId || '');
+      const showroomId = existing.showroom_id?.toString();
+      const renterId = existing.user_id?._id?.toString() || existing.user_id?.toString();
+      const isAdmin = req.user?.role === 'admin';
+      const isShowroom = req.user?.role === 'showroom';
+      const isRenter = !isAdmin && !isShowroom;
+
+      if (isShowroom && showroomId !== actorId) {
+        return res.status(403).json({ message: "Không có quyền hủy booking này" });
+      }
+      if (isRenter && renterId !== actorId) {
+        return res.status(403).json({ message: "Không có quyền hủy booking này" });
+      }
+
+      const result = await bookingService.cancelBooking(bookingId);
       return res.status(200).json({
         message: "Hủy booking thành công",
         data: result,

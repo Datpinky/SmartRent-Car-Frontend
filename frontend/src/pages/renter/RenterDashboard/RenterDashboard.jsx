@@ -263,7 +263,7 @@ const RenterDashboard = () => {
     const loadDashboard = async () => {
       setLoading(true);
       try {
-        const bookings = await bookingService.getMyBookingsDetailed();
+        const bookings = await bookingService.getCurrentRoleBookingsDetailed();
         if (!mounted) {
           return;
         }

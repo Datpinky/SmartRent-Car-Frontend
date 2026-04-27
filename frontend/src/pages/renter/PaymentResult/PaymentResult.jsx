@@ -57,6 +57,11 @@ const PaymentResult = () => {
         : (redirectStatus === 'failed' ? 'error' : 'pending')));
   const [status, setStatus] = useState('loading');
   const [booking, setBooking] = useState(null);
+  const canRetryPayment =
+    ['pending', 'waiting_payment'].includes(booking?.paymentState?.bookingStatus || booking?.status || '')
+    && ['pending', 'failed', 'declined'].includes(
+      booking?.payment?.payment_status || booking?.paymentState?.paymentStatus || 'pending'
+    );
 
   const isSuccess = status === 'success';
   const isPending = status === 'pending';
@@ -204,17 +209,17 @@ const PaymentResult = () => {
             </button>
           ) : isPending ? (
             <button
-              onClick={() => navigate('/renter/pending-pickups')}
+              onClick={() => navigate(canRetryPayment ? `/renter/retry-payment/${bookingId}` : '/renter/pending-pickups')}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#d97706', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
             >
-              <FaList /> Theo doi nhan xe
+              <FaMoneyBillWave /> Thanh toan lai
             </button>
           ) : (
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(canRetryPayment ? `/renter/retry-payment/${bookingId}` : '/renter/transactions')}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '11px 0', background: '#00b14f', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
             >
-              Thu lai
+              Thanh toan lai
             </button>
           )}
         </div>

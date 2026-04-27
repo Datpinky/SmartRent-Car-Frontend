@@ -15,6 +15,8 @@ export const PAYMENT_LABELS = {
   failed: 'That bai',
 };
 
+const RETRY_PAYMENT_BOOKING_STATUSES = ['pending', 'waiting_payment'];
+
 export const formatDateTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'N/A';
@@ -34,6 +36,119 @@ const getLocationLabel = (note) => {
   return rawNote;
 };
 
+const getCoordinationMeta = (booking, flowState, paymentStatus) => {
+  const startLabel = flowState.hasStarted ? 'Da den gio nhan xe' : 'Chua den gio nhan xe';
+
+  if (flowState.isAwaitingPayment) {
+    const needsRetry = ['failed', 'declined'].includes(paymentStatus);
+    return {
+      headline: needsRetry ? 'Cho ban thanh toan lai' : 'Cho ban thanh toan',
+      waitingFor: needsRetry
+        ? 'He thong dang cho ban tao lai va hoan tat phien thanh toan.'
+        : 'He thong dang cho ban hoan tat thanh toan cho booking nay.',
+      owner: 'Ben can xu ly: Ban',
+      nextStep: 'Sau khi thanh toan thanh cong, booking se chuyen sang Cho showroom xu ly.',
+      renterAction: needsRetry ? 'Thanh toan lai de tiep tuc quy trinh dat xe.' : 'Hoan tat thanh toan de showroom tiep tuc xu ly.',
+      menuKey: 'pending-payments',
+    };
+  }
+
+  if (flowState.isAwaitingShowroomProcessing) {
+    const isConfirmed = booking.status === 'confirmed';
+    return {
+      headline: isConfirmed ? 'Cho showroom chuan bi ban giao' : 'Cho showroom xac nhan',
+      waitingFor: isConfirmed
+        ? 'Dang cho showroom chuan bi xe va chuyen booking sang buoc Cho ban giao.'
+        : 'Dang cho showroom tiep nhan booking da thanh toan va xac nhan xu ly.',
+      owner: 'Ben can xu ly: Showroom',
+      nextStep: 'Khi showroom chuyen booking sang Cho ban giao, ban se thay o menu Cho nhan xe.',
+      renterAction: 'Theo doi cap nhat tu showroom hoac lien he neu can.',
+      menuKey: 'pending-showroom-processing',
+    };
+  }
+
+  if (flowState.isAwaitingPickup) {
+    if (flowState.canConfirmPickup) {
+      return {
+        headline: 'Cho ban xac nhan da nhan xe',
+        waitingFor: 'Showroom da san sang ban giao va dang cho ban xac nhan da nhan xe.',
+        owner: 'Ben can xu ly: Ban',
+        nextStep: 'Sau khi xac nhan, booking se duoc chuyen vao Chuyen di cua toi.',
+        renterAction: 'Xac nhan da nhan xe khi ban da kiem tra xong viec ban giao.',
+        menuKey: 'pending-pickups',
+      };
+    }
+
+    return {
+      headline: 'Cho den gio nhan xe',
+      waitingFor: `Showroom da san sang ban giao. ${startLabel}.`,
+      owner: 'Ben can xu ly: Ban',
+      nextStep: 'Nut xac nhan se mo khi den gio nhan xe hop le.',
+      renterAction: 'Den diem giao nhan dung hen va san sang xac nhan nhan xe.',
+      menuKey: 'pending-pickups',
+    };
+  }
+
+  if (booking.status === 'waiting_return_confirmation') {
+    return {
+      headline: 'Cho showroom xac nhan da tra xe',
+      waitingFor: 'Ban da gui yeu cau tra xe. Dang cho showroom doi chieu anh va xac nhan hoan tat.',
+      owner: 'Ben can xu ly: Showroom',
+      nextStep: 'Sau khi showroom xac nhan, booking se chuyen sang Hoan thanh.',
+      renterAction: 'Theo doi cap nhat hoan tat hoac lien he showroom neu can.',
+      menuKey: 'bookings',
+    };
+  }
+
+  if (flowState.isActive) {
+    return {
+      headline: flowState.hasEnded ? 'Den han tra xe' : 'Dang trong thoi gian thue',
+      waitingFor: flowState.hasEnded
+        ? 'He thong dang cho ban mo quy trinh tra xe va gui yeu cau tra xe.'
+        : 'Booking dang o giai doan thue xe. Ban chu dong su dung xe va bao su co neu can.',
+      owner: 'Ben can xu ly: Ban',
+      nextStep: flowState.hasEnded
+        ? 'Mo Nhan / Tra xe de upload anh tra xe va gui yeu cau xac nhan.'
+        : 'Khi den han, ban se mo Nhan / Tra xe de thuc hien buoc tra xe.',
+      renterAction: flowState.hasEnded ? 'Gui yeu cau tra xe' : 'Theo doi han thue va giu xe dung hien trang.',
+      menuKey: 'bookings',
+    };
+  }
+
+  if (flowState.isCompleted) {
+    return {
+      headline: 'Da hoan thanh',
+      waitingFor: 'Booking nay da khop quy trinh tra xe va khong con buoc nao dang cho xu ly.',
+      owner: 'Trang thai: Hoan tat',
+      nextStep: 'Ban co the xem bien ban, bao cao AI local va danh gia xe neu du dieu kien.',
+      renterAction: 'Kiem tra lai lich su hoac de lai danh gia.',
+      menuKey: 'bookings',
+    };
+  }
+
+  if (flowState.isCancelled) {
+    return {
+      headline: 'Da huy booking',
+      waitingFor: 'Booking nay khong con tiep tuc trong quy trinh dat xe hien tai.',
+      owner: 'Trang thai: Da huy',
+      nextStep: paymentStatus === 'refunded'
+        ? 'Khoan hoan tra da duoc ghi nhan trong lich su giao dich.'
+        : 'Neu can dat lai xe, ban co the tao booking moi.',
+      renterAction: 'Kiem tra lich su giao dich neu can doi chieu thanh toan.',
+      menuKey: 'bookings',
+    };
+  }
+
+  return {
+    headline: 'Dang xu ly booking',
+    waitingFor: 'Booking dang duoc he thong theo doi theo trang thai hien tai.',
+    owner: 'Ben can xu ly: Dang cap nhat',
+    nextStep: 'Theo doi tiep cap nhat tren tung menu cua renter.',
+    renterAction: 'Kiem tra chi tiet booking neu can.',
+    menuKey: 'bookings',
+  };
+};
+
 export const mapRenterBooking = (booking) => {
   const images = sanitizeImageList([
     ...(booking.vehicle?.images || []),
@@ -44,6 +159,7 @@ export const mapRenterBooking = (booking) => {
   const paymentStatus = getBookingPaymentStatus(booking);
   const flowState = getBookingFlowState(booking, paymentStatus);
   const workflow = getRentalWorkflow(booking._id);
+  const coordination = getCoordinationMeta(booking, flowState, paymentStatus);
 
   return {
     id: booking._id,
@@ -62,6 +178,9 @@ export const mapRenterBooking = (booking) => {
     paymentStatus,
     paymentMethod: booking.payment?.payment_method || 'Chua co',
     paymentRecord: booking.payment || null,
+    canRetryPayment:
+      RETRY_PAYMENT_BOOKING_STATUSES.includes(booking.status)
+      && ['pending', 'failed', 'declined'].includes(paymentStatus),
     canCancel: CANCELLABLE_STATUSES.includes(booking.status),
     canReviewVehicle: canReviewBooking(booking),
     canConfirmPickup: flowState.canConfirmPickup,
@@ -70,6 +189,8 @@ export const mapRenterBooking = (booking) => {
     hasRentalEnded: flowState.hasEnded,
     hasRentalStarted: flowState.hasStarted,
     isActive: flowState.isActive,
+    isAwaitingPayment: flowState.isAwaitingPayment,
+    isAwaitingShowroomProcessing: flowState.isAwaitingShowroomProcessing,
     isAwaitingPickup: flowState.isAwaitingPickup,
     isCancelled: flowState.isCancelled,
     isCompleted: flowState.isCompleted,
@@ -78,6 +199,12 @@ export const mapRenterBooking = (booking) => {
     pickupConfirmationHint: flowState.pickupConfirmationHint,
     rentalAccessHint: flowState.rentalAccessHint,
     rentalActionLabel: flowState.rentalActionLabel || 'Nhan / Tra xe',
+    statusHeadline: coordination.headline,
+    waitingForLabel: coordination.waitingFor,
+    waitingOwnerLabel: coordination.owner,
+    nextStepLabel: coordination.nextStep,
+    renterActionHint: coordination.renterAction,
+    menuKey: coordination.menuKey,
     workflow,
     raw: booking,
   };

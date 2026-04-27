@@ -1,6 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { FaMapMarkerAlt, FaSearch, FaTimes, FaCheck, FaChevronRight, FaCar, FaCalendarAlt } from 'react-icons/fa';
-import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  FaCalendarAlt,
+  FaCar,
+  FaCheck,
+  FaChevronRight,
+  FaMapMarkerAlt,
+  FaSearch,
+  FaTimes,
+} from 'react-icons/fa';import { lockPageScroll, unlockPageScroll } from '../../utils/scrollLock';
 
 const CITIES = ['Ha Noi', 'Da Nang', 'Ho Chi Minh'];
 
@@ -19,17 +26,51 @@ const CITY_DISTRICTS = {
   },
 };
 
-const formatDateLabel = (value, fallback) => {
+const parseDateTime = (value) => {
   if (!value) {
-    return fallback;
+    return null;
   }
 
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return fallback;
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const pad2 = (value) => String(value).padStart(2, '0');
+
+const toLocalInputValue = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
   }
 
-  return parsed.toLocaleString('vi-VN');
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+};
+
+const buildDefaultPickupDate = () => {
+  const date = new Date();
+  date.setMinutes(0, 0, 0);
+  date.setHours(date.getHours() + 2);
+  return toLocalInputValue(date);
+};
+
+const buildDefaultReturnDate = (pickupValue) => {
+  const pickupDate = parseDateTime(pickupValue) || new Date();
+  const next = new Date(pickupDate);
+  next.setDate(next.getDate() + 2);
+  return toLocalInputValue(next);
+};
+
+const formatDateTimeShort = (value) => {
+  const date = parseDateTime(value);
+  if (!date) {
+    return '';
+  }
+
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const SearchBar = ({ onSearch }) => {
@@ -37,9 +78,9 @@ const SearchBar = ({ onSearch }) => {
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [carName, setCarName] = useState('');
-  const [pickupDate, setPickupDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const [pickupDate, setPickupDate] = useState(() => buildDefaultPickupDate());
+  const [returnDate, setReturnDate] = useState(() => buildDefaultReturnDate(buildDefaultPickupDate()));
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     if (!showModal) {
@@ -56,6 +97,15 @@ const SearchBar = ({ onSearch }) => {
     };
   }, [showModal]);
 
+  useEffect(() => {
+    const pickup = parseDateTime(pickupDate);
+    const ret = parseDateTime(returnDate);
+
+    if (pickup && ret && ret <= pickup) {
+      setReturnDate(buildDefaultReturnDate(pickupDate));
+    }
+  }, [pickupDate, returnDate]);
+
   const districts = selectedCity ? CITY_DISTRICTS[selectedCity] : null;
 
   const locationLabel = useMemo(() => {
@@ -66,34 +116,49 @@ const SearchBar = ({ onSearch }) => {
     return selectedCity || '';
   }, [selectedCity, selectedDistrict]);
 
+  const rentalWindowLabel = useMemo(() => {
+    const pickupLabel = formatDateTimeShort(pickupDate);
+    const returnLabel = formatDateTimeShort(returnDate);
+
+    if (!pickupLabel || !returnLabel) {
+      return 'Chon ngay nhan va tra xe';
+    }
+
+    return `${pickupLabel} - ${returnLabel}`;
+  }, [pickupDate, returnDate]);
+
   const handleSearch = () => {
-    if ((pickupDate && !returnDate) || (!pickupDate && returnDate)) {
-      setValidationError('Can chon day du ngay nhan xe va ngay tra xe.');
+    const pickup = parseDateTime(pickupDate);
+    const ret = parseDateTime(returnDate);
+
+    if (!pickup || !ret) {
+      setSearchError('Vui long chon day du ngay nhan xe va ngay tra xe.');
       return;
     }
 
-    if (pickupDate && returnDate && new Date(pickupDate) >= new Date(returnDate)) {
-      setValidationError('Ngay tra xe phai sau ngay nhan xe.');
+    if (ret <= pickup) {
+      setSearchError('Ngay tra xe phai sau ngay nhan xe.');
       return;
     }
 
+    setSearchError('');
     onSearch?.({
       location: locationLabel,
       carName,
       pickupDate,
       returnDate,
     });
-    setValidationError('');
     setShowModal(false);
   };
 
   const handleReset = () => {
+    const nextPickupDate = buildDefaultPickupDate();
     setSelectedCity(null);
     setSelectedDistrict('');
     setCarName('');
-    setPickupDate('');
-    setReturnDate('');
-    setValidationError('');
+    setPickupDate(nextPickupDate);
+    setReturnDate(buildDefaultReturnDate(nextPickupDate));
+    setSearchError('');
   };
 
   return (
@@ -105,10 +170,10 @@ const SearchBar = ({ onSearch }) => {
 
         <button
           type="button"
-          className="mx-auto flex w-full max-w-[820px] items-stretch overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-md transition-shadow hover:shadow-lg max-[640px]:flex-col max-[640px]:rounded-xl"
+          className="mx-auto flex w-full max-w-[1040px] items-stretch overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-md transition-shadow hover:shadow-lg max-[860px]:flex-col max-[860px]:rounded-xl"
           onClick={() => setShowModal(true)}
         >
-          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
+          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[860px]:border-b max-[860px]:border-r-0">
             <FaMapMarkerAlt className="shrink-0 text-base text-primary" />
             <div className="min-w-0">
               <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Dia diem</div>
@@ -118,27 +183,7 @@ const SearchBar = ({ onSearch }) => {
             </div>
           </div>
 
-          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
-            <FaCalendarAlt className="shrink-0 text-base text-primary" />
-            <div className="min-w-0">
-              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Nhan xe</div>
-              <div className={`truncate text-[0.92rem] font-medium ${pickupDate ? 'text-gray-800' : 'text-gray-400'}`}>
-                {formatDateLabel(pickupDate, 'Chon ngay nhan xe')}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
-            <FaCalendarAlt className="shrink-0 text-base text-primary" />
-            <div className="min-w-0">
-              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Tra xe</div>
-              <div className={`truncate text-[0.92rem] font-medium ${returnDate ? 'text-gray-800' : 'text-gray-400'}`}>
-                {formatDateLabel(returnDate, 'Chon ngay tra xe')}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[640px]:border-b max-[640px]:border-r-0">
+          <div className="flex flex-1 items-center gap-3 border-r border-gray-100 px-5 py-3.5 max-[860px]:border-b max-[860px]:border-r-0">
             <FaCar className="shrink-0 text-base text-gray-400" />
             <div className="min-w-0">
               <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Tim theo ten xe</div>
@@ -148,7 +193,17 @@ const SearchBar = ({ onSearch }) => {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center justify-center gap-2 bg-primary px-7 py-3.5 text-[0.85rem] font-bold uppercase tracking-wide text-white max-[640px]:py-4">
+          <div className="flex flex-1 items-center gap-3 px-5 py-3.5 max-[860px]:border-b max-[860px]:border-gray-100">
+            <FaCalendarAlt className="shrink-0 text-base text-gray-400" />
+            <div className="min-w-0">
+              <div className="text-[0.68rem] font-semibold uppercase tracking-wide text-gray-400">Thoi gian thue</div>
+              <div className="truncate text-[0.92rem] font-medium text-gray-800">
+                {rentalWindowLabel}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center justify-center gap-2 bg-primary px-7 py-3.5 text-[0.85rem] font-bold uppercase tracking-wide text-white max-[860px]:py-4">
             <FaSearch />
             Tim kiem
           </div>
@@ -161,7 +216,7 @@ const SearchBar = ({ onSearch }) => {
           onClick={() => setShowModal(false)}
         >
           <div
-            className="flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.25)] sm:max-w-[520px] sm:rounded-2xl"
+            className="flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.25)] sm:max-w-[560px] sm:rounded-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -200,30 +255,22 @@ const SearchBar = ({ onSearch }) => {
                     placeholder="Tim theo ten xe..."
                     value={carName}
                     onChange={(event) => setCarName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        handleSearch();
-                      }
-                    }}
                   />
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
                     Ngay nhan xe
                   </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
-                    <FaCalendarAlt className="shrink-0 text-primary" />
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
                     <input
                       type="datetime-local"
-                      className="flex-1 border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
+                      className="w-full border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
                       value={pickupDate}
-                      onChange={(event) => {
-                        setPickupDate(event.target.value);
-                        setValidationError('');
-                      }}
+                      min={buildDefaultPickupDate()}
+                      onChange={(event) => setPickupDate(event.target.value)}
                     />
                   </div>
                 </div>
@@ -232,21 +279,23 @@ const SearchBar = ({ onSearch }) => {
                   <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
                     Ngay tra xe
                   </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
-                    <FaCalendarAlt className="shrink-0 text-primary" />
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
                     <input
                       type="datetime-local"
-                      className="flex-1 border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
+                      className="w-full border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
                       value={returnDate}
-                      min={pickupDate || undefined}
-                      onChange={(event) => {
-                        setReturnDate(event.target.value);
-                        setValidationError('');
-                      }}
+                      min={pickupDate}
+                      onChange={(event) => setReturnDate(event.target.value)}
                     />
                   </div>
                 </div>
               </div>
+
+              {searchError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.82rem] text-red-700">
+                  {searchError}
+                </div>
+              )}
 
               <div>
                 <div className="mb-2 flex items-center justify-between">
@@ -331,11 +380,6 @@ const SearchBar = ({ onSearch }) => {
             </div>
 
             <div className="flex shrink-0 flex-col gap-3 border-t border-gray-100 px-5 py-4">
-              {validationError && (
-                <div className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[0.8rem] text-red-700">
-                  {validationError}
-                </div>
-              )}
               <div className="flex w-full items-center gap-3">
                 <button
                   type="button"
@@ -361,3 +405,4 @@ const SearchBar = ({ onSearch }) => {
 };
 
 export default SearchBar;
+

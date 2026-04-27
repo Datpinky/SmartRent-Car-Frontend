@@ -22,7 +22,6 @@ import reviewService from '../../../services/reviewService';
 import favoriteService from '../../../services/favoriteService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { canReviewBooking, resolveBookingVehicleId } from '../../../utils/bookingReviewEligibility';
-import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import { buildRentalWindowQuery, resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const ROLE_DEFAULT_PATHS = {
@@ -257,13 +256,10 @@ const CarDetail = () => {
   const loadCar = useCallback(async () => {
     setLoading(true);
     try {
-      if (isMongoId(id)) {
-        const apiCar = await vehicleService.getById(id);
-        setCar(apiCar || null);
-      } else {
-        setCar(null);
-      }
-    } catch {
+      const apiCar = await vehicleService.getById(id);
+      setCar(apiCar || null);
+    } catch (error) {
+      console.error('Error loading car:', error.message);
       setCar(null);
     } finally {
       setLoading(false);
@@ -421,7 +417,7 @@ const CarDetail = () => {
 
   const nImg = visibleGalleryImages.length;
   const activeIdx = Math.min(activeImageIndex, Math.max(nImg - 1, 0));
-  const mainSrc = visibleGalleryImages[activeIdx] || '';
+  const activeImage = visibleGalleryImages[activeIdx] || '';
 
   const currentUserId = user?._id || user?.id || '';
   const canManageReviews = user?.role === 'renter' && isMongoId(id);
@@ -542,11 +538,6 @@ const CarDetail = () => {
     });
   };
 
-  const openGalleryAt = (index) => {
-    setActiveImageIndex(index);
-    setGalleryOpen(true);
-  };
-
   const moveGallery = (direction) => {
     if (visibleGalleryImages.length <= 1) {
       return;
@@ -564,28 +555,14 @@ const CarDetail = () => {
     });
   };
 
-  const handleBookNow = () => {
-    if (!user) {
-      navigate('/login');
+  const openGalleryAt = (index) => {
+    if (!visibleGalleryImages.length) {
       return;
     }
 
-    if (user.role !== 'renter') {
-      navigate(ROLE_DEFAULT_PATHS[user.role] || '/', { replace: true });
-      return;
-    }
-
-    const pickupDate = initialRentalWindow?.pickupDate || createDefaultPickup();
-    const returnDate = initialRentalWindow?.returnDate || createDefaultReturn();
-
-    navigate(`/renter/checkout/${id}${buildRentalWindowQuery(pickupDate, returnDate)}`, {
-      state: {
-        car,
-        rentalSearch: { pickupDate, returnDate },
-        pickupDate,
-        returnDate,
-      },
-    });
+    const boundedIndex = Math.min(Math.max(index, 0), visibleGalleryImages.length - 1);
+    setActiveImageIndex(boundedIndex);
+    setGalleryOpen(true);
   };
 
   return (
@@ -598,35 +575,22 @@ const CarDetail = () => {
         <FaChevronLeft size={12} aria-hidden="true" /> Quay lại danh sách xe
       </button>
 
-      {/*
-        Hai tầng: (1) gallery + thẻ đặt xe cùng hàng — không dùng sticky để tránh thẻ bám viewport và chồng footer.
-        (2) Khối thông tin xe full width bên dưới.
-      */}
-      <div className="flex flex-col gap-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start lg:items-start max-[900px]:gap-6">
-          {/* Cột trái: chỉ gallery + nút chia sẻ */}
-          <div className="min-w-0">
-          {/* Gallery — nhiều ảnh: ảnh lớn + mũi tên + thumbnail (kiểu Shopee) */}
-          <div className="w-full space-y-2">
-            <div
-              className="w-full rounded-2xl overflow-hidden bg-gray-100 relative group"
-              style={{ aspectRatio: '16/9' }}
-            >
-              {mainSrc ? (
-                <img
-                  key={mainSrc}
-                  src={mainSrc}
-                  alt={`${car.name} — ảnh ${activeIdx + 1}/${nImg}`}
-                  width={600}
-                  height={400}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    const el = e.target.nextElementSibling;
-                    if (el) el.style.display = 'flex';
-                  }}
-                />
-              ) : null}
+      <div className="grid grid-cols-[1fr_360px] items-start gap-8 max-[900px]:grid-cols-1">
+        <div>
+          <div className="relative w-full overflow-hidden rounded-2xl bg-gray-100" style={{ aspectRatio: '16/9' }}>
+            {activeImage ? (
+              <img
+                src={activeImage}
+                alt={car.name}
+                className="h-full w-full cursor-zoom-in object-cover"
+                onClick={() =>
+                  openGalleryAt(Math.min(activeImageIndex, Math.max(visibleGalleryImages.length - 1, 0)))
+                }
+                onError={() => {
+                  markImageBroken(activeImage);
+                }}
+              />
+            ) : (
               <div
                 className="flex h-full w-full items-center justify-center"
                 style={{
@@ -642,7 +606,8 @@ const CarDetail = () => {
                   }}
                 />
               </div>
-              
+            )}
+
             {visibleGalleryImages.length > 1 && (
               <div className="absolute bottom-4 right-4 rounded-full bg-black/55 px-3 py-1.5 text-[0.78rem] font-semibold text-white backdrop-blur-sm">
                 {Math.min(activeImageIndex + 1, visibleGalleryImages.length)}/{visibleGalleryImages.length} ảnh
@@ -665,7 +630,6 @@ const CarDetail = () => {
                     }`}
                     style={{ aspectRatio: '4/3' }}
                     onClick={() => {
-                      setImgError(false);
                       setActiveImageIndex(index);
                     }}
                   >
@@ -710,73 +674,8 @@ const CarDetail = () => {
               </span>
             </button>
           </div>
-          </div>
 
-        {/* Cột phải: đặt xe — luôn ngang hàng gallery trên desktop, không sticky */}
-        <div className="min-w-0 w-full lg:max-w-[360px] lg:justify-self-end">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
-            <div className="mb-4">
-              <span className="text-[1.35rem] font-extrabold text-primary tabular-nums leading-tight block">
-                {formatVndPerDay(car.price)}
-              </span>
-            </div>
-            <div className="h-px bg-gray-100 my-4" />
-
-            {[
-              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
-              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
-            ].map(({ label, id: inputId, def }) => (
-              <div key={inputId} className="mb-3">
-                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
-                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
-              </div>
-            ))}
-
-            <div className="h-px bg-gray-100 my-4" />
-
-            <div className="flex flex-col gap-2 mb-4">
-              {[
-                [`${car.price ? car.price.toLocaleString('vi-VN') : 0} VNĐ × 2 ngày`, formatVnd(car.price ? car.price * 2 : 0)],
-                ['Phí dịch vụ (5%)', formatVnd(car.price ? Math.round(car.price * 2 * 0.05) : 0)],
-              ].map(([label, val]) => (
-                <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
-                  <span>{label}</span>
-                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
-                </div>
-              ))}
-              <div className="h-px bg-gray-100 my-1" />
-              <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
-                <span>Tổng cộng</span>
-                <span className="text-primary tabular-nums">
-                  {formatVnd(car.price ? car.price * 2 + Math.round(car.price * 2 * 0.05) : 0)}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleBookNow}
-              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
-            >
-              Đặt xe ngay
-            </button>
-            <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
-
-            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
-                {car.showroom ? car.showroom[0] : 'C'}
-              </div>
-              <div>
-                <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
-                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-
-          {/* Info card — full width dưới gallery + đặt xe */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+          <div className="flex flex-col gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h1 className="text-2xl font-extrabold text-gray-900">{car.name}</h1>
 
             <div className="flex flex-wrap gap-3">
