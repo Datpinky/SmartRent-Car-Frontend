@@ -15,6 +15,24 @@ const TYPE_ICONS = {
 
 const POLL_INTERVAL_MS = 30_000;
 
+const normalizeNotificationLink = (link) => {
+  if (!link) {
+    return '';
+  }
+
+  try {
+    const url = new URL(link, window.location.origin);
+
+    if (url.pathname === '/renter/bookings' && url.searchParams.get('bookingId')) {
+      url.searchParams.set('fromNotification', '1');
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return link;
+  }
+};
+
 const NotificationBell = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -135,7 +153,7 @@ const NotificationBell = () => {
   const handleNotificationClick = (notification) => {
     markRead(notification.id);
     if (notification.link) {
-      navigate(notification.link);
+      navigate(normalizeNotificationLink(notification.link));
       setOpen(false);
     }
   };

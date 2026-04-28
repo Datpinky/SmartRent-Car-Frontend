@@ -7,7 +7,9 @@ const parseDate = (value) => {
 
 export const UPCOMING_STATUSES = ['pending', 'confirmed', 'waiting_payment', 'paid', 'waiting_handover'];
 export const ACTIVE_STATUSES = ['handed_over', 'in_use', 'waiting_return_confirmation'];
-export const AWAITING_PICKUP_STATUSES = ['pending', 'confirmed', 'waiting_payment', 'paid', 'waiting_handover'];
+export const AWAITING_PAYMENT_STATUSES = ['pending', 'waiting_payment'];
+export const SHOWROOM_PROCESSING_STATUSES = ['confirmed', 'paid'];
+export const AWAITING_PICKUP_STATUSES = ['waiting_handover'];
 export const CANCELLABLE_STATUSES = ['pending', 'confirmed', 'waiting_payment', 'paid', 'waiting_handover'];
 export const RENTAL_FLOW_STATUSES = ['waiting_handover', 'handed_over', 'in_use', 'waiting_return_confirmation', 'completed'];
 
@@ -32,13 +34,31 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
   const isCancelled = ['cancelled', 'cancel_pending', 'cancel_failed'].includes(status);
   const isCompleted = status === 'completed';
   const hasSuccessfulPayment = paymentStatus === 'successful';
+  const requiresRetryPayment = ['failed', 'declined'].includes(paymentStatus);
+  const isAwaitingPayment =
+    !isCancelled
+    && !isCompleted
+    && AWAITING_PAYMENT_STATUSES.includes(status)
+    && !hasSuccessfulPayment
+    && paymentStatus !== 'refunded';
+  const isAwaitingShowroomProcessing =
+    !isCancelled
+    && !isCompleted
+    && !isAwaitingPayment
+    && paymentStatus !== 'refunded'
+    && hasSuccessfulPayment
+    && SHOWROOM_PROCESSING_STATUSES.includes(status);
   const isAwaitingPickup =
     !isCancelled
     && !isCompleted
+    && !isAwaitingPayment
+    && !isAwaitingShowroomProcessing
+    && paymentStatus !== 'refunded'
+    && hasSuccessfulPayment
     && AWAITING_PICKUP_STATUSES.includes(status);
   const pickupReadyByTime = startAt ? hasStarted : hasSuccessfulPayment;
   const canConfirmPickup =
-    isAwaitingPickup
+    status === 'waiting_handover'
     && hasSuccessfulPayment
     && pickupReadyByTime;
   const timeBasedRentalAccess = false;
@@ -67,29 +87,33 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
       : 'waiting_handover';
 
   const rentalActionLabel = isCompleted
-    ? 'Xem bien ban'
+    ? 'Xem biên bản'
     : status === 'waiting_return_confirmation'
-      ? 'Dang cho xac nhan'
+      ? 'Đang chờ xác nhận'
       : canHandleReturn && hasEnded
-        ? 'Tra xe ngay'
+        ? 'Trả xe ngay'
         : status === 'waiting_handover'
-          ? 'Nhan xe'
+          ? 'Nhận xe'
           : canOpenRentalFlow
-            ? 'Nhan / Tra xe'
+            ? 'Nhận / Trả xe'
             : '';
 
   const rentalAccessHint = timeBasedRentalAccess
     ? hasEnded
-      ? 'Da qua han tra xe. Ban co the mo giao dien tra xe ngay.'
-      : 'Da den lich thue. Ban co the mo quy trinh nhan / tra xe.'
+      ? 'Đã quá hạn trả xe. Bạn có thể mở giao diện trả xe ngay.'
+      : 'Đã đến lịch thuê. Bạn có thể mở quy trình nhận / trả xe.'
     : '';
-  const pickupConfirmationHint = !isAwaitingPickup
+  const pickupConfirmationHint = !(isAwaitingPickup || isAwaitingShowroomProcessing)
     ? ''
-    : !hasSuccessfulPayment
-      ? 'Can thanh toan thanh cong truoc khi xac nhan da nhan xe.'
-      : !pickupReadyByTime && startAt
-        ? `Nut xac nhan se mo tu ${startAt.toLocaleString('vi-VN')}.`
-        : 'Sau khi xac nhan da nhan xe, booking se duoc chuyen sang Chuyen di cua toi.';
+    : requiresRetryPayment
+      ? 'Thanh toán trước đó chưa thành công. Vui lòng thanh toán lại để tiếp tục quy trình nhận xe.'
+      : !hasSuccessfulPayment
+        ? 'Booking đang chờ thanh toán. Sau khi payment thành công, showroom mới có thể bàn giao xe.'
+        : isAwaitingShowroomProcessing
+          ? 'Showroom đang xử lý booking và chuẩn bị bàn giao xe. Nút xác nhận sẽ mở khi booking chuyển sang Chờ bàn giao.'
+          : !pickupReadyByTime && startAt
+            ? `Nút xác nhận sẽ mở từ ${startAt.toLocaleString('vi-VN')}.`
+            : 'Sau khi xác nhận đã nhận xe, booking sẽ được chuyển sang Chuyến đi của tôi.';
 
   return {
     canConfirmPickup,
@@ -101,6 +125,8 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
     hasStarted,
     hasSuccessfulPayment,
     isActive,
+    isAwaitingPayment,
+    isAwaitingShowroomProcessing,
     isAwaitingPickup,
     isCancelled,
     isCompleted,

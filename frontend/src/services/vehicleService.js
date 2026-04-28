@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 
-// ─── Mapping helpers ──────────────────────────────────────────────────────────
+// --- Mapping helpers -----------------------------------------------------
 
 const FUEL_MAP = {
   petrol: 'Xăng',
@@ -65,7 +65,7 @@ function mapListerProfile(added) {
   };
 }
 
-/** Bỏ URL ảnh demo/seed không tồn tại (vd. cdn.example.com) — tránh lỗi net::ERR_NAME_NOT_RESOLVED */
+/** Bỏ URL ảnh demo/seed không tồn tại (vd. cdn.example.com) để tránh lỗi net::ERR_NAME_NOT_RESOLVED */
 export function sanitizeVehicleImageUrl(url) {
   if (url == null || typeof url !== 'string') return '';
   const t = url.trim();
@@ -77,7 +77,7 @@ export function sanitizeVehicleImageUrl(url) {
       return '';
     }
   } catch {
-    // Đường dẫn tương đối hoặc không parse được — giữ nguyên
+    // Đường dẫn tương đối hoặc không parse được thì giữ nguyên
     return t;
   }
   return t;
@@ -85,7 +85,7 @@ export function sanitizeVehicleImageUrl(url) {
 
 /**
  * Maps a backend Vehicle document to the shape expected by frontend components.
- * This is the central adapter – update here if either schema changes.
+ * This is the central adapter - update here if either schema changes.
  */
 export function mapVehicle(v) {
   const name =
@@ -130,7 +130,7 @@ export function mapVehicle(v) {
     transmission: TRANS_MAP[v.transmission] || v.transmission || 'Số tự động',
     seats: v.number_of_seats || 5,
 
-    // Pricing — hiển thị thống nhất VNĐ/ngày (dữ liệu API vẫn có thể có currency khác)
+    // Pricing - hiển thị thống nhất VNĐ/ngày (dữ liệu API vẫn có thể có currency khác)
     price: Number(v.vehicle_hire_rate_in_figures) || 0,
     currency: 'VND',
     chargeUnit: 'day',
@@ -171,7 +171,7 @@ export function mapVehicle(v) {
   };
 }
 
-// ─── Service methods ──────────────────────────────────────────────────────────
+// --- Service methods -----------------------------------------------------
 
 export const vehicleService = {
   /**
@@ -229,3 +229,4 @@ export const vehicleService = {
 };
 
 export default vehicleService;
+

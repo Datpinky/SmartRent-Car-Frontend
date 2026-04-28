@@ -1,25 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaCalendarAlt,
   FaCamera,
   FaClock,
-  FaEnvelope,
-  FaExchangeAlt,
-  FaEye,
   FaMapMarkerAlt,
-  FaMoneyBillWave,
-  FaRobot,
-  FaStar,
-  FaTimesCircle,
+  FaSearch,
 } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
-import { useAuth } from '../../../contexts/AuthContext';
 import bookingService from '../../../services/bookingService';
-import reviewService from '../../../services/reviewService';
-import { getCancelBookingNotice } from '../../../utils/bookingCancellationFeedback';
 import { getBookingFlowState } from '../../../utils/bookingFlowState';
 import {
   PAYMENT_LABELS,
@@ -29,58 +20,30 @@ import {
 } from '../../../utils/renterBookingView';
 import RentalFlowModal from './RentalFlowModal';
 
-const TAB_CONFIG = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'active', label: 'Đang thuê' },
-  { key: 'completed', label: 'Hoàn thành' },
-  { key: 'cancelled', label: 'Đã hủy' },
-];
-
-const getReviewUserId = (review) => {
-  const reviewUser = review?.user;
-  if (!reviewUser) return '';
-  if (typeof reviewUser === 'string') return reviewUser;
-  return reviewUser._id || reviewUser.id || '';
-};
-
-const matchTab = (booking, tabKey) => {
-  if (tabKey === 'all') return !booking.isCancelled && !booking.isAwaitingPickup;
-  if (tabKey === 'active') return booking.isActive;
-  if (tabKey === 'completed') return booking.isCompleted;
-  if (tabKey === 'cancelled') return booking.isCancelled;
-  return false;
-};
-
 const MyBookings = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [params] = useSearchParams();
+  const highlightedBookingId = params.get('bookingId') || '';
+  const fromNotification = params.get('fromNotification') === '1';
+  const handledHighlightRef = useRef('');
 
-  const [activeTab, setActiveTab] = useState('all');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState({ tone: '', text: '' });
+  const [searchTerm, setSearchTerm] = useState('');
   const [detailModal, setDetailModal] = useState(null);
-  const [cancellingId, setCancellingId] = useState('');
   const [rentalModalBooking, setRentalModalBooking] = useState(null);
-  const [reviewModalBooking, setReviewModalBooking] = useState(null);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
-  const [reviewError, setReviewError] = useState('');
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [editingReviewId, setEditingReviewId] = useState('');
-
-  const currentUserId = user?._id || user?.id || '';
 
   const loadBookings = async () => {
     setLoading(true);
     try {
-      const data = await bookingService.getMyBookingsDetailed();
+      const data = await bookingService.getCurrentRoleBookingsDetailed();
       setBookings((data || []).map(mapRenterBooking));
       setError('');
     } catch (err) {
       setBookings([]);
-      setError(err.message || 'Không thể tải chuyến đi của bạn.');
+      setError(err.message || 'Không thể tải danh sách xe đang thuê.');
     } finally {
       setLoading(false);
     }
@@ -90,20 +53,69 @@ const MyBookings = () => {
     loadBookings();
   }, []);
 
-  const displayedBookings = useMemo(
-    () => bookings.filter((booking) => matchTab(booking, activeTab)),
-    [activeTab, bookings]
+  const activeBookings = useMemo(
+    () => bookings.filter((booking) => booking.isActive),
+    [bookings]
   );
+
+  const displayedBookings = useMemo(() => {
+    const normalized = String(searchTerm || '').trim().toLowerCase();
+    if (!normalized) {
+      return activeBookings;
+    }
+
+    return activeBookings.filter((booking) => (
+      [booking.id, booking.vehicleName, booking.showroomName, booking.status]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalized))
+    ));
+  }, [activeBookings, searchTerm]);
 
   const summary = useMemo(
     () => ({
-      total: bookings.filter((booking) => !booking.isCancelled && !booking.isAwaitingPickup).length,
-      awaitingPickup: bookings.filter((booking) => booking.isAwaitingPickup).length,
-      active: bookings.filter((booking) => booking.isActive).length,
-      completed: bookings.filter((booking) => booking.isCompleted).length,
+      active: activeBookings.length,
+      dueReturn: activeBookings.filter((booking) => booking.hasRentalEnded).length,
+      waitingReturnConfirmation: activeBookings.filter((booking) => booking.status === 'waiting_return_confirmation').length,
     }),
-    [bookings]
+    [activeBookings]
   );
+
+  useEffect(() => {
+    if (!highlightedBookingId || loading || bookings.length === 0) {
+      return;
+    }
+
+    const handledKey = `${window.location.pathname}:${highlightedBookingId}`;
+    if (handledHighlightRef.current === handledKey) {
+      return;
+    }
+
+    const targetBooking = bookings.find((booking) => String(booking.id) === String(highlightedBookingId));
+    if (!targetBooking) {
+      return;
+    }
+
+    handledHighlightRef.current = handledKey;
+
+    if (targetBooking.isAwaitingPayment) {
+      navigate(`/renter/pending-payments?bookingId=${targetBooking.id}&fromNotification=${fromNotification ? '1' : '0'}`, { replace: true });
+      return;
+    }
+
+    if (targetBooking.isAwaitingShowroomProcessing) {
+      navigate(`/renter/pending-showroom-processing?bookingId=${targetBooking.id}&fromNotification=${fromNotification ? '1' : '0'}`, { replace: true });
+      return;
+    }
+
+    if (targetBooking.isAwaitingPickup) {
+      navigate(`/renter/pending-pickups?bookingId=${targetBooking.id}&fromNotification=${fromNotification ? '1' : '0'}`, { replace: true });
+      return;
+    }
+
+    if (targetBooking.isActive) {
+      setDetailModal(targetBooking);
+    }
+  }, [bookings, fromNotification, highlightedBookingId, loading, navigate]);
 
   const applyBookingUpdate = (booking, nextStatus, nextWorkflow) => {
     if (!booking) {
@@ -135,6 +147,8 @@ const MyBookings = () => {
       hasRentalEnded: nextFlowState.hasEnded,
       hasRentalStarted: nextFlowState.hasStarted,
       isActive: nextFlowState.isActive,
+      isAwaitingPayment: nextFlowState.isAwaitingPayment,
+      isAwaitingShowroomProcessing: nextFlowState.isAwaitingShowroomProcessing,
       isAwaitingPickup: nextFlowState.isAwaitingPickup,
       isCancelled: nextFlowState.isCancelled,
       isCompleted: nextFlowState.isCompleted,
@@ -143,30 +157,6 @@ const MyBookings = () => {
       rentalAccessHint: nextFlowState.rentalAccessHint,
       rentalActionLabel: nextFlowState.rentalActionLabel || booking.rentalActionLabel,
     };
-  };
-
-  const handleCancelBooking = async (booking) => {
-    const cancelMessage = booking.paymentStatus === 'successful'
-      ? `Hủy booking ${booking.id} cho xe ${booking.vehicleName}? Hệ thống sẽ chạy luồng hoàn tiền theo logic backend nếu booking đã thanh toán.`
-      : `Hủy booking ${booking.id} cho xe ${booking.vehicleName}?`;
-    const confirmed = window.confirm(cancelMessage);
-    if (!confirmed) return;
-
-    setCancellingId(booking.id);
-    setError('');
-    setNotice({ tone: '', text: '' });
-    try {
-      const cancelResult = await bookingService.cancelBooking(booking.id);
-      await loadBookings();
-      if (detailModal?.id === booking.id) {
-        setDetailModal(null);
-      }
-      setNotice(getCancelBookingNotice(booking, cancelResult));
-    } catch (err) {
-      setError(err.message || 'Không thể hủy booking này.');
-    } finally {
-      setCancellingId('');
-    }
   };
 
   const handleWorkflowSaved = (payload) => {
@@ -187,92 +177,14 @@ const MyBookings = () => {
     setBookings((current) => current.map((booking) => applyByTarget(booking)));
     setDetailModal((current) => (current ? applyByTarget(current) : current));
     setRentalModalBooking((current) => (current ? applyByTarget(current) : current));
-  };
 
-  const resetReviewState = () => {
-    setReviewForm({ rating: 5, comment: '' });
-    setReviewError('');
-    setReviewLoading(false);
-    setReviewSubmitting(false);
-    setEditingReviewId('');
-  };
-
-  const handleCloseReviewModal = () => {
-    setReviewModalBooking(null);
-    resetReviewState();
-  };
-
-  const handleOpenReview = async (booking) => {
-    if (!booking?.vehicleId) {
-      setError('Không tìm thấy thông tin xe để mở form đánh giá.');
-      return;
-    }
-
-    setDetailModal(null);
-    setReviewModalBooking(booking);
-    setReviewForm({ rating: 5, comment: '' });
-    setReviewError('');
-    setEditingReviewId('');
-    setReviewLoading(true);
-
-    try {
-      const res = await reviewService.getByVehicleId(booking.vehicleId, { page: 1, limit: 100 });
-      const ownReview = (res?.data || []).find((review) => getReviewUserId(review) === currentUserId);
-
-      if (ownReview) {
-        setEditingReviewId(ownReview._id || '');
-        setReviewForm({
-          rating: Number(ownReview.rating) || 5,
-          comment: ownReview.comment || '',
-        });
-      }
-    } catch (err) {
-      setReviewError(err.message || 'Không thể tải dữ liệu đánh giá lúc này.');
-    } finally {
-      setReviewLoading(false);
+    if (nextStatus === 'waiting_return_confirmation') {
+      setNotice({
+        tone: 'success',
+        text: 'Bạn đã gửi yêu cầu trả xe. Booking này đang chờ showroom xác nhận đã trả xe.',
+      });
     }
   };
-
-  const handleSubmitReview = async (event) => {
-    event.preventDefault();
-    if (!reviewModalBooking?.vehicleId) {
-      setReviewError('Không tìm thấy thông tin xe để gửi đánh giá.');
-      return;
-    }
-
-    setReviewSubmitting(true);
-    setReviewError('');
-
-    try {
-      if (editingReviewId) {
-        await reviewService.update({
-          review_id: editingReviewId,
-          rating: reviewForm.rating,
-          comment: reviewForm.comment,
-        });
-      } else {
-        await reviewService.create({
-          vehicle_id: reviewModalBooking.vehicleId,
-          rating: reviewForm.rating,
-          comment: reviewForm.comment,
-        });
-      }
-
-      handleCloseReviewModal();
-    } catch (err) {
-      setReviewError(err.message || 'Không thể gửi đánh giá lúc này.');
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
-  const getPaymentResultUrl = (booking) =>
-    `/renter/payment-result?bookingId=${booking.id}&status=${booking.paymentStatus === 'successful'
-      ? 'success'
-      : booking.paymentStatus === 'pending'
-        ? 'pending'
-        : 'error'
-    }`;
 
   const renderEmptyState = () => (
     <div
@@ -286,16 +198,23 @@ const MyBookings = () => {
       }}
     >
       <MdDirectionsCar style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }} />
-      <div style={{ fontWeight: 700, color: '#6b7280', marginBottom: summary.awaitingPickup > 0 ? 10 : 0 }}>
-        {summary.awaitingPickup > 0
-          ? 'Bạn chưa có chuyến đi nào sau khi nhận xe.'
-          : 'Không tìm thấy booking trong mục này.'}
+      <div style={{ fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>
+        Bạn chưa có xe nào đang thuê hoặc đang trong bước trả xe.
       </div>
-      {summary.awaitingPickup > 0 && (
-        <button className="btn-primary" onClick={() => navigate('/renter/pending-pickups')}>
-          Mở khu chờ nhận xe
+      <div style={{ fontSize: '0.82rem', color: '#9ca3af', lineHeight: 1.6, marginBottom: 16 }}>
+        Các booking chờ thanh toán, chờ showroom xử lý, chờ nhận xe, hoàn thành hoặc đã hủy đã được tách sang menu riêng.
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-showroom-processing')}>
+          Chờ showroom xử lý
         </button>
-      )}
+        <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-pickups')}>
+          Chờ nhận xe
+        </button>
+        <button className="btn-primary" onClick={() => navigate('/')}>
+          Đặt xe mới
+        </button>
+      </div>
     </div>
   );
 
@@ -304,6 +223,9 @@ const MyBookings = () => {
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
           <h1 className="page-title">Chuyến đi của tôi</h1>
+          <p className="page-subtitle">
+            Xem danh sách xe đang thuê và thực hiện quy trình trả xe khi đến hạn.
+          </p>
         </div>
         <button className="btn-primary" onClick={() => navigate('/')}>Hành trình mới</button>
       </div>
@@ -343,10 +265,9 @@ const MyBookings = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Tổng chuyến', val: summary.total, color: '#374151' },
-          { label: 'Chờ nhận xe', val: summary.awaitingPickup, color: '#d97706' },
           { label: 'Đang thuê', val: summary.active, color: '#2563eb' },
-          { label: 'Hoàn thành', val: summary.completed, color: '#059669' },
+          { label: 'Cần trả xe', val: summary.dueReturn, color: '#d97706' },
+          { label: 'Chờ showroom xác nhận trả', val: summary.waitingReturnConfirmation, color: '#7c3aed' },
         ].map((item) => (
           <div
             key={item.label}
@@ -356,7 +277,7 @@ const MyBookings = () => {
               padding: '10px 18px',
               border: '1px solid #f0f0f0',
               textAlign: 'center',
-              minWidth: 110,
+              minWidth: 150,
             }}
           >
             <div style={{ fontWeight: 800, fontSize: '1.3rem', color: item.color }}>{item.val}</div>
@@ -365,56 +286,67 @@ const MyBookings = () => {
         ))}
       </div>
 
-      {summary.awaitingPickup > 0 && (
-        <div
+      <div
+        style={{
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <label
           style={{
-            marginBottom: 18,
-            background: '#fff7ed',
-            border: '1px solid #fdba74',
-            color: '#9a3412',
-            borderRadius: 14,
-            padding: '14px 16px',
+            minWidth: 260,
+            flex: '1 1 320px',
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 12,
-            flexWrap: 'wrap',
+            gap: 10,
+            background: '#fff',
+            borderRadius: 14,
+            padding: '0 14px',
+            minHeight: 44,
           }}
         >
-          <div style={{ fontSize: '0.84rem', lineHeight: 1.6 }}>
-            Bạn có {summary.awaitingPickup} booking đang chờ xác nhận đã nhận xe. Chỉ sau khi renter
-            xác nhận nhận xe, booking mới hiện trong "Chuyến đi của tôi".
-          </div>
-          <button className="btn-primary" onClick={() => navigate('/renter/pending-pickups')}>
-            Mở khu chờ nhận xe
-          </button>
-        </div>
-      )}
-
-      <div className="booking-tabs">
-        {TAB_CONFIG.map((tab) => {
-          const count = bookings.filter((booking) => matchTab(booking, tab.key)).length;
-          return (
-            <button
-              key={tab.key}
-              className={`booking-tab ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {tab.label}
-              {count > 0 && <span className="booking-tab-count">{count}</span>}
-            </button>
-          );
-        })}
+          <FaSearch style={{ color: '#9ca3af', flexShrink: 0 }} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Tìm theo mã booking, tên xe hoặc showroom"
+            style={{
+              border: 'none',
+              outline: 'none',
+              width: '100%',
+              fontSize: '0.84rem',
+              color: '#111827',
+              background: 'transparent',
+            }}
+          />
+        </label>
       </div>
 
       <div className="booking-list">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>Đang tải dữ liệu...</div>
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>Đang tải danh sách xe đang thuê...</div>
         ) : displayedBookings.length === 0 ? (
           renderEmptyState()
         ) : (
           displayedBookings.map((booking) => (
-            <div key={booking.id} className="booking-card-item">
+            <div
+              key={booking.id}
+              className="booking-card-item"
+              onClick={() => setDetailModal(booking)}
+              style={String(booking.id) === String(highlightedBookingId)
+                ? {
+                  border: '1px solid #bfdbfe',
+                  boxShadow: '0 12px 30px rgba(37, 99, 235, 0.12)',
+                  background: '#f8fbff',
+                  cursor: 'pointer',
+                }
+                : { cursor: 'pointer' }}
+            >
               <div className="booking-card-left">
                 <div className="booking-card-img" style={{ overflow: 'hidden', background: '#f3f4f6' }}>
                   {booking.image ? (
@@ -441,6 +373,8 @@ const MyBookings = () => {
                       <FaMapMarkerAlt size={11} /> {booking.locationLabel}
                     </span>
                   </div>
+                  <div style={{ marginTop: 8, fontSize: '0.78rem', fontWeight: 800, color: '#334155' }}>{booking.statusHeadline}</div>
+                  <div style={{ marginTop: 4, fontSize: '0.76rem', color: '#6b7280', lineHeight: 1.6 }}>{booking.waitingForLabel}</div>
                 </div>
               </div>
 
@@ -457,42 +391,9 @@ const MyBookings = () => {
                     {formatMoney(booking.totalPrice)}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Mã: {booking.id}</div>
-                  {(booking.workflow?.receiveImages?.length > 0 || booking.workflow?.returnImages?.length > 0) && (
-                    <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: 6 }}>
-                      FE proof: {booking.workflow?.receiveImages?.length || 0} ảnh nhận xe, {booking.workflow?.returnImages?.length || 0} ảnh trả xe
-                    </div>
-                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  <button className="btn-icon" onClick={() => setDetailModal(booking)} title="Chi tiết">
-                    <FaEye />
-                  </button>
-
-                  {booking.showroomEmail && (
-                    <a className="btn-icon" href={`mailto:${booking.showroomEmail}`} title="Liên hệ showroom">
-                      <FaEnvelope />
-                    </a>
-                  )}
-
-                  {booking.canReportIssue && (
-                    <button
-                      style={{
-                        background: '#dc2626',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => navigate('/renter/sos')}
-                    >
-                      Báo cáo sự cố
-                    </button>
-                  )}
-
                   {booking.canOpenRentalFlow && (
                     <button
                       style={{
@@ -505,56 +406,12 @@ const MyBookings = () => {
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}
-                      onClick={() => setRentalModalBooking(booking)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setRentalModalBooking(booking);
+                      }}
                     >
                       {booking.rentalActionLabel}
-                    </button>
-                  )}
-
-                  {booking.hasAiInspectionReport && (
-                    <button
-                      style={{
-                        background: '#2563eb',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => navigate(`/renter/ai-reports?bookingId=${booking.id}`)}
-                    >
-                      Thiệt hại phát sinh
-                    </button>
-                  )}
-
-                  {booking.canReviewVehicle && (
-                    <button
-                      style={{
-                        background: '#f59e0b',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => handleOpenReview(booking)}
-                    >
-                      Đánh giá xe
-                    </button>
-                  )}
-
-                  {booking.canCancel && (
-                    <button
-                      className="renter-btn-soft-danger"
-                      style={{ opacity: cancellingId === booking.id ? 0.65 : 1 }}
-                      onClick={() => handleCancelBooking(booking)}
-                      disabled={cancellingId === booking.id}
-                    >
-                      {cancellingId === booking.id ? 'Đang hủy...' : 'Hủy booking'}
                     </button>
                   )}
                 </div>
@@ -564,12 +421,35 @@ const MyBookings = () => {
         )}
       </div>
 
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết" width={520}>
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết xe đang thuê" width={520}>
         {detailModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{detailModal.vehicleName}</div>
               <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>{detailModal.showroomName}</div>
+            </div>
+
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 12,
+                padding: '14px 16px',
+              }}
+            >
+              <div style={{ fontWeight: 800, color: '#111827', marginBottom: 8 }}>{detailModal.statusHeadline}</div>
+              <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.65, marginBottom: 8 }}>
+                {detailModal.waitingForLabel}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#334155', fontWeight: 700, marginBottom: 6 }}>
+                {detailModal.waitingOwnerLabel}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>
+                Bước tiếp theo: {detailModal.nextStepLabel}
+              </div>
+              <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#0f766e', lineHeight: 1.6 }}>
+                Việc bạn nên làm: {detailModal.renterActionHint}
+              </div>
             </div>
 
             {[
@@ -580,11 +460,7 @@ const MyBookings = () => {
               ['Tổng tiền', formatMoney(detailModal.totalPrice)],
               ['Trạng thái booking', detailModal.status],
               ['Trạng thái thanh toán', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
-              ['Phương thức thanh toán', detailModal.paymentMethod],
-              ['Ghi chú / nhận xe', detailModal.locationLabel],
-              ['Ảnh nhận xe (FE)', detailModal.workflow?.receiveImages?.length || 0],
-              ['Ảnh trả xe (FE)', detailModal.workflow?.returnImages?.length || 0],
-              ['Thiệt hại phát sinh', detailModal.hasAiInspectionReport ? 'Đã có báo cáo' : 'Chưa tạo'],
+              ['Địa điểm giao nhận', detailModal.locationLabel],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -601,183 +477,14 @@ const MyBookings = () => {
               </div>
             ))}
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                className="btn-primary"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => navigate(getPaymentResultUrl(detailModal))}
-              >
-                <FaMoneyBillWave /> Xem kết quả thanh toán
-              </button>
-
-              <button
-                className="renter-btn-soft"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => navigate('/renter/transactions')}
-              >
-                <FaExchangeAlt /> Lịch sử giao dịch
-              </button>
-
-              {detailModal.canOpenRentalFlow && (
-                <button
-                  className="renter-btn-soft"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => setRentalModalBooking(detailModal)}
-                >
-                  <FaCamera /> {detailModal.rentalActionLabel}
-                </button>
-              )}
-
-              {detailModal.canReviewVehicle && (
-                <button
-                  className="renter-btn-soft"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => handleOpenReview(detailModal)}
-                >
-                  <FaCamera /> Đánh giá xe
-                </button>
-              )}
-
-              {detailModal.hasAiInspectionReport && (
-                <button
-                  className="renter-btn-soft"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => navigate(`/renter/ai-reports?bookingId=${detailModal.id}`)}
-                >
-                  <FaRobot /> Thiệt hại phát sinh
-                </button>
-              )}
-
-              {detailModal.canCancel && (
-                <button
-                  className="renter-btn-soft-danger"
-                  style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => handleCancelBooking(detailModal)}
-                >
-                  <FaTimesCircle /> Hủy booking
-                </button>
-              )}
-            </div>
+            <button
+              className="renter-btn-soft-success"
+              style={{ justifyContent: 'center' }}
+              onClick={() => setRentalModalBooking(detailModal)}
+            >
+              <FaCamera /> {detailModal.rentalActionLabel}
+            </button>
           </div>
-        )}
-      </Modal>
-
-      <Modal
-        isOpen={!!reviewModalBooking}
-        onClose={handleCloseReviewModal}
-        title={editingReviewId ? 'Chỉnh sửa đánh giá xe' : 'Đánh giá xe'}
-        width={560}
-      >
-        {reviewModalBooking && (
-          <form onSubmit={handleSubmitReview} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ background: '#f9fafb', borderRadius: 14, padding: 16 }}>
-              <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{reviewModalBooking.vehicleName}</div>
-              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 4 }}>{reviewModalBooking.showroomName}</div>
-              <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: 8 }}>
-                {formatDateTime(reviewModalBooking.startDate)} - {formatDateTime(reviewModalBooking.endDate)}
-              </div>
-            </div>
-
-            {reviewLoading ? (
-              <div style={{ textAlign: 'center', padding: '18px 0', color: '#6b7280', fontSize: '0.84rem' }}>
-                Đang tải dữ liệu đánh giá...
-              </div>
-            ) : (
-              <>
-                <div
-                  style={{
-                    background: editingReviewId ? '#eff6ff' : '#f0fdf4',
-                    border: editingReviewId ? '1px solid #bfdbfe' : '1px solid #bbf7d0',
-                    color: editingReviewId ? '#1d4ed8' : '#166534',
-                    borderRadius: 12,
-                    padding: '12px 14px',
-                    fontSize: '0.82rem',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {editingReviewId
-                    ? 'Bạn đang chỉnh sửa đánh giá đã gửi trước đó cho chiếc xe này.'
-                    : 'Hãy chia sẻ trải nghiệm thuê xe để showroom và renter khác tham khảo.'}
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151', marginBottom: 10 }}>Số sao</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewForm((current) => ({ ...current, rating: star }))}
-                        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-                      >
-                        <FaStar size={24} color={star <= reviewForm.rating ? '#f59e0b' : '#d1d5db'} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151', marginBottom: 8 }}>Nhận xét</div>
-                  <textarea
-                    rows={5}
-                    maxLength={1000}
-                    value={reviewForm.comment}
-                    onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))}
-                    placeholder="Viết cảm nhận của bạn về chất lượng xe, tình trạng sạch sẽ, thái độ hỗ trợ..."
-                    style={{
-                      width: '100%',
-                      border: '1px solid #d1d5db',
-                      borderRadius: 12,
-                      padding: '12px 14px',
-                      fontSize: '0.84rem',
-                      resize: 'vertical',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                  <div style={{ marginTop: 6, fontSize: '0.74rem', color: '#9ca3af', textAlign: 'right' }}>
-                    {reviewForm.comment.length}/1000
-                  </div>
-                </div>
-
-                {reviewError && (
-                  <div
-                    style={{
-                      background: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      color: '#b91c1c',
-                      borderRadius: 12,
-                      padding: '10px 12px',
-                      fontSize: '0.8rem',
-                    }}
-                  >
-                    {reviewError}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                  <button
-                    type="button"
-                    className="renter-btn-soft"
-                    onClick={handleCloseReviewModal}
-                    style={{ justifyContent: 'center' }}
-                  >
-                    Dong
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    disabled={reviewSubmitting}
-                    style={{ justifyContent: 'center', opacity: reviewSubmitting ? 0.7 : 1 }}
-                  >
-                    {reviewSubmitting
-                      ? (editingReviewId ? 'Đang lưu...' : 'Đang gửi...')
-                      : (editingReviewId ? 'Lưu thay đổi' : 'Gửi đánh giá')}
-                  </button>
-                </div>
-              </>
-            )}
-          </form>
         )}
       </Modal>
 

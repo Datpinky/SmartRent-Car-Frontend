@@ -2,15 +2,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaCalendarAlt,
-  FaCheckCircle,
   FaClock,
+  FaCreditCard,
   FaMapMarkerAlt,
+  FaMoneyBillWave,
   FaSpinner,
+  FaTimesCircle,
 } from 'react-icons/fa';
 import { MdDirectionsCar } from 'react-icons/md';
 import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
 import bookingService from '../../../services/bookingService';
+import { getCancelBookingNotice } from '../../../utils/bookingCancellationFeedback';
 import {
   PAYMENT_LABELS,
   formatDateTime,
@@ -26,7 +29,7 @@ const cardInfoStyle = {
   boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
 };
 
-const PendingPickups = () => {
+const PendingPayments = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const highlightedBookingId = params.get('bookingId') || '';
@@ -36,20 +39,18 @@ const PendingPickups = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState({ tone: '', text: '' });
   const [detailModal, setDetailModal] = useState(null);
-  const [confirmingId, setConfirmingId] = useState('');
+  const [cancellingId, setCancellingId] = useState('');
 
   const loadBookings = async () => {
     setLoading(true);
     try {
       const data = await bookingService.getCurrentRoleBookingsDetailed();
-      const mapped = (data || [])
-        .map(mapRenterBooking)
-        .filter((booking) => booking.isAwaitingPickup);
+      const mapped = (data || []).map(mapRenterBooking).filter((booking) => booking.isAwaitingPayment);
       setBookings(mapped);
       setError('');
     } catch (err) {
       setBookings([]);
-      setError(err.message || 'Không thể tải danh sách chờ nhận xe.');
+      setError(err.message || 'Không thể tải danh sách chờ thanh toán.');
     } finally {
       setLoading(false);
     }
@@ -58,6 +59,16 @@ const PendingPickups = () => {
   useEffect(() => {
     loadBookings();
   }, []);
+
+  const summary = useMemo(
+    () => ({
+      total: bookings.length,
+      pending: bookings.filter((booking) => booking.paymentStatus === 'pending').length,
+      retry: bookings.filter((booking) => booking.canRetryPayment).length,
+      failed: bookings.filter((booking) => ['failed', 'declined'].includes(booking.paymentStatus)).length,
+    }),
+    [bookings]
+  );
 
   useEffect(() => {
     if (!highlightedBookingId || loading || bookings.length === 0) {
@@ -78,61 +89,69 @@ const PendingPickups = () => {
     setDetailModal(targetBooking);
   }, [bookings, highlightedBookingId, loading]);
 
-  const summary = useMemo(
-    () => ({
-      total: bookings.length,
-      ready: bookings.filter((booking) => booking.canConfirmPickup).length,
-      waiting: bookings.filter((booking) => !booking.canConfirmPickup).length,
-      readyForHandover: bookings.filter((booking) => booking.status === 'waiting_handover').length,
-    }),
-    [bookings]
+  const getPaymentResultUrl = (booking) =>
+    `/renter/payment-result?bookingId=${booking.id}&status=${booking.paymentStatus === 'successful'
+      ? 'success'
+      : booking.paymentStatus === 'pending'
+        ? 'pending'
+        : 'error'
+    }`;
+
+  const getRetryPaymentUrl = (booking) => `/renter/retry-payment/${booking.id}`;
+
+  const getCancelActionLabel = (booking) => (
+    booking.paymentStatus === 'successful'
+      ? 'Hủy booking / hoàn tiền'
+      : 'Hủy booking'
   );
 
-  const getPickupWaitingLabel = (booking) => {
-    if (booking.canConfirmPickup) {
-      return 'Chờ bạn xác nhận đã nhận xe';
+  const getPaymentWaitingLabel = (booking) => {
+    if (booking.canRetryPayment) {
+      return 'Chờ bạn thanh toán lại';
     }
 
-    return 'Chưa đến giờ nhận xe';
+    if (booking.paymentStatus === 'pending') {
+      return 'Chờ bạn thanh toán';
+    }
+
+    return 'Đang chờ bạn hoàn tất thanh toán';
   };
 
-  const handleConfirmPickup = async (booking) => {
-    const confirmed = window.confirm(
-      `Xác nhận bạn đã nhận xe ${booking.vehicleName}? Sau khi xác nhận, booking sẽ được chuyển vào "Chuyến đi của tôi".`
-    );
+  const handleCancelBooking = async (booking) => {
+    const message = booking.paymentStatus === 'successful'
+      ? `Hủy booking ${booking.id} cho xe ${booking.vehicleName}? Hệ thống sẽ chạy luồng hoàn tiền theo logic backend nếu booking đã thanh toán.`
+      : `Hủy booking ${booking.id} cho xe ${booking.vehicleName}?`;
+    const confirmed = window.confirm(message);
     if (!confirmed) return;
 
-    setConfirmingId(booking.id);
+    setCancellingId(booking.id);
     setError('');
     setNotice({ tone: '', text: '' });
 
     try {
-      await bookingService.confirmPickup(booking.id);
+      const cancelResult = await bookingService.cancelBooking(booking.id);
       setDetailModal(null);
       await loadBookings();
-      setNotice({
-        tone: 'success',
-        text: `Đã xác nhận nhận xe cho ${booking.vehicleName}. Booking này đã được chuyển vào "Chuyến đi của tôi".`,
-      });
+      setNotice(getCancelBookingNotice(booking, cancelResult));
     } catch (err) {
-      setError(err.message || 'Không thể xác nhận nhận xe lúc này.');
+      setError(err.message || 'Không thể hủy booking lúc này.');
     } finally {
-      setConfirmingId('');
+      setCancellingId('');
     }
   };
 
   return (
-    <div className="pending-pickups">
+    <div className="pending-payments">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Chờ nhận xe</h1>
+          <h1 className="page-title">Chờ thanh toán</h1>
           <p className="page-subtitle">
-            Chỉ các booking showroom đã chuyển sang Chờ bàn giao mới hiện tại đây. Bạn sẽ xác nhận đã nhận xe ở bước này.
+            Lưu và theo dõi các booking đang chờ thanh toán hoặc cần thanh toán lại trước khi showroom bàn giao xe.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-showroom-processing')}>
-            Chờ showroom xử lý
+          <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-pickups')}>
+            Chờ nhận xe
           </button>
           <button className="btn-primary" onClick={() => navigate('/')}>
             Đặt xe mới
@@ -176,15 +195,15 @@ const PendingPickups = () => {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
           { label: 'Tổng booking', val: summary.total, color: '#374151' },
-          { label: 'Có thể xác nhận', val: summary.ready, color: '#059669' },
-          { label: 'Chờ đến giờ nhận', val: summary.waiting, color: '#d97706' },
-          { label: 'Đã sẵn sàng giao', val: summary.readyForHandover, color: '#2563eb' },
+          { label: 'Đang chờ thanh toán', val: summary.pending, color: '#d97706' },
+          { label: 'Cần thanh toán lại', val: summary.retry, color: '#059669' },
+          { label: 'Thất bại / từ chối', val: summary.failed, color: '#dc2626' },
         ].map((item) => (
           <div
             key={item.label}
             style={{
               ...cardInfoStyle,
-              minWidth: 140,
+              minWidth: 150,
               textAlign: 'center',
               padding: '14px 18px',
             }}
@@ -198,14 +217,14 @@ const PendingPickups = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7280' }}>
           <FaSpinner className="animate-spin" style={{ fontSize: '1.4rem', marginBottom: 10 }} />
-          <div>Đang tải danh sách chờ nhận xe...</div>
+          <div>Đang tải danh sách chờ thanh toán...</div>
         </div>
       ) : bookings.length === 0 ? (
         <div style={{ ...cardInfoStyle, textAlign: 'center', padding: 30 }}>
           <MdDirectionsCar style={{ fontSize: '3rem', color: '#94a3b8', marginBottom: 14 }} />
-          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Không có booking nào đang chờ nhận xe</div>
+          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Không có booking nào đang chờ thanh toán</div>
           <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, marginBottom: 16 }}>
-            Booking sẽ hiện tại đây khi showroom đã chuyển sang Chờ bàn giao và đang chờ bạn xác nhận đã nhận xe.
+            Các booking chưa thanh toán xong hoặc cần retry payment sẽ được lưu tại đây để bạn quay lại xử lý bất cứ lúc nào.
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="renter-btn-soft" onClick={() => navigate('/renter/bookings')}>
@@ -263,11 +282,6 @@ const PendingPickups = () => {
                   <div style={{ marginTop: 4, fontSize: '0.76rem', color: '#6b7280', lineHeight: 1.6 }}>
                     {booking.waitingForLabel}
                   </div>
-                  {booking.pickupConfirmationHint && (
-                    <div style={{ marginTop: 8, fontSize: '0.76rem', color: '#9a3412', lineHeight: 1.6 }}>
-                      {booking.pickupConfirmationHint}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -287,42 +301,45 @@ const PendingPickups = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  {booking.canConfirmPickup ? (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      borderRadius: 8,
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: '#e2e8f0',
+                      color: '#475569',
+                    }}
+                  >
+                    {getPaymentWaitingLabel(booking)}
+                  </div>
+
+                  {booking.canRetryPayment && (
                     <button
-                      style={{
-                        background: '#00b14f',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        opacity: confirmingId === booking.id ? 0.7 : 1,
-                      }}
-                      disabled={confirmingId === booking.id}
+                      className="renter-btn-soft-success"
                       onClick={(event) => {
                         event.stopPropagation();
-                        handleConfirmPickup(booking);
+                        navigate(getRetryPaymentUrl(booking));
                       }}
                     >
-                      {confirmingId === booking.id ? 'Đang xác nhận...' : 'Xác nhận đã nhận xe'}
+                      <FaCreditCard /> Thanh toán lại
                     </button>
-                  ) : (
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        borderRadius: 8,
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        background: '#e2e8f0',
-                        color: '#475569',
+                  )}
+
+                  {booking.canCancel && (
+                    <button
+                      className="renter-btn-soft-danger"
+                      style={{ opacity: cancellingId === booking.id ? 0.65 : 1 }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCancelBooking(booking);
                       }}
+                      disabled={cancellingId === booking.id}
                     >
-                      {getPickupWaitingLabel(booking)}
-                    </div>
+                      {cancellingId === booking.id ? 'Đang hủy...' : getCancelActionLabel(booking)}
+                    </button>
                   )}
                 </div>
               </div>
@@ -331,7 +348,7 @@ const PendingPickups = () => {
         </div>
       )}
 
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết chờ nhận xe" width={560}>
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết chờ thanh toán" width={560}>
         {detailModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
@@ -370,7 +387,7 @@ const PendingPickups = () => {
               ['Trạng thái booking', detailModal.status],
               ['Trạng thái thanh toán', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
               ['Phương thức thanh toán', detailModal.paymentMethod],
-              ['Địa điểm giao nhận', detailModal.locationLabel],
+              ['Ghi chú / nhận xe', detailModal.locationLabel],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -403,34 +420,35 @@ const PendingPickups = () => {
               </div>
             )}
 
-            {detailModal.canConfirmPickup ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
-                className="renter-btn-soft-success"
-                style={{ justifyContent: 'center' }}
-                onClick={() => handleConfirmPickup(detailModal)}
-                disabled={confirmingId === detailModal.id}
+                className="btn-primary"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={() => navigate(getPaymentResultUrl(detailModal))}
               >
-                <FaCheckCircle /> {confirmingId === detailModal.id ? 'Đang xác nhận...' : 'Xác nhận đã nhận xe'}
+                <FaMoneyBillWave /> Xem kết quả thanh toán
               </button>
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 10,
-                  background: '#e2e8f0',
-                  color: '#475569',
-                  padding: '12px 14px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  minHeight: 42,
-                  textAlign: 'center',
-                }}
-              >
-                {getPickupWaitingLabel(detailModal)}
-              </div>
-            )}
+
+              {detailModal.canRetryPayment && (
+                <button
+                  className="renter-btn-soft-success"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => navigate(getRetryPaymentUrl(detailModal))}
+                >
+                  <FaCreditCard /> Thanh toán lại
+                </button>
+              )}
+
+              {detailModal.canCancel && (
+                <button
+                  className="renter-btn-soft-danger"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => handleCancelBooking(detailModal)}
+                >
+                  <FaTimesCircle /> {getCancelActionLabel(detailModal)}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </Modal>
@@ -438,4 +456,4 @@ const PendingPickups = () => {
   );
 };
 
-export default PendingPickups;
+export default PendingPayments;

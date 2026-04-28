@@ -16,48 +16,52 @@ import {
   FaExchangeAlt,
   FaMoneyBillWave,
   FaReceipt,
+  FaStar,
   FaUndoAlt,
 } from 'react-icons/fa';
+import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
 import bookingService from '../../../services/bookingService';
+import reviewService from '../../../services/reviewService';
 import { getBookingPaymentStatus } from '../../../utils/bookingFlowState';
+import { canReviewBooking, resolveBookingVehicleId, resolveReviewBookingId } from '../../../utils/bookingReviewEligibility';
 import { formatDateTime, formatMoney, PAYMENT_LABELS } from '../../../utils/renterBookingView';
 import { sanitizeImageList } from '../../../utils/media';
 
 const PAYMENT_VISUALS = {
-  successful: { label: 'Da ghi nhan', bg: '#dcfce7', color: '#166534' },
-  refunded: { label: 'Da hoan tra', bg: '#dbeafe', color: '#1d4ed8' },
-  refund_pending: { label: 'Dang xu ly hoan tra', bg: '#dbeafe', color: '#1d4ed8' },
-  pending: { label: 'Cho thanh toan', bg: '#fef3c7', color: '#b45309' },
-  failed: { label: 'That bai', bg: '#fee2e2', color: '#b91c1c' },
-  declined: { label: 'Bi tu choi', bg: '#fee2e2', color: '#b91c1c' },
+  successful: { label: 'Đã ghi nhận', bg: '#dcfce7', color: '#166534' },
+  refunded: { label: 'Đã hoàn trả', bg: '#dbeafe', color: '#1d4ed8' },
+  refund_pending: { label: 'Đang xử lý hoàn trả', bg: '#dbeafe', color: '#1d4ed8' },
+  pending: { label: 'Chờ thanh toán', bg: '#fef3c7', color: '#b45309' },
+  failed: { label: 'Thất bại', bg: '#fee2e2', color: '#b91c1c' },
+  declined: { label: 'Bị từ chối', bg: '#fee2e2', color: '#b91c1c' },
 };
 
 const SUMMARY_CARD_CONFIG = [
   {
     key: 'recordedAmount',
-    label: 'Tien dat xe da ghi nhan',
+    label: 'Tiền đặt xe đã ghi nhận',
     icon: FaMoneyBillWave,
     accent: '#059669',
     tint: 'rgba(5, 150, 105, 0.12)',
   },
   {
     key: 'refundTrackingAmount',
-    label: 'Hoan tra da ghi nhan / dang xu ly',
+    label: 'Hoàn trả đã ghi nhận',
     icon: FaUndoAlt,
     accent: '#2563eb',
     tint: 'rgba(37, 99, 235, 0.12)',
   },
   {
     key: 'refundTrackingCount',
-    label: 'Booking theo doi hoan tra',
+    label: 'Booking theo dõi hoàn trả',
     icon: FaReceipt,
     accent: '#7c3aed',
     tint: 'rgba(124, 58, 237, 0.12)',
   },
   {
     key: 'pendingAmount',
-    label: 'So tien cho thanh toan',
+    label: 'Số tiền chờ thanh toán',
     icon: FaClock,
     accent: '#d97706',
     tint: 'rgba(217, 119, 6, 0.12)',
@@ -137,12 +141,14 @@ const resolveFinanceItem = (booking) => {
   return {
     id: payment?._id || booking._id,
     bookingId: booking._id,
-    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe khong ten',
+    vehicleId: resolveBookingVehicleId(booking),
+    canReviewVehicle: canReviewBooking(booking),
+    vehicleName: booking.vehicle?.name || booking.vehicle_id?.vehicle_name || 'Xe không tên',
     showroomName: booking.showroom?.name || booking.showroom_id?.name || 'SmartRent',
     amount,
     status: booking.status,
     paymentStatus,
-    paymentMethod: payment?.payment_method || 'Chua co',
+    paymentMethod: payment?.payment_method || 'Chưa có',
     transactionCode: payment?.transaction_code || payment?.stripe_payment_intent_id || '',
     createdAt,
     paidAt,
@@ -155,12 +161,12 @@ const resolveFinanceItem = (booking) => {
     pendingPayment,
     image: images[0] || '',
     refundHint: refundCompleted
-      ? 'Khoan hoan tra da duoc ghi nhan tren he thong.'
+      ? 'Khoản hoàn trả đã được ghi nhận trên hệ thống.'
       : refundPending
-        ? 'Booking da huy sau khi thanh toan thanh cong. FE dang theo doi de doi chieu hoan tra.'
+        ? 'Booking đã hủy sau khi thanh toán thành công. FE đang theo dõi để đối chiếu hoàn trả.'
         : pendingPayment
-          ? 'Booking nay chua co payment thanh cong.'
-          : 'Khoan tien da duoc ghi nhan tren he thong.',
+          ? 'Booking này chưa có thanh toán thành công.'
+          : 'Khoản tiền đã được ghi nhận trên hệ thống.',
   };
 };
 
@@ -174,44 +180,44 @@ const cardValue = (key, summary) => {
 
 const cardHint = (key, summary) => {
   if (key === 'recordedAmount') {
-    return `${summary.recordedCount} booking da ghi nhan payment`;
+    return `${summary.recordedCount} booking đã ghi nhận thanh toán`;
   }
 
   if (key === 'refundTrackingAmount') {
     if (!summary.refundTrackingCount) {
-      return 'Chua co booking nao can theo doi hoan tra';
+      return 'Chưa có booking nào cần theo dõi hoàn trả';
     }
 
     if (summary.refundPendingCount && summary.refundCompletedCount) {
-      return `${summary.refundCompletedCount} da hoan tra, ${summary.refundPendingCount} dang xu ly`;
+      return `${summary.refundCompletedCount} đã hoàn trả, ${summary.refundPendingCount} đang xử lý`;
     }
 
     if (summary.refundCompletedCount) {
-      return `${summary.refundCompletedCount} booking da hoan tra`;
+      return `${summary.refundCompletedCount} booking đã hoàn trả`;
     }
 
-    return `${summary.refundPendingCount} booking dang xu ly hoan tra`;
+    return `${summary.refundPendingCount} booking đang xử lý hoàn trả`;
   }
 
   if (key === 'refundTrackingCount') {
     if (!summary.refundTrackingCount) {
-      return 'Chua co yeu cau hoan tra nao can theo doi';
+      return 'Chưa có yêu cầu hoàn trả nào cần theo dõi';
     }
 
     if (summary.refundCompletedCount && summary.refundPendingCount) {
-      return 'Bao gom booking da hoan tra va booking dang xu ly';
+      return 'Bao gồm booking đã hoàn trả và booking đang xử lý';
     }
 
     if (summary.refundCompletedCount) {
-      return 'Tat ca booking trong nhom nay da hoan tra';
+      return 'Tất cả booking trong nhóm này đã hoàn trả';
     }
 
-    return 'Mo danh sach ben duoi de xem tung booking';
+    return 'Mở danh sách bên dưới để xem từng booking';
   }
 
   return summary.pendingCount
-    ? `${summary.pendingCount} booking van dang cho thanh toan`
-    : 'Khong co booking nao dang cho thanh toan';
+    ? `${summary.pendingCount} booking vẫn đang chờ thanh toán`
+    : 'Không có booking nào đang chờ thanh toán';
 };
 
 const PaymentPill = ({ item }) => {
@@ -256,6 +262,13 @@ const RenterDashboard = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState({ tone: '', text: '' });
+  const [reviewModalItem, setReviewModalItem] = useState(null);
+  const [reviewEditingId, setReviewEditingId] = useState('');
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -263,7 +276,7 @@ const RenterDashboard = () => {
     const loadDashboard = async () => {
       setLoading(true);
       try {
-        const bookings = await bookingService.getMyBookingsDetailed();
+        const bookings = await bookingService.getCurrentRoleBookingsDetailed();
         if (!mounted) {
           return;
         }
@@ -276,7 +289,7 @@ const RenterDashboard = () => {
         }
 
         setItems([]);
-        setError(err.message || 'Khong the tai du lieu tai chinh.');
+        setError(err.message || 'Không thể tải dữ liệu tài chính.');
       } finally {
         if (mounted) {
           setLoading(false);
@@ -364,6 +377,84 @@ const RenterDashboard = () => {
     [items]
   );
 
+  const closeReviewModal = () => {
+    setReviewModalItem(null);
+    setReviewEditingId('');
+    setReviewForm({ rating: 5, comment: '' });
+    setReviewLoading(false);
+    setReviewSubmitting(false);
+    setReviewError('');
+  };
+
+  const openReviewModal = async (item) => {
+    if (!item?.vehicleId || !item?.bookingId) {
+      return;
+    }
+
+    setReviewModalItem(item);
+    setReviewEditingId('');
+    setReviewForm({ rating: 5, comment: '' });
+    setReviewError('');
+    setReviewLoading(true);
+
+    try {
+      const myReviews = await reviewService.getMineByVehicleId(item.vehicleId);
+      const existingReview = (myReviews || []).find(
+        (review) => String(resolveReviewBookingId(review)) === String(item.bookingId)
+      );
+
+      if (existingReview) {
+        setReviewEditingId(existingReview._id || '');
+        setReviewForm({
+          rating: Number(existingReview.rating) || 5,
+          comment: existingReview.comment || '',
+        });
+      }
+    } catch (err) {
+      setReviewError(err.message || 'Không thể tải dữ liệu đánh giá của booking này.');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+    if (!reviewModalItem?.vehicleId || !reviewModalItem?.bookingId) {
+      return;
+    }
+
+    setReviewSubmitting(true);
+    setReviewError('');
+    try {
+      if (reviewEditingId) {
+        await reviewService.update({
+          review_id: reviewEditingId,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment,
+        });
+      } else {
+        await reviewService.create({
+          booking_id: reviewModalItem.bookingId,
+          vehicle_id: reviewModalItem.vehicleId,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment,
+        });
+      }
+
+      setNotice({
+        tone: 'success',
+        text: reviewEditingId
+          ? 'Đã cập nhật đánh giá cho booking ' + reviewModalItem.bookingId + '.'
+          : 'Đã gửi đánh giá cho booking ' + reviewModalItem.bookingId + '.',
+      });
+      closeReviewModal();
+    } catch (err) {
+      setReviewError(err.message || 'Không thể lưu đánh giá cho booking này.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <section
@@ -381,13 +472,13 @@ const RenterDashboard = () => {
       >
         <div style={{ maxWidth: 760 }}>
           <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#111827' }}>
-            Tong quan tien dat xe va hoan tra
+            Tổng quan tiền đặt xe và hoàn trả
           </div>
           <div style={{ fontSize: '0.92rem', color: '#4b5563', marginTop: 8, lineHeight: 1.65 }}>
-            Dashboard nay tong hop tien dat xe da ghi nhan, cac booking huy co lien quan den hoan tra,
-            va nhung khoan van dang cho thanh toan. Hien FE dang doi chieu hoan tra theo trang thai
-            booking va payment hien co. Khi backend co them trang thai refund rieng, so lieu se duoc
-            tach ro hon.
+            Dashboard này tổng hợp tiền đặt xe đã ghi nhận, các booking hủy có liên quan đến hoàn trả,
+            và những khoản vẫn đang chờ thanh toán. Hiện FE đang đối chiếu hoàn trả theo trạng thái
+            booking và payment hiện có. Khi backend có thêm trạng thái refund riêng, số liệu sẽ được
+            tách rõ hơn.
           </div>
         </div>
 
@@ -397,14 +488,14 @@ const RenterDashboard = () => {
             className="btn-primary"
             onClick={() => navigate('/renter/transactions')}
           >
-            <FaExchangeAlt /> Lich su giao dich
+            <FaExchangeAlt /> Lịch sử giao dịch
           </button>
           <button
             type="button"
             className="renter-btn-soft"
             onClick={() => navigate('/renter/bookings')}
           >
-            <FaArrowRight /> Chuyen di cua toi
+            <FaArrowRight /> Chuyến đi của tôi
           </button>
         </div>
       </section>
@@ -421,6 +512,22 @@ const RenterDashboard = () => {
           }}
         >
           {error}
+        </div>
+      )}
+
+      {notice.text && (
+        <div
+          style={{
+            background: notice.tone === 'warning' ? '#fff7ed' : '#f0fdf4',
+            border: notice.tone === 'warning' ? '1px solid #fdba74' : '1px solid #86efac',
+            color: notice.tone === 'warning' ? '#9a3412' : '#166534',
+            borderRadius: 16,
+            padding: '14px 16px',
+            fontSize: '0.86rem',
+            lineHeight: 1.6,
+          }}
+        >
+          {notice.text}
         </div>
       )}
 
@@ -486,7 +593,7 @@ const RenterDashboard = () => {
                 </div>
               </div>
               <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: 12, lineHeight: 1.55 }}>
-                {loading ? 'Dang tong hop du lieu...' : cardHint(card.key, summary)}
+                {loading ? 'Đang tổng hợp dữ liệu...' : cardHint(card.key, summary)}
               </div>
             </div>
           );
@@ -513,10 +620,7 @@ const RenterDashboard = () => {
         >
           <div>
             <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#111827' }}>
-              Dong tien 6 thang gan day
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>
-              Xanh la: da ghi nhan. Xanh duong: da hoan tra hoac dang xu ly. Cam: cho thanh toan.
+              Dòng tiền 6 tháng gần đây
             </div>
           </div>
           <div
@@ -532,7 +636,7 @@ const RenterDashboard = () => {
               fontWeight: 700,
             }}
           >
-            <FaCalendarAlt /> Cap nhat theo booking / payment hien co
+            <FaCalendarAlt /> Cập nhật booking/ thanh toán hiện có
           </div>
         </div>
 
@@ -552,9 +656,9 @@ const RenterDashboard = () => {
                 formatter={(value) => formatMoney(value)}
                 labelStyle={{ fontWeight: 700, color: '#0f172a' }}
               />
-              <Bar dataKey="bookedAmount" name="Da ghi nhan" fill="#00b14f" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="refundAmount" name="Hoan tra / dang xu ly" fill="#2563eb" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="pendingAmount" name="Cho thanh toan" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="bookedAmount" name="Đã ghi nhận" fill="#00b14f" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="refundAmount" name="Hoàn trả / đang xử lý" fill="#2563eb" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="pendingAmount" name="Chờ thanh toán" fill="#f59e0b" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -573,11 +677,11 @@ const RenterDashboard = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 18 }}>
             <div>
               <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#111827' }}>
-                Theo doi hoan tra
+                Theo dõi hoàn trả
               </div>
               <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4 }}>
-                Bao gom booking da huy co payment da ghi nhan. FE dang nhom chung cac truong hop da hoan tra
-                va dang xu ly de renter de theo doi.
+                Bao gồm booking đã hủy có payment đã ghi nhận. FE đang nhóm chung các trường hợp đã hoàn trả
+                và đang xử lý để renter để theo dõi.
               </div>
             </div>
             <button
@@ -591,12 +695,12 @@ const RenterDashboard = () => {
 
           {loading ? (
             <div style={{ textAlign: 'center', color: '#6b7280', padding: '48px 0' }}>
-              Dang tai dashboard...
+              Đang tải dashboard...
             </div>
           ) : refundCases.length === 0 ? (
             <EmptyPanel
-              title="Chua co booking nao can theo doi hoan tra"
-              description="Khi booking bi huy sau khi da co payment ghi nhan, muc nay se hien de renter theo doi."
+              title="Chưa có booking nào cần theo dõi hoàn trả"
+              description="Khi booking bị hủy sau khi đã có payment ghi nhận, mục này sẽ hiện để renter theo dõi."
             />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -676,7 +780,7 @@ const RenterDashboard = () => {
                         className="renter-btn-soft"
                         onClick={() => navigate('/renter/bookings')}
                       >
-                        Mo booking
+                        Mở Booking
                       </button>
                       <button
                         type="button"
@@ -703,20 +807,20 @@ const RenterDashboard = () => {
           }}
         >
           <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#111827' }}>
-            Giao dich gan day
+            Giao dịch gần đây
           </div>
           <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 4, marginBottom: 16 }}>
-            Cac booking va payment moi nhat duoc FE tong hop tai day de renter doi chieu nhanh.
+            Các booking và payment mới nhất được FE tổng hợp tại đây để renter đối chiếu nhanh.
           </div>
 
           {loading ? (
             <div style={{ textAlign: 'center', color: '#6b7280', padding: '48px 0' }}>
-              Dang tai lich su...
+              Đang tải lịch sử...
             </div>
           ) : recentItems.length === 0 ? (
             <EmptyPanel
-              title="Chua co dong tien nao"
-              description="Khi renter tao booking va thanh toan, dashboard se hien cac muc tong hop tai day."
+              title="Chưa có giao dịch nào"
+              description="Khi renter tạo booking và thanh toán, dashboard sẽ hiện các mục tổng hợp tại đây."
             />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -759,16 +863,135 @@ const RenterDashboard = () => {
                         {formatMoney(item.amount)}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 4 }}>
-                        {item.transactionCode || 'Chua co ma giao dich'}
+                        {item.transactionCode || 'Chưa có mã giao dịch'}
                       </div>
                     </div>
                   </div>
+
+                  {item.canReviewVehicle && item.vehicleId && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        className="renter-btn-soft"
+                        onClick={() => openReviewModal(item)}
+                      >
+                        Đánh giá đơn thuê này
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
       </section>
+
+      <Modal
+        isOpen={!!reviewModalItem}
+        onClose={closeReviewModal}
+        title="Đánh giá theo booking"
+        width={520}
+      >
+        {reviewModalItem && (
+          <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 14,
+                padding: '14px 16px',
+              }}
+            >
+              <div style={{ fontWeight: 800, color: '#111827', fontSize: '0.96rem' }}>
+                {reviewModalItem.vehicleName}
+              </div>
+              <div style={{ marginTop: 4, fontSize: '0.8rem', color: '#64748b' }}>
+                Booking: {reviewModalItem.bookingId}
+              </div>
+              <div style={{ marginTop: 8, fontSize: '0.8rem', color: '#334155', lineHeight: 1.6 }}>
+                Mỗi booking chỉ được gửi 1 đánh giá. Nếu booking này đã có review, bạn chỉ có thể cập nhật lại nội dung hiện có.
+              </div>
+            </div>
+
+            {reviewLoading ? (
+              <div style={{ padding: '12px 0', color: '#6b7280', fontSize: '0.84rem' }}>
+                Đang tải dữ liệu đánh giá hiện tại...
+              </div>
+            ) : (
+              <>
+                <div>
+                  <div style={{ marginBottom: 8, fontSize: '0.82rem', fontWeight: 700, color: '#374151' }}>
+                    So sao
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={`${value} sao`}
+                        onClick={() => setReviewForm((current) => ({ ...current, rating: value }))}
+                        style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+                      >
+                        <FaStar
+                          size={22}
+                          color={value <= reviewForm.rating ? '#f59e0b' : '#e5e7eb'}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151' }}>Nhan xet</span>
+                  <textarea
+                    rows={4}
+                    value={reviewForm.comment}
+                    onChange={(event) =>
+                      setReviewForm((current) => ({ ...current, comment: event.target.value }))
+                    }
+                    placeholder="Chia sẻ trải nghiệm của bạn..."
+                    style={{
+                      width: '100%',
+                      resize: 'vertical',
+                      borderRadius: 12,
+                      border: '1px solid #d1d5db',
+                      padding: '12px 14px',
+                      fontSize: '0.84rem',
+                      color: '#111827',
+                      outline: 'none',
+                    }}
+                  />
+                </label>
+              </>
+            )}
+
+            {reviewError && (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  color: '#b91c1c',
+                  borderRadius: 12,
+                  padding: '10px 12px',
+                  fontSize: '0.8rem',
+                }}
+              >
+                {reviewError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" className="renter-btn-soft" onClick={closeReviewModal}>
+                Đóng
+              </button>
+              <button type="submit" className="btn-primary" disabled={reviewSubmitting || reviewLoading}>
+                {reviewSubmitting ? 'Đang lưu...' : reviewEditingId ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

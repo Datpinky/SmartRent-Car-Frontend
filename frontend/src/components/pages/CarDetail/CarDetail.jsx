@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   FaStar,
@@ -15,14 +15,11 @@ import { MdPeople, MdSettings, MdDirectionsCar, MdVerified, MdShield } from 'rea
 import { BsLightningChargeFill } from 'react-icons/bs';
 import CarLocationMap from '../../Map/CarLocationMap';
 import Modal from '../../common/Modal';
-import bookingService from '../../../services/bookingService';
 import vehicleService from '../../../services/vehicleService';
 import vehicleLocationService from '../../../services/vehicleLocationService';
 import reviewService from '../../../services/reviewService';
 import favoriteService from '../../../services/favoriteService';
 import { useAuth } from '../../../contexts/AuthContext';
-import { canReviewBooking, resolveBookingVehicleId } from '../../../utils/bookingReviewEligibility';
-import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import { buildRentalWindowQuery, resolveRentalWindow } from '../../../utils/rentalWindow';
 
 const ROLE_DEFAULT_PATHS = {
@@ -80,7 +77,7 @@ const createDefaultReturn = () => {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-const BookingCard = ({ car, id, avgRating, navigate, user, initialRentalWindow }) => {
+const BookingCard = ({ car, id, avgRating, navigate, user, initialRentalWindow, onOpenShowroomProfile }) => {
   const initialPickup = initialRentalWindow?.pickupDate || createDefaultPickup();
   const initialReturn = initialRentalWindow?.returnDate || createDefaultReturn();
   const [pickupDate, setPickupDate] = useState(initialPickup);
@@ -107,6 +104,23 @@ const BookingCard = ({ car, id, avgRating, navigate, user, initialRentalWindow }
   const currency = car.currency === 'VND' ? 'đ' : car.currency || '';
   const isRenter = user?.role === 'renter';
   const roleRedirect = ROLE_DEFAULT_PATHS[user?.role] || '/';
+  const addedBy = car?.addedBy;
+  const showroomUserId = typeof addedBy === 'string' ? addedBy : addedBy?._id || addedBy?.id || '';
+  const canOpenShowroomProfile = isMongoId(showroomUserId);
+  const showroomLabel = car.showroom || 'Chủ xe SmartRent';
+
+  const handleOpenShowroomProfile = () => {
+    if (!canOpenShowroomProfile) {
+      return;
+    }
+
+    if (typeof onOpenShowroomProfile === 'function') {
+      onOpenShowroomProfile(showroomUserId);
+      return;
+    }
+
+    navigate('/showrooms/' + showroomUserId);
+  };
 
   const handleBook = () => {
     if (!user) {
@@ -208,16 +222,32 @@ const BookingCard = ({ car, id, avgRating, navigate, user, initialRentalWindow }
             : 'Miễn phí hủy trước 1 giờ · Thanh toán an toàn'}
         </div>
 
-        <div className="mt-4 flex items-center gap-3 border-t border-gray-100 pt-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-white">
-            {car.showroom ? car.showroom[0] : 'C'}
-          </div>
-          <div>
-            <div className="text-[0.85rem] font-semibold text-gray-800">
-              {car.showroom || 'Chủ xe SmartRent'}
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          {canOpenShowroomProfile ? (
+            <button
+              type="button"
+              onClick={handleOpenShowroomProfile}
+              className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left transition-colors hover:bg-gray-50"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-white">
+                {showroomLabel ? showroomLabel[0] : 'C'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[0.85rem] font-semibold text-gray-800">{showroomLabel}</div>
+                <div className="text-[0.75rem] text-gray-400">Xem hồ sơ showroom</div>
+              </div>
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-white">
+                {showroomLabel ? showroomLabel[0] : 'C'}
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-semibold text-gray-800">{showroomLabel}</div>
+                <div className="text-[0.75rem] text-gray-400">Showroom đợi phản hồi trong 5 phút</div>
+              </div>
             </div>
-            <div className="text-[0.75rem] text-gray-400">⭐ {avgRating} · Phản hồi trong 5 phút</div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -242,7 +272,6 @@ const CarDetail = () => {
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [vehicleLocation, setVehicleLocation] = useState(null);
-
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState('');
   const [reviewAccessLoading, setReviewAccessLoading] = useState(false);
@@ -257,13 +286,10 @@ const CarDetail = () => {
   const loadCar = useCallback(async () => {
     setLoading(true);
     try {
-      if (isMongoId(id)) {
-        const apiCar = await vehicleService.getById(id);
-        setCar(apiCar || null);
-      } else {
-        setCar(null);
-      }
-    } catch {
+      const apiCar = await vehicleService.getById(id);
+      setCar(apiCar || null);
+    } catch (error) {
+      console.error('Error loading car:', error.message);
       setCar(null);
     } finally {
       setLoading(false);
@@ -304,37 +330,11 @@ const CarDetail = () => {
     }
   }, [id]);
 
-  const loadReviewAccess = useCallback(async () => {
-    if (user?.role !== 'renter' || !isMongoId(id)) {
-      setReviewAccess({ canReview: false, eligibleBookings: 0 });
-      setReviewAccessLoading(false);
-      return;
-    }
-
-    setReviewAccessLoading(true);
-    try {
-      const myBookings = await bookingService.getMyBookings();
-      const eligibleBookings = (myBookings || []).filter(
-        (booking) => resolveBookingVehicleId(booking) === id && canReviewBooking(booking)
-      );
-
-      setReviewAccess({
-        canReview: eligibleBookings.length > 0,
-        eligibleBookings: eligibleBookings.length,
-      });
-    } catch {
-      setReviewAccess({ canReview: false, eligibleBookings: 0 });
-    } finally {
-      setReviewAccessLoading(false);
-    }
-  }, [id, user?.role]);
-
   useEffect(() => {
     loadCar();
     loadReviews();
     loadVehicleLocation();
-    loadReviewAccess();
-  }, [loadCar, loadReviews, loadVehicleLocation, loadReviewAccess]);
+  }, [loadCar, loadReviews, loadVehicleLocation]);
 
   useEffect(() => {
     setActiveImageIndex(0);
@@ -365,35 +365,6 @@ const CarDetail = () => {
     }
   };
 
-  const handleReviewSubmit = async (event) => {
-    event.preventDefault();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    if (!canReviewThisVehicle) {
-      setReviewError('Bạn chỉ có thể đánh giá sau khi hoàn tất ít nhất một booking cho chiếc xe này.');
-      return;
-    }
-
-    setReviewError('');
-    setReviewSubmitting(true);
-    try {
-      if (editingReviewId) {
-        await reviewService.update({ review_id: editingReviewId, ...reviewForm });
-      } else {
-        await reviewService.create({ vehicle_id: id, ...reviewForm });
-      }
-      resetReviewComposer();
-      await loadReviews();
-    } catch (error) {
-      setReviewError(error.message);
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
   const carName = car?.name || '';
   const hue = Math.abs(carName.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)) % 360;
   const avgRating = reviews.length
@@ -421,9 +392,20 @@ const CarDetail = () => {
 
   const nImg = visibleGalleryImages.length;
   const activeIdx = Math.min(activeImageIndex, Math.max(nImg - 1, 0));
-  const mainSrc = visibleGalleryImages[activeIdx] || '';
+  const activeImage = visibleGalleryImages[activeIdx] || '';
 
   const currentUserId = user?._id || user?.id || '';
+  const showroomUserId =
+    typeof car?.addedBy === 'string' ? car.addedBy : car?.addedBy?._id || car?.addedBy?.id || '';
+  const openShowroomProfile = useCallback(
+    (userId) => {
+      if (isMongoId(userId)) {
+        navigate('/showrooms/' + userId);
+      }
+    },
+    [navigate]
+  );
+
   const canManageReviews = user?.role === 'renter' && isMongoId(id);
   const canReviewThisVehicle = canManageReviews && reviewAccess.canReview;
   const hasReviews = reviews.length > 0;
@@ -447,30 +429,6 @@ const CarDetail = () => {
     [currentUserId, getReviewUserId]
   );
 
-  const resetReviewComposer = useCallback(() => {
-    setShowReviewForm(false);
-    setEditingReviewId('');
-    setReviewForm({ rating: 5, comment: '' });
-    setReviewError('');
-  }, []);
-
-  const openCreateReviewForm = useCallback(() => {
-    setReviewError('');
-    setEditingReviewId('');
-    setReviewForm({ rating: 5, comment: '' });
-    setShowReviewForm((current) => (isEditingReview ? true : !current));
-  }, [isEditingReview]);
-
-  const openEditReviewForm = useCallback((review) => {
-    setReviewError('');
-    setEditingReviewId(review?._id || '');
-    setReviewForm({
-      rating: Number(review?.rating) || 5,
-      comment: review?.comment || '',
-    });
-    setShowReviewForm(true);
-  }, []);
-
   const formatReviewDate = useCallback((value) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
@@ -478,18 +436,6 @@ const CarDetail = () => {
     }
     return date.toLocaleDateString('vi-VN');
   }, []);
-
-  useEffect(() => {
-    if (!location.state?.openReviewComposer || reviewAccessLoading) {
-      return;
-    }
-
-    if (canReviewThisVehicle) {
-      setShowReviewForm(true);
-    }
-
-    navigate(location.pathname, { replace: true, state: {} });
-  }, [canReviewThisVehicle, location.pathname, location.state, navigate, reviewAccessLoading]);
 
   useEffect(() => {
     if (!visibleGalleryImages.length) {
@@ -516,7 +462,9 @@ const CarDetail = () => {
   if (!car) {
     return (
       <div className="px-5 py-20 text-center">
-        <div className="mb-4 text-[4rem]">🚗</div>
+        <div className="mb-4 flex justify-center text-primary">
+          <MdDirectionsCar style={{ fontSize: '4rem' }} />
+        </div>
         <h2 className="mb-5 text-xl font-bold text-gray-800">Không tìm thấy xe</h2>
         <button
           type="button"
@@ -542,11 +490,6 @@ const CarDetail = () => {
     });
   };
 
-  const openGalleryAt = (index) => {
-    setActiveImageIndex(index);
-    setGalleryOpen(true);
-  };
-
   const moveGallery = (direction) => {
     if (visibleGalleryImages.length <= 1) {
       return;
@@ -564,28 +507,14 @@ const CarDetail = () => {
     });
   };
 
-  const handleBookNow = () => {
-    if (!user) {
-      navigate('/login');
+  const openGalleryAt = (index) => {
+    if (!visibleGalleryImages.length) {
       return;
     }
 
-    if (user.role !== 'renter') {
-      navigate(ROLE_DEFAULT_PATHS[user.role] || '/', { replace: true });
-      return;
-    }
-
-    const pickupDate = initialRentalWindow?.pickupDate || createDefaultPickup();
-    const returnDate = initialRentalWindow?.returnDate || createDefaultReturn();
-
-    navigate(`/renter/checkout/${id}${buildRentalWindowQuery(pickupDate, returnDate)}`, {
-      state: {
-        car,
-        rentalSearch: { pickupDate, returnDate },
-        pickupDate,
-        returnDate,
-      },
-    });
+    const boundedIndex = Math.min(Math.max(index, 0), visibleGalleryImages.length - 1);
+    setActiveImageIndex(boundedIndex);
+    setGalleryOpen(true);
   };
 
   return (
@@ -598,35 +527,22 @@ const CarDetail = () => {
         <FaChevronLeft size={12} aria-hidden="true" /> Quay lại danh sách xe
       </button>
 
-      {/*
-        Hai tầng: (1) gallery + thẻ đặt xe cùng hàng — không dùng sticky để tránh thẻ bám viewport và chồng footer.
-        (2) Khối thông tin xe full width bên dưới.
-      */}
-      <div className="flex flex-col gap-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start lg:items-start max-[900px]:gap-6">
-          {/* Cột trái: chỉ gallery + nút chia sẻ */}
-          <div className="min-w-0">
-          {/* Gallery — nhiều ảnh: ảnh lớn + mũi tên + thumbnail (kiểu Shopee) */}
-          <div className="w-full space-y-2">
-            <div
-              className="w-full rounded-2xl overflow-hidden bg-gray-100 relative group"
-              style={{ aspectRatio: '16/9' }}
-            >
-              {mainSrc ? (
-                <img
-                  key={mainSrc}
-                  src={mainSrc}
-                  alt={`${car.name} — ảnh ${activeIdx + 1}/${nImg}`}
-                  width={600}
-                  height={400}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    const el = e.target.nextElementSibling;
-                    if (el) el.style.display = 'flex';
-                  }}
-                />
-              ) : null}
+      <div className="grid grid-cols-[1fr_360px] items-start gap-8 max-[900px]:grid-cols-1">
+        <div>
+          <div className="relative w-full overflow-hidden rounded-2xl bg-gray-100" style={{ aspectRatio: '16/9' }}>
+            {activeImage ? (
+              <img
+                src={activeImage}
+                alt={car.name}
+                className="h-full w-full cursor-zoom-in object-cover"
+                onClick={() =>
+                  openGalleryAt(Math.min(activeImageIndex, Math.max(visibleGalleryImages.length - 1, 0)))
+                }
+                onError={() => {
+                  markImageBroken(activeImage);
+                }}
+              />
+            ) : (
               <div
                 className="flex h-full w-full items-center justify-center"
                 style={{
@@ -642,7 +558,8 @@ const CarDetail = () => {
                   }}
                 />
               </div>
-              
+            )}
+
             {visibleGalleryImages.length > 1 && (
               <div className="absolute bottom-4 right-4 rounded-full bg-black/55 px-3 py-1.5 text-[0.78rem] font-semibold text-white backdrop-blur-sm">
                 {Math.min(activeImageIndex + 1, visibleGalleryImages.length)}/{visibleGalleryImages.length} ảnh
@@ -658,14 +575,12 @@ const CarDetail = () => {
                   <button
                     key={imageUrl}
                     type="button"
-                    className={`overflow-hidden rounded-xl border-2 transition-all ${
-                      isActiveImage
-                        ? 'border-primary shadow-[0_8px_20px_rgba(0,177,79,0.18)]'
-                        : 'border-gray-200 hover:border-primary/60'
-                    }`}
+                    className={`overflow-hidden rounded-xl border-2 transition-all ${isActiveImage
+                      ? 'border-primary shadow-[0_8px_20px_rgba(0,177,79,0.18)]'
+                      : 'border-gray-200 hover:border-primary/60'
+                      }`}
                     style={{ aspectRatio: '4/3' }}
                     onClick={() => {
-                      setImgError(false);
                       setActiveImageIndex(index);
                     }}
                   >
@@ -698,11 +613,10 @@ const CarDetail = () => {
               type="button"
               onClick={handleToggleFavorite}
               disabled={likeLoading}
-              className={`cursor-pointer rounded-full border bg-white px-4 py-2 text-[0.82rem] transition-colors ${
-                liked
-                  ? 'border-red-400 text-red-500 hover:border-red-500'
-                  : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
-              }`}
+              className={`cursor-pointer rounded-full border bg-white px-4 py-2 text-[0.82rem] transition-colors ${liked
+                ? 'border-red-400 text-red-500 hover:border-red-500'
+                : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
+                }`}
             >
               <span className="inline-flex items-center gap-1.5">
                 {liked ? <FaHeart size={13} aria-hidden="true" /> : <FaRegHeart size={13} aria-hidden="true" />}
@@ -710,73 +624,8 @@ const CarDetail = () => {
               </span>
             </button>
           </div>
-          </div>
 
-        {/* Cột phải: đặt xe — luôn ngang hàng gallery trên desktop, không sticky */}
-        <div className="min-w-0 w-full lg:max-w-[360px] lg:justify-self-end">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
-            <div className="mb-4">
-              <span className="text-[1.35rem] font-extrabold text-primary tabular-nums leading-tight block">
-                {formatVndPerDay(car.price)}
-              </span>
-            </div>
-            <div className="h-px bg-gray-100 my-4" />
-
-            {[
-              { label: 'Thời gian nhận xe', id: 'pickup-time', def: '2026-04-02T15:00' },
-              { label: 'Thời gian trả xe', id: 'return-time', def: '2026-04-04T19:00' },
-            ].map(({ label, id: inputId, def }) => (
-              <div key={inputId} className="mb-3">
-                <label htmlFor={inputId} className="text-[0.78rem] font-semibold text-gray-600 mb-1.5 uppercase tracking-wide block">{label}</label>
-                <input id={inputId} type="datetime-local" className="w-full border-[1.5px] border-gray-200 rounded-lg px-3 py-2.5 text-[0.85rem] text-gray-800 outline-none focus:border-primary transition-colors" defaultValue={def} />
-              </div>
-            ))}
-
-            <div className="h-px bg-gray-100 my-4" />
-
-            <div className="flex flex-col gap-2 mb-4">
-              {[
-                [`${car.price ? car.price.toLocaleString('vi-VN') : 0} VNĐ × 2 ngày`, formatVnd(car.price ? car.price * 2 : 0)],
-                ['Phí dịch vụ (5%)', formatVnd(car.price ? Math.round(car.price * 2 * 0.05) : 0)],
-              ].map(([label, val]) => (
-                <div key={label} className="flex justify-between text-[0.83rem] text-gray-600">
-                  <span>{label}</span>
-                  <span className="font-semibold text-gray-800 tabular-nums">{val}</span>
-                </div>
-              ))}
-              <div className="h-px bg-gray-100 my-1" />
-              <div className="flex justify-between font-extrabold text-[0.95rem] text-gray-900">
-                <span>Tổng cộng</span>
-                <span className="text-primary tabular-nums">
-                  {formatVnd(car.price ? car.price * 2 + Math.round(car.price * 2 * 0.05) : 0)}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleBookNow}
-              className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-dark text-white font-bold rounded-xl text-[0.95rem] tracking-wide transition-[transform,box-shadow,background-color] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)]"
-            >
-              Đặt xe ngay
-            </button>
-            <div className="text-center text-[0.75rem] text-gray-400 mt-3">Miễn phí hủy trước 1 giờ · Thanh toán sau</div>
-
-            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">
-                {car.showroom ? car.showroom[0] : 'C'}
-              </div>
-              <div>
-                <div className="text-[0.85rem] font-semibold text-gray-800">{car.showroom || 'Chủ xe SmartRent'}</div>
-                <div className="text-[0.75rem] text-gray-400">⭐ <span className="tabular-nums">{avgRating}</span> · Phản hồi trong 5 phút</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-
-          {/* Info card — full width dưới gallery + đặt xe */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+          <div className="flex flex-col gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h1 className="text-2xl font-extrabold text-gray-900">{car.name}</h1>
 
             <div className="flex flex-wrap gap-3">
@@ -784,9 +633,19 @@ const CarDetail = () => {
                 <FaMapMarkerAlt size={12} aria-hidden="true" /> {displayAddress}
               </span>
               {car.showroom && (
-                <span className="flex items-center gap-1 text-[0.82rem] text-gray-500">
-                  <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.showroom}
-                </span>
+                showroomUserId ? (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-[0.82rem] text-gray-500 transition-colors hover:text-primary"
+                    onClick={() => openShowroomProfile(showroomUserId)}
+                  >
+                    <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.showroom}
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1 text-[0.82rem] text-gray-500">
+                    <FaStore size={12} className="text-gray-400" aria-hidden="true" /> {car.showroom}
+                  </span>
+                )
               )}
               <StarRow rating={avgRating} count={tripCount} />
               <span className="flex items-center gap-1 text-[0.85rem] font-semibold text-primary">
@@ -797,7 +656,7 @@ const CarDetail = () => {
             <div>
               <div className={sectionTitle}>Thông số kỹ thuật</div>
               <div className="grid grid-cols-2 gap-3 max-[480px]:grid-cols-1">
-                <SpecItem icon={<MdPeople size={18} />} label="Số chỗ" value={`${car.seats || 5} chỗ ngồi`} />
+                <SpecItem icon={<MdPeople size={18} />} label="Số chỗ" value={`${car.seats || 5} chỗ`} />
                 <SpecItem icon={<MdSettings size={18} />} label="Hộp số" value={car.transmission || 'Số tự động'} />
                 <SpecItem
                   icon={
@@ -874,109 +733,7 @@ const CarDetail = () => {
                 <span className="text-[0.9rem] font-bold text-gray-800">
                   Đánh giá {reviewsMeta.total > 0 && <span className="tabular-nums">({reviewsMeta.total})</span>}
                 </span>
-                {canReviewThisVehicle && (
-                  <button
-                    type="button"
-                    onClick={openCreateReviewForm}
-                    className="text-[0.8rem] font-semibold text-primary hover:underline"
-                  >
-                    {showReviewForm && !isEditingReview
-                      ? 'Hủy'
-                      : hasReviews
-                        ? '+ Thêm đánh giá'
-                        : '+ Viết đánh giá'}
-                  </button>
-                )}
               </div>
-
-              {user && user.role !== 'renter' && isMongoId(id) && (
-                <p className="mb-2 text-[0.78rem] text-gray-500">
-                  Chỉ tài khoản <strong>khách thuê</strong> mới có thể gửi đánh giá.
-                </p>
-              )}
-
-              {canManageReviews && reviewAccessLoading && (
-                <p className="mb-3 text-[0.8rem] text-gray-400">Đang kiểm tra điều kiện đánh giá...</p>
-              )}
-
-              {canManageReviews && !reviewAccessLoading && !canReviewThisVehicle && (
-                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[0.8rem] leading-6 text-amber-800">
-                  Bạn có thể xem đánh giá của những renter khác tại đây. Quyền viết đánh giá chỉ mở sau khi bạn hoàn tất
-                  ít nhất một booking cho chiếc xe này.
-                </div>
-              )}
-
-              {showReviewForm && (
-                <form
-                  onSubmit={handleReviewSubmit}
-                  className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[0.86rem] font-bold text-gray-800">
-                        {isEditingReview ? 'Chỉnh sửa đánh giá của bạn' : 'Chia sẻ cảm nhận về chiếc xe này'}
-                      </div>
-                      <div className="mt-1 text-[0.76rem] text-gray-500">
-                        {isEditingReview
-                          ? 'Cập nhật lại điểm số hoặc nhận xét để người thuê sau có thêm thông tin.'
-                          : 'Đánh giá chất lượng xe, mức độ sạch sẽ và trải nghiệm thuê xe của bạn.'}
-                      </div>
-                    </div>
-
-                    {isEditingReview && (
-                      <button
-                        type="button"
-                        onClick={resetReviewComposer}
-                        className="text-[0.78rem] font-semibold text-gray-500 transition-colors hover:text-primary"
-                      >
-                        Hủy sửa
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[0.82rem] font-medium text-gray-600">Điểm:</span>
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-label={`${value} sao`}
-                        onClick={() => setReviewForm((current) => ({ ...current, rating: value }))}
-                      >
-                        <FaStar
-                          size={20}
-                          color={value <= reviewForm.rating ? '#f59e0b' : '#e5e7eb'}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    ))}
-                  </div>
-
-                  <textarea
-                    rows={3}
-                    placeholder="Nhận xét của bạn..."
-                    value={reviewForm.comment}
-                    onChange={(event) =>
-                      setReviewForm((current) => ({ ...current, comment: event.target.value }))
-                    }
-                    className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-[0.85rem] outline-none focus:border-primary"
-                  />
-                  {reviewError && <p className="text-[0.8rem] text-red-500">{reviewError}</p>}
-                  <button
-                    type="submit"
-                    disabled={reviewSubmitting}
-                    className="self-end rounded-lg bg-primary px-5 py-2 text-[0.85rem] font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
-                  >
-                    {reviewSubmitting
-                      ? isEditingReview
-                        ? 'Đang lưu...'
-                        : 'Đang gửi...'
-                      : isEditingReview
-                        ? 'Lưu thay đổi'
-                        : 'Gửi đánh giá'}
-                  </button>
-                </form>
-              )}
 
               {reviewsLoading && <p className="py-2 text-[0.82rem] text-gray-400">Đang tải đánh giá...</p>}
 
@@ -1012,15 +769,6 @@ const CarDetail = () => {
                       </div>
                     </div>
 
-                    {canReviewThisVehicle && isOwnReview(review) && (
-                      <button
-                        type="button"
-                        onClick={() => openEditReviewForm(review)}
-                        className="shrink-0 text-[0.76rem] font-semibold text-primary hover:underline"
-                      >
-                        Sửa
-                      </button>
-                    )}
                   </div>
 
                   <div className="ml-9">
@@ -1044,8 +792,8 @@ const CarDetail = () => {
                   'Không sử dụng xe thuê vào mục đích phi pháp, trái pháp luật.',
                   'Không sử dụng xe thuê để cầm cố, thế chấp.',
                   'Không hút thuốc, nhả kẹo cao su, xả rác trong xe.',
-                  'Không chở hàng quốc cấm dễ cháy nổ.',
-                  'Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời !',
+                  'Không chở hàng quốc cấm, dễ cháy nổ.',
+                  'Trân trọng cảm ơn, chúc quý khách hàng có những chuyến đi tuyệt vời!',
                 ].map((term, index) => (
                   <p key={index}>– {term}</p>
                 ))}
@@ -1061,13 +809,14 @@ const CarDetail = () => {
           navigate={navigate}
           user={user}
           initialRentalWindow={initialRentalWindow}
+          onOpenShowroomProfile={openShowroomProfile}
         />
       </div>
 
       <Modal
         isOpen={galleryOpen && visibleGalleryImages.length > 0}
         onClose={() => setGalleryOpen(false)}
-        title={`${car.name} - Thu vien anh`}
+        title={`${car.name} - Thư viện ảnh`}
         width={980}
       >
         {visibleGalleryImages.length > 0 && (
@@ -1106,9 +855,8 @@ const CarDetail = () => {
                   <button
                     key={`${imageUrl}-${index}`}
                     type="button"
-                    className={`overflow-hidden rounded-xl border-2 transition-all ${
-                      index === activeImageIndex ? 'border-primary' : 'border-gray-200 hover:border-primary/60'
-                    }`}
+                    className={`overflow-hidden rounded-xl border-2 transition-all ${index === activeImageIndex ? 'border-primary' : 'border-gray-200 hover:border-primary/60'
+                      }`}
                     style={{ aspectRatio: '4/3' }}
                     onClick={() => setActiveImageIndex(index)}
                   >

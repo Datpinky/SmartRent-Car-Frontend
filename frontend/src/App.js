@@ -9,6 +9,7 @@ import CarDetail from './components/pages/CarDetail/CarDetail';
 import Home from './components/pages/Home/Home';
 import Login from './components/pages/Login/Login';
 import PartnerRegister from './components/pages/PartnerRegister/PartnerRegister';
+import ShowroomPublic from './components/pages/ShowroomPublic/ShowroomPublic';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -27,9 +28,12 @@ import AIReports from './pages/renter/AIReports/AIReports';
 import Checkout from './pages/renter/Checkout/Checkout';
 import MapPage from './pages/renter/Map/MapPage';
 import MyBookings from './pages/renter/MyBookings/MyBookings';
-import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
+import PendingPayments from './pages/renter/PendingPayments/PendingPayments';
 import PendingPickups from './pages/renter/PendingPickups/PendingPickups';
+import PendingShowroomProcessing from './pages/renter/PendingShowroomProcessing/PendingShowroomProcessing';
+import PaymentResult from './pages/renter/PaymentResult/PaymentResult';
 import Profile from './pages/renter/Profile/Profile';
+import RetryPayment from './pages/renter/RetryPayment/RetryPayment';
 import RenterDashboard from './pages/renter/RenterDashboard/RenterDashboard';
 import SOSReport from './pages/renter/SOSReport/SOSReport';
 import Transactions from './pages/renter/Transactions/Transactions';
@@ -71,6 +75,7 @@ const PublicSite = () => (
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/xe/:id" element={<CarDetail />} />
+        <Route path="/showrooms/:userId" element={<ShowroomPublic />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -112,12 +117,15 @@ const App = () => (
 
           <Route path="/renter/dashboard" element={<RenterPage><RenterDashboard /></RenterPage>} />
           <Route path="/renter/profile" element={<RenterPage><Profile /></RenterPage>} />
+          <Route path="/renter/pending-payments" element={<RenterPage><PendingPayments /></RenterPage>} />
+          <Route path="/renter/pending-showroom-processing" element={<RenterPage><PendingShowroomProcessing /></RenterPage>} />
           <Route path="/renter/pending-pickups" element={<RenterPage><PendingPickups /></RenterPage>} />
           <Route path="/renter/bookings" element={<RenterPage><MyBookings /></RenterPage>} />
           <Route path="/renter/ai-reports" element={<RenterPage><AIReports /></RenterPage>} />
           <Route path="/renter/transactions" element={<RenterPage><Transactions /></RenterPage>} />
           <Route path="/renter/checkout/:carId" element={<RenterPage><Checkout /></RenterPage>} />
           <Route path="/renter/checkout" element={<RenterPage><Checkout /></RenterPage>} />
+          <Route path="/renter/retry-payment/:bookingId" element={<RenterOnlyPage><RetryPayment /></RenterOnlyPage>} />
           <Route path="/renter/payment-result" element={<RenterOnlyPage><PaymentResult /></RenterOnlyPage>} />
           <Route path="/renter/sos" element={<RenterPage><SOSReport /></RenterPage>} />
 

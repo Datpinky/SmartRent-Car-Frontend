@@ -22,6 +22,7 @@ const CarGrid = ({ cars, loading = false, rentalSearch = null }) => {
 
   useEffect(() => {
     setDisplayCars(cars || []);
+    setVisibleCount(8);
   }, [cars]);
 
   const visible = displayCars.slice(0, visibleCount);

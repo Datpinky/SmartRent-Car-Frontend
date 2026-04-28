@@ -4,8 +4,10 @@ class NotificationController {
     async list(req, res, next) {
         try {
             const userId = req.user.userId;
+            const role = req.user.role;
             const limit = Math.min(parseInt(req.query.limit) || 50, 100);
             const skip  = parseInt(req.query.skip) || 0;
+            await notificationService.syncReturnDueNotifications(userId, role);
             const data  = await notificationService.listForUser(userId, { limit, skip });
             const unread = data.filter((n) => !n.read).length;
             return res.status(200).json({ message: 'OK', data, unread });
@@ -16,6 +18,7 @@ class NotificationController {
 
     async countUnread(req, res, next) {
         try {
+            await notificationService.syncReturnDueNotifications(req.user.userId, req.user.role);
             const count = await notificationService.countUnread(req.user.userId);
             return res.status(200).json({ message: 'OK', data: { count } });
         } catch (error) {
