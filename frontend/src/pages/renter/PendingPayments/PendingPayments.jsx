@@ -50,7 +50,7 @@ const PendingPayments = () => {
       setError('');
     } catch (err) {
       setBookings([]);
-      setError(err.message || 'Khong the tai danh sach cho thanh toan.');
+      setError(err.message || 'Không thể tải danh sách chờ thanh toán.');
     } finally {
       setLoading(false);
     }
@@ -101,26 +101,26 @@ const PendingPayments = () => {
 
   const getCancelActionLabel = (booking) => (
     booking.paymentStatus === 'successful'
-      ? 'Huy booking / hoan tien'
-      : 'Huy booking'
+      ? 'Hủy booking / hoàn tiền'
+      : 'Hủy booking'
   );
 
   const getPaymentWaitingLabel = (booking) => {
     if (booking.canRetryPayment) {
-      return 'Cho ban thanh toan lai';
+      return 'Chờ bạn thanh toán lại';
     }
 
     if (booking.paymentStatus === 'pending') {
-      return 'Cho ban thanh toan';
+      return 'Chờ bạn thanh toán';
     }
 
-    return 'Dang cho ban hoan tat payment';
+    return 'Đang chờ bạn hoàn tất thanh toán';
   };
 
   const handleCancelBooking = async (booking) => {
     const message = booking.paymentStatus === 'successful'
-      ? `Huy booking ${booking.id} cho xe ${booking.vehicleName}? He thong se chay luong hoan tien theo logic backend neu booking da thanh toan.`
-      : `Huy booking ${booking.id} cho xe ${booking.vehicleName}?`;
+      ? `Hủy booking ${booking.id} cho xe ${booking.vehicleName}? Hệ thống sẽ chạy luồng hoàn tiền theo logic backend nếu booking đã thanh toán.`
+      : `Hủy booking ${booking.id} cho xe ${booking.vehicleName}?`;
     const confirmed = window.confirm(message);
     if (!confirmed) return;
 
@@ -134,7 +134,7 @@ const PendingPayments = () => {
       await loadBookings();
       setNotice(getCancelBookingNotice(booking, cancelResult));
     } catch (err) {
-      setError(err.message || 'Khong the huy booking luc nay.');
+      setError(err.message || 'Không thể hủy booking lúc này.');
     } finally {
       setCancellingId('');
     }
@@ -144,17 +144,17 @@ const PendingPayments = () => {
     <div className="pending-payments">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Cho thanh toan</h1>
+          <h1 className="page-title">Chờ thanh toán</h1>
           <p className="page-subtitle">
-            Luu va theo doi cac booking dang cho thanh toan hoac can thanh toan lai truoc khi showroom ban giao xe.
+            Lưu và theo dõi các booking đang chờ thanh toán hoặc cần thanh toán lại trước khi showroom bàn giao xe.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-pickups')}>
-            Cho nhan xe
+            Chờ nhận xe
           </button>
           <button className="btn-primary" onClick={() => navigate('/')}>
-            Dat xe moi
+            Đặt xe mới
           </button>
         </div>
       </div>
@@ -194,10 +194,10 @@ const PendingPayments = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Tong booking', val: summary.total, color: '#374151' },
-          { label: 'Dang cho thanh toan', val: summary.pending, color: '#d97706' },
-          { label: 'Can thanh toan lai', val: summary.retry, color: '#059669' },
-          { label: 'That bai / tu choi', val: summary.failed, color: '#dc2626' },
+          { label: 'Tổng booking', val: summary.total, color: '#374151' },
+          { label: 'Đang chờ thanh toán', val: summary.pending, color: '#d97706' },
+          { label: 'Cần thanh toán lại', val: summary.retry, color: '#059669' },
+          { label: 'Thất bại / từ chối', val: summary.failed, color: '#dc2626' },
         ].map((item) => (
           <div
             key={item.label}
@@ -217,21 +217,21 @@ const PendingPayments = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7280' }}>
           <FaSpinner className="animate-spin" style={{ fontSize: '1.4rem', marginBottom: 10 }} />
-          <div>Dang tai danh sach cho thanh toan...</div>
+          <div>Đang tải danh sách chờ thanh toán...</div>
         </div>
       ) : bookings.length === 0 ? (
         <div style={{ ...cardInfoStyle, textAlign: 'center', padding: 30 }}>
           <MdDirectionsCar style={{ fontSize: '3rem', color: '#94a3b8', marginBottom: 14 }} />
-          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Khong co booking nao dang cho thanh toan</div>
+          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Không có booking nào đang chờ thanh toán</div>
           <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, marginBottom: 16 }}>
-            Cac booking chua thanh toan xong hoac can retry payment se duoc luu tai day de ban quay lai xu ly bat cu luc nao.
+            Các booking chưa thanh toán xong hoặc cần retry payment sẽ được lưu tại đây để bạn quay lại xử lý bất cứ lúc nào.
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="renter-btn-soft" onClick={() => navigate('/renter/bookings')}>
-              Mo Chuyen di cua toi
+              Mở Chuyến đi của tôi
             </button>
             <button className="btn-primary" onClick={() => navigate('/')}>
-              Dat xe moi
+              Đặt xe mới
             </button>
           </div>
         </div>
@@ -272,7 +272,7 @@ const PendingPayments = () => {
                       <FaCalendarAlt size={11} /> {formatDateTime(booking.startDate)} - {formatDateTime(booking.endDate)}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
-                      <FaClock size={11} /> {booking.durationDays} ngay
+                      <FaClock size={11} /> {booking.durationDays} ngày
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
                       <FaMapMarkerAlt size={11} /> {booking.locationLabel}
@@ -297,7 +297,7 @@ const PendingPayments = () => {
                   <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#00b14f', marginTop: 8 }}>
                     {formatMoney(booking.totalPrice)}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Ma: {booking.id}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Mã: {booking.id}</div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -324,7 +324,7 @@ const PendingPayments = () => {
                         navigate(getRetryPaymentUrl(booking));
                       }}
                     >
-                      <FaCreditCard /> Thanh toan lai
+                      <FaCreditCard /> Thanh toán lại
                     </button>
                   )}
 
@@ -338,7 +338,7 @@ const PendingPayments = () => {
                       }}
                       disabled={cancellingId === booking.id}
                     >
-                      {cancellingId === booking.id ? 'Dang huy...' : getCancelActionLabel(booking)}
+                      {cancellingId === booking.id ? 'Đang hủy...' : getCancelActionLabel(booking)}
                     </button>
                   )}
                 </div>
@@ -348,7 +348,7 @@ const PendingPayments = () => {
         </div>
       )}
 
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiet cho thanh toan" width={560}>
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết chờ thanh toán" width={560}>
         {detailModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
@@ -372,22 +372,22 @@ const PendingPayments = () => {
                 {detailModal.waitingOwnerLabel}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>
-                Buoc tiep theo: {detailModal.nextStepLabel}
+                Bước tiếp theo: {detailModal.nextStepLabel}
               </div>
               <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#0f766e', lineHeight: 1.6 }}>
-                Viec ban nen lam: {detailModal.renterActionHint}
+                Việc bạn nên làm: {detailModal.renterActionHint}
               </div>
             </div>
 
             {[
-              ['Ma booking', detailModal.id],
-              ['Ngay nhan xe', formatDateTime(detailModal.startDate)],
-              ['Ngay tra xe', formatDateTime(detailModal.endDate)],
-              ['Tong tien', formatMoney(detailModal.totalPrice)],
-              ['Trang thai booking', detailModal.status],
-              ['Trang thai thanh toan', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
-              ['Phuong thuc thanh toan', detailModal.paymentMethod],
-              ['Ghi chu / nhan xe', detailModal.locationLabel],
+              ['Mã booking', detailModal.id],
+              ['Ngày nhận xe', formatDateTime(detailModal.startDate)],
+              ['Ngày trả xe', formatDateTime(detailModal.endDate)],
+              ['Tổng tiền', formatMoney(detailModal.totalPrice)],
+              ['Trạng thái booking', detailModal.status],
+              ['Trạng thái thanh toán', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
+              ['Phương thức thanh toán', detailModal.paymentMethod],
+              ['Ghi chú / nhận xe', detailModal.locationLabel],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -426,7 +426,7 @@ const PendingPayments = () => {
                 style={{ flex: 1, justifyContent: 'center' }}
                 onClick={() => navigate(getPaymentResultUrl(detailModal))}
               >
-                <FaMoneyBillWave /> Xem ket qua thanh toan
+                <FaMoneyBillWave /> Xem kết quả thanh toán
               </button>
 
               {detailModal.canRetryPayment && (
@@ -435,7 +435,7 @@ const PendingPayments = () => {
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => navigate(getRetryPaymentUrl(detailModal))}
                 >
-                  <FaCreditCard /> Thanh toan lai
+                  <FaCreditCard /> Thanh toán lại
                 </button>
               )}
 

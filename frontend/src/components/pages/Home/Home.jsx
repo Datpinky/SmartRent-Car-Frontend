@@ -168,7 +168,7 @@ const Home = () => {
     setFilteredCars(availableCars);
     setAvailabilityError(
       failedCount > 0
-        ? 'Khong the kiem tra lich thue cua mot so xe. Danh sach dang hien thi theo ket qua du phong.'
+        ? 'Không thể kiểm tra lịch của một số xe. Vui lòng kiểm tra lại!'
         : ''
     );
     setCheckingAvailability(false);
@@ -204,7 +204,7 @@ const Home = () => {
 
         setAllCars([]);
         setFilteredCars([]);
-        setApiError(error.message || 'Khong the tai du lieu xe tu backend.');
+        setApiError(error.message || 'Không thể tải dữ liệu!');
       } finally {
         if (!cancelled) {
           setLoadingVehicles(false);
@@ -248,7 +248,7 @@ const Home = () => {
       {apiError && (
         <div className="mx-auto max-w-[1280px] px-5 pt-3">
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-[0.82rem] text-red-700">
-            <span className="font-semibold">Khong the tai danh sach xe tu he thong.</span> {apiError}
+            <span className="font-semibold">Không thể tải danh sách xe!</span> {apiError}
           </div>
         </div>
       )}
@@ -256,7 +256,7 @@ const Home = () => {
       {availabilityError && (
         <div className="mx-auto max-w-[1280px] px-5 pt-3">
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[0.82rem] text-amber-800">
-            <span className="font-semibold">Khong the kiem tra trung lich cho mot so xe.</span> {availabilityError}
+            <span className="font-semibold">Không thể kiểm tra trùng lịch</span> {availabilityError}
           </div>
         </div>
       )}

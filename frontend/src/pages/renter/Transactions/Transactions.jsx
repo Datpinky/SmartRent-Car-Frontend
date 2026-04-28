@@ -14,19 +14,19 @@ import bookingService from '../../../services/bookingService';
 import paymentService from '../../../services/paymentService';
 
 const FILTERS = [
-  { key: 'all', label: 'Tat ca' },
-  { key: 'successful', label: 'Thanh cong' },
-  { key: 'refunded', label: 'Hoan tra' },
-  { key: 'pending', label: 'Cho xu ly' },
-  { key: 'failed', label: 'That bai / tu choi' },
+  { key: 'all', label: 'Tất cả' },
+  { key: 'successful', label: 'Thành công' },
+  { key: 'refunded', label: 'Hoàn trả' },
+  { key: 'pending', label: 'Chờ xử lý' },
+  { key: 'failed', label: 'Thất bại / từ chối' },
 ];
 
 const PAYMENT_LABELS = {
-  pending: 'Cho thanh toan',
-  successful: 'Thanh cong',
-  refunded: 'Da hoan tra',
-  failed: 'That bai',
-  declined: 'Bi tu choi',
+  pending: 'Chờ thanh toán',
+  successful: 'Thành công',
+  refunded: 'Đã hoàn trả',
+  failed: 'Thất bại',
+  declined: 'Bị từ chối',
 };
 
 const formatDateTime = (value) => {
@@ -84,7 +84,7 @@ const Transactions = () => {
         }
 
         setTransactions([]);
-        setError(err.message || 'Khong the tai lich su giao dich.');
+        setError(err.message || 'Không thể tải lịch sử giao dịch.');
       } finally {
         if (mounted) {
           setLoading(false);
@@ -119,8 +119,8 @@ const Transactions = () => {
     <div>
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Lich su giao dich</h1>
-          <p className="page-subtitle">Danh sach payment record cua renter, khong suy dien tu booking card.</p>
+          <h1 className="page-title">Lịch sử giao dịch</h1>
+          <p className="page-subtitle">Danh sách payment record của renter, không suy diễn từ booking card.</p>
         </div>
         <button className="btn-primary" onClick={() => navigate('/renter/bookings')}>
           Xem booking
@@ -135,13 +135,13 @@ const Transactions = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Tong giao dich', value: summary.total, color: '#111827' },
-          { label: 'Thanh cong', value: summary.successful, color: '#059669' },
-          { label: 'Cho xu ly', value: summary.pending, color: '#d97706' },
-          { label: 'Da chi', value: formatMoney(summary.totalPaid), color: '#2563eb' },
+          { label: 'Tổng giao dịch', value: summary.total, color: '#111827' },
+          { label: 'Thành công', value: summary.successful, color: '#059669' },
+          { label: 'Chờ xử lý', value: summary.pending, color: '#d97706' },
+          { label: 'Đã chi', value: formatMoney(summary.totalPaid), color: '#2563eb' },
         ].map((item) => (
           <div key={item.label} style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', padding: '12px 18px', minWidth: 140 }}>
-            <div style={{ fontSize: item.label === 'Da chi' ? '1.1rem' : '1.35rem', fontWeight: 800, color: item.color }}>
+            <div style={{ fontSize: item.label === 'Đã chi' ? '1.1rem' : '1.35rem', fontWeight: 800, color: item.color }}>
               {item.value}
             </div>
             <div style={{ fontSize: '0.74rem', color: '#9ca3af', marginTop: 2 }}>{item.label}</div>
@@ -166,11 +166,11 @@ const Transactions = () => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '56px 0', color: '#6b7280' }}>Dang tai giao dich...</div>
+        <div style={{ textAlign: 'center', padding: '56px 0', color: '#6b7280' }}>Đang tải giao dịch...</div>
       ) : filteredTransactions.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '56px 0', color: '#9ca3af', background: '#fff', borderRadius: 16 }}>
           <FaMoneyBillWave style={{ fontSize: '2.8rem', opacity: 0.25, marginBottom: 12 }} />
-          <div>Chua co giao dich nao trong nhom nay</div>
+          <div>Chưa có giao dịch nào trong nhóm này</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -207,7 +207,7 @@ const Transactions = () => {
                     <FaCalendarAlt size={11} /> {formatDateTime(transaction.createdAt)}
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.77rem', color: '#6b7280' }}>
-                    <FaClock size={11} /> {transaction.paidAt ? formatDateTime(transaction.paidAt) : 'Chua ghi nhan paid_at'}
+                    <FaClock size={11} /> {transaction.paidAt ? formatDateTime(transaction.paidAt) : 'Chưa ghi nhận paid_at'}
                   </span>
                 </div>
               </div>
@@ -228,7 +228,7 @@ const Transactions = () => {
                   className="btn-icon"
                   style={{ marginLeft: 'auto', marginTop: 10 }}
                   onClick={() => setDetailModal(transaction)}
-                  title="Chi tiet giao dich"
+                  title="Chi tiết giao dịch"
                 >
                   <FaEye />
                 </button>
@@ -238,7 +238,7 @@ const Transactions = () => {
         </div>
       )}
 
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiet giao dich" width={560}>
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết giao dịch" width={560}>
         {detailModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: '#f9fafb', borderRadius: 14, padding: 16 }}>
@@ -248,13 +248,13 @@ const Transactions = () => {
 
             {[
               ['Booking ID', detailModal.bookingId],
-              ['Trang thai booking', detailModal.bookingStatus],
-              ['Trang thai payment', PAYMENT_LABELS[detailModal.status] || detailModal.status],
-              ['Phuong thuc', detailModal.method],
-              ['So tien', formatMoney(detailModal.amount)],
-              ['Tao luc', formatDateTime(detailModal.createdAt)],
-              ['Paid at', formatDateTime(detailModal.paidAt)],
-              ['Ma giao dich', detailModal.transactionCode || 'Chua co'],
+              ['Trạng thái booking', detailModal.bookingStatus],
+              ['Trạng thái payment', PAYMENT_LABELS[detailModal.status] || detailModal.status],
+              ['Phương thức', detailModal.method],
+              ['Số tiền', formatMoney(detailModal.amount)],
+              ['Tạo lúc', formatDateTime(detailModal.createdAt)],
+              ['Thanh toán lúc', formatDateTime(detailModal.paidAt)],
+              ['Mã giao dịch', detailModal.transactionCode || 'Chưa có'],
             ].map(([label, value]) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, paddingBottom: 10, borderBottom: '1px solid #f3f4f6' }}>
                 <span style={{ color: '#6b7280', fontSize: '0.82rem' }}>{label}</span>
@@ -277,7 +277,7 @@ const Transactions = () => {
                   )
                 }
               >
-                <FaCheckCircle /> Xem payment result
+                <FaCheckCircle /> Xem kết quả thanh toán
               </button>
               {['pending', 'failed', 'declined'].includes(detailModal.status) && (
                 <button
@@ -285,7 +285,7 @@ const Transactions = () => {
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => navigate(`/renter/retry-payment/${detailModal.bookingId}`)}
                 >
-                  <FaMoneyBillWave /> Thanh toan lai
+                  <FaMoneyBillWave /> Thanh toán lại
                 </button>
               )}
               <button
