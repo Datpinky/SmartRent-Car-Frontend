@@ -74,6 +74,19 @@ class AuthController {
             next(error);
         }
     }
+
+    async forgotPassword(req, res, next) {
+        try {
+            const { email, newPassword } = req.body;
+            const data = await authService.forgotPassword(email, newPassword);
+            return res.status(200).json({
+                message: "Dat lai mat khau thanh cong. Vui long dang nhap lai.",
+                data,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new AuthController();

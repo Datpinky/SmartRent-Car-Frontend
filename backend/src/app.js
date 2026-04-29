@@ -21,6 +21,7 @@ const adminRoutes = require('./routes/admin.route');
 const notificationRoutes = require('./routes/notification.route');
 const showroomRoutes = require('./routes/showroom.route');
 const contractRoutes = require('./routes/contract.route');
+const rentalContractRoutes = require('./routes/rentalContract.route');
 const vehicleDamageInspectionRoutes = require('./routes/vehicleDamageInspection.route');
 // middleware for hand
 const errorHandler = require('./middlewares/errorHandler');
@@ -81,6 +82,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/showrooms', showroomRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/rental-contract', rentalContractRoutes);
 app.use('/api/vehicle-damage-inspections', vehicleDamageInspectionRoutes);
 app.use(errorHandler);
 
