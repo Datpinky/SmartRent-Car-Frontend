@@ -107,6 +107,20 @@ class AuthValidation {
             return true;
         }),
     ];
+
+    forgotPassword = [
+        body("email")
+            .notEmpty()
+            .withMessage("email la bat buoc")
+            .isEmail()
+            .withMessage("email khong hop le")
+            .normalizeEmail(),
+        body("newPassword").custom((value) => {
+            const result = validateStrongPassword(value);
+            if (!result.ok) throw new Error(result.message);
+            return true;
+        }),
+    ];
 }
 
 module.exports = new AuthValidation();

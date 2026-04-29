@@ -16,10 +16,6 @@ const BOOKING_STATUSES = ['pending',
 
 class BookingValidation {
   createBooking = [
-    body("user_id")
-      .notEmpty().withMessage("Không được để trống")
-      .isMongoId().withMessage("Phải là MongoId hợp lệ"),
-
     body("vehicle_id")
       .notEmpty().withMessage("Không được để trống")
       .isMongoId().withMessage("Phải là MongoId hợp lệ"),

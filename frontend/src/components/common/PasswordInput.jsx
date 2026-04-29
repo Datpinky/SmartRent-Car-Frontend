@@ -7,20 +7,20 @@ const inputCls =
 
 // Must stay in sync with backend/src/utils/passwordPolicy.js
 export const PASSWORD_REQUIREMENTS = [
-  { regex: /.{8,}/, text: 'It nhat 8 ky tu' },
-  { regex: /[0-9]/, text: 'It nhat 1 chu so' },
-  { regex: /[a-z]/, text: 'It nhat 1 chu thuong' },
-  { regex: /[A-Z]/, text: 'It nhat 1 chu hoa' },
-  { regex: /[!-/:-@[-`{-~]/, text: 'It nhat 1 ky tu dac biet' },
+  { regex: /.{8,}/, text: 'Ít nhất 8 ký tự' },
+  { regex: /[0-9]/, text: 'Ít nhất 1 chữ số' },
+  { regex: /[a-z]/, text: 'Ít nhất 1 chữ thường' },
+  { regex: /[A-Z]/, text: 'Ít nhất 1 chữ hoa' },
+  { regex: /[!-/:-@[-`{-~]/, text: 'Ít nhất 1 ký tự đặc biệt' },
 ];
 
 const STRENGTH_TEXTS = {
-  0: 'Nhap mat khau',
-  1: 'Mat khau yeu',
-  2: 'Mat khau trung binh',
-  3: 'Mat khau kha manh',
-  4: 'Mat khau manh',
-  5: 'Mat khau rat manh',
+  0: 'Nhập mật khẩu',
+  1: 'Mật khẩu yếu',
+  2: 'Mật khẩu trung bình',
+  3: 'Mật khẩu khá mạnh',
+  4: 'Mật khẩu mạnh',
+  5: 'Mật khẩu rất mạnh',
 };
 
 export function passwordMeetsPolicy(password) {
@@ -33,7 +33,7 @@ export function PasswordStrengthInput({
   value,
   onChange,
   error,
-  placeholder = 'Nhap mat khau',
+  placeholder = 'Nhập mật khẩu',
   required = true,
 }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -79,7 +79,7 @@ export function PasswordStrengthInput({
         <button
           type="button"
           onClick={() => setIsVisible((prev) => !prev)}
-          aria-label={isVisible ? 'An mat khau' : 'Hien mat khau'}
+          aria-label={isVisible ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
           className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-gray-500 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {isVisible ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
@@ -101,13 +101,13 @@ export function PasswordStrengthInput({
         id="password-strength-hint"
         className="flex justify-between gap-2 text-[0.8rem] font-medium text-gray-700"
       >
-        <span>Yeu cau:</span>
+        <span>Yêu cầu:</span>
         <span className="shrink-0 font-semibold text-primary">
           {STRENGTH_TEXTS[Math.min(calculateStrength.score, 5)]}
         </span>
       </p>
 
-      <ul className="space-y-1.5" aria-label="Yeu cau mat khau">
+      <ul className="space-y-1.5" aria-label="Yêu cầu mật khẩu">
         {calculateStrength.requirements.map((req) => (
           <li key={req.text} className="flex items-center gap-2">
             {req.met ? (
@@ -132,7 +132,7 @@ export function PasswordToggleInput({
   value,
   onChange,
   error,
-  placeholder = 'Nhap mat khau',
+  placeholder = 'Nhập mật khẩu',
   autoComplete = 'current-password',
   required = false,
 }) {
@@ -167,7 +167,7 @@ export function PasswordToggleInput({
         <button
           type="button"
           onClick={() => setIsVisible((prev) => !prev)}
-          aria-label={isVisible ? 'An mat khau' : 'Hien mat khau'}
+            aria-label={isVisible ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
           className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-gray-500 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {isVisible ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}

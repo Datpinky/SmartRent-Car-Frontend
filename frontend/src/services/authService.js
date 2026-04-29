@@ -150,6 +150,14 @@ export const authService = {
     return res.data?.data;
   },
 
+  async forgotPassword({ email, newPassword }) {
+    const res = await apiClient.post('/api/auth/forgot-password', {
+      email,
+      newPassword,
+    });
+    return res.data?.data;
+  },
+
   async listSessions() {
     const res = await apiClient.get('/api/auth/sessions');
     return res.data?.data;

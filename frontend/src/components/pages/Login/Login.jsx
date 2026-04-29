@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MdDirectionsCar, MdEmail, MdPhone } from 'react-icons/md';
 import { useAuth } from '../../../contexts/AuthContext';
+import authService from '../../../services/authService';
 import {
   PasswordStrengthInput,
   PasswordToggleInput,
@@ -87,6 +88,15 @@ const Login = () => {
   const [registerError, setRegisterError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState('');
+  const [forgotInlineOpen, setForgotInlineOpen] = useState(false);
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [forgotForm, setForgotForm] = useState({
+    email: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
   const registerPasswordInvalid =
     tab === 'register' && !!registerError && !passwordMeetsPolicy(form.password);
@@ -124,19 +134,19 @@ const Login = () => {
     if (tab === 'register') {
       if (!passwordMeetsPolicy(form.password)) {
         setRegisterError(
-          'Mat khau chua du do manh. Vui long dap ung day du cac yeu cau ben duoi o mat khau.'
+          'Mật khẩu chưa đủ độ mạnh. Vui lòng đáp ứng đầy đủ các yêu cầu bên dưới ở mật khẩu.'
         );
         return;
       }
 
       if (form.password !== form.confirmPassword) {
-        setConfirmError('Mat khau xac nhan khong khop.');
+        setConfirmError('Mật khẩu xác nhận không khớp.');
         return;
       }
 
       const phoneDigits = (form.phone || '').replace(/\D/g, '');
       if (phoneDigits.length !== 10) {
-        setRegisterError('So dien thoai phai co dung 10 chu so.');
+        setRegisterError('Số điện thoại phải có đúng 10 chữ số.');
         return;
       }
 
@@ -189,6 +199,86 @@ const Login = () => {
     }
   };
 
+  const openForgotModal = () => {
+    setForgotError('');
+    setForgotSuccess('');
+    setForgotForm({
+      email: form.email || '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    setForgotInlineOpen(true);
+  };
+
+  const closeForgotModal = () => {
+    if (forgotSubmitting) return;
+    setForgotInlineOpen(false);
+  };
+
+  const handleBackToLogin = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (forgotSubmitting) return;
+
+    setForgotInlineOpen(false);
+    setForgotError('');
+    setForgotSuccess('');
+    setTab('login');
+    setForm((current) => ({
+      ...current,
+      password: '',
+    }));
+  };
+
+  const handleForgotChange = (event) => {
+    const { name, value } = event.target;
+    setForgotForm((current) => ({ ...current, [name]: value }));
+    if (forgotError) setForgotError('');
+    if (forgotSuccess) setForgotSuccess('');
+  };
+
+  const handleForgotSubmit = async (event) => {
+    event.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+
+    if (!forgotForm.email.trim()) {
+      setForgotError('Vui long nhap email da dang ky.');
+      return;
+    }
+
+    if (!passwordMeetsPolicy(forgotForm.newPassword)) {
+      setForgotError('Mat khau moi chua du manh. Vui long dap ung day du yeu cau.');
+      return;
+    }
+
+    if (forgotForm.newPassword !== forgotForm.confirmPassword) {
+      setForgotError('Mat khau xac nhan khong khop.');
+      return;
+    }
+
+    setForgotSubmitting(true);
+    try {
+      await authService.forgotPassword({
+        email: forgotForm.email,
+        newPassword: forgotForm.newPassword,
+      });
+      setForgotSuccess('Dat lai mat khau thanh cong. Vui long dang nhap lai.');
+      setForm((current) => ({
+        ...current,
+        email: forgotForm.email.trim(),
+        password: '',
+      }));
+      setTimeout(() => {
+        setForgotInlineOpen(false);
+      }, 900);
+    } catch (error) {
+      setForgotError(error.message || 'Khong the dat lai mat khau. Vui long thu lai.');
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <div
@@ -214,28 +304,35 @@ const Login = () => {
 
       <div className="flex h-full w-full flex-col justify-center overflow-y-auto bg-white px-12 py-[60px] md:w-[480px] max-[480px]:px-6 max-[480px]:py-10">
         <div className="mb-2 text-[1.75rem] font-extrabold text-gray-900">
-          {tab === 'login' ? 'Chao mung tro lai!' : 'Tao tai khoan'}
+          {forgotInlineOpen ? 'Đặt lại mật khẩu' : tab === 'login' ? 'Chào mừng trở lại!' : 'Tạo tài khoản'}
         </div>
         <div className="mb-8 text-[0.875rem] text-gray-500">
-          {tab === 'login' && 'Dang nhap de tiep tuc thue xe'}
+          {forgotInlineOpen
+            ? 'Nhập email đã đăng ký để đặt lại mật khẩu'
+            : tab === 'login' && 'Đăng nhập để tiếp tục thuê xe'}
         </div>
 
-        <div className="mb-7 flex border-b-2 border-gray-200">
-          {['login', 'register'].map((value) => (
-            <button
-              key={value}
-              type="button"
-              className={`-mb-0.5 flex-1 border-b-2 py-2.5 text-center text-[0.9rem] font-semibold transition-all ${
-                tab === value
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setTab(value)}
-            >
-              {value === 'login' ? 'Dang nhap' : 'Dang ky'}
-            </button>
-          ))}
-        </div>
+        {!forgotInlineOpen && (
+          <div className="mb-7 flex border-b-2 border-gray-200">
+            {['login', 'register'].map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`-mb-0.5 flex-1 border-b-2 py-2.5 text-center text-[0.9rem] font-semibold transition-all ${
+                  tab === value
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => {
+                  setForgotInlineOpen(false);
+                  setTab(value);
+                }}
+              >
+                {value === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {registerSuccess && (
           <div className="mb-2.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[0.82rem] text-green-700">
@@ -253,10 +350,80 @@ const Login = () => {
           </div>
         )}
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        {forgotInlineOpen ? (
+          <form className="flex flex-col gap-3.5" onSubmit={handleForgotSubmit}>
+            {forgotError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[0.8rem] text-red-600">
+                {forgotError}
+              </div>
+            )}
+            {forgotSuccess && (
+              <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[0.8rem] text-green-700">
+                {forgotSuccess}
+              </div>
+            )}
+
+            <LoginFormField
+              label="Email da dang ky"
+              name="email"
+              type="email"
+              icon={MdEmail}
+              placeholder="example@email.com"
+              required
+              value={forgotForm.email}
+              onChange={handleForgotChange}
+              extra={{ autoComplete: 'email' }}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.8rem] font-semibold text-gray-700">Mat khau moi</label>
+              <PasswordStrengthInput
+                name="newPassword"
+                id="forgot-new-password"
+                value={forgotForm.newPassword}
+                onChange={handleForgotChange}
+                error={!!forgotError && !passwordMeetsPolicy(forgotForm.newPassword)}
+                placeholder="Nhap mat khau moi"
+              />
+            </div>
+
+            <PasswordToggleInput
+              label="Xac nhan mat khau moi"
+              name="confirmPassword"
+              id="forgot-confirm-password"
+              value={forgotForm.confirmPassword}
+              onChange={handleForgotChange}
+              error={
+                !!forgotForm.confirmPassword &&
+                forgotForm.newPassword !== forgotForm.confirmPassword
+              }
+              placeholder="Nhap lai mat khau moi"
+              autoComplete="new-password"
+              required
+            />
+
+            <button
+              type="submit"
+              disabled={forgotSubmitting}
+              className="mt-1 w-full rounded-xl bg-gradient-to-br from-primary to-primary-dark py-3 text-[0.92rem] font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0"
+            >
+              {forgotSubmitting ? 'Dang cap nhat...' : 'Dat lai mat khau'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBackToLogin}
+              disabled={forgotSubmitting}
+              className="text-center text-[0.83rem] font-semibold text-primary disabled:opacity-60"
+            >
+              Quay lại đăng nhập
+            </button>
+          </form>
+        ) : (
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {tab === 'register' && (
             <LoginFormField
-              label="Ho va ten"
+              label="Họ và tên"
               name="name"
               icon={MdDirectionsCar}
               placeholder="Nguyen Van A"
@@ -267,7 +434,7 @@ const Login = () => {
 
           {tab === 'register' && (
             <LoginFormField
-              label="So dien thoai (10 so)"
+              label="Số điện thoại (10 số)"
               name="phone"
               type="tel"
               icon={MdPhone}
@@ -281,11 +448,11 @@ const Login = () => {
 
           {tab === 'register' && (
             <div className="flex flex-col gap-2">
-              <span className="text-[0.8rem] font-semibold text-gray-700">Toi muon</span>
+              <span className="text-[0.8rem] font-semibold text-gray-700">Tôi muốn</span>
               <div className="flex flex-col gap-2">
                 {[
-                  { value: 'renter', label: 'Thue xe (khach hang)' },
-                  { value: 'owner', label: 'Cho thue xe ca nhan (chu xe)' },
+                  { value: 'renter', label: 'Thuê xe (khách hàng)' },
+                  { value: 'owner', label: 'Cho thuê xe cá nhân (chủ xe)' },
                 ].map(({ value, label }) => (
                   <label
                     key={value}
@@ -324,14 +491,14 @@ const Login = () => {
 
           {tab === 'register' ? (
             <div className="flex flex-col gap-1.5">
-              <label className="text-[0.8rem] font-semibold text-gray-700">Mat khau</label>
+              <label className="text-[0.8rem] font-semibold text-gray-700">Mật khẩu</label>
               <PasswordStrengthInput
                 name="password"
                 id="register-password"
                 value={form.password}
                 onChange={handleChange}
                 error={registerPasswordInvalid}
-                placeholder="Nhap mat khau"
+                placeholder="Nhập mật khẩu"
               />
               {registerPasswordInvalid && (
                 <div className="mt-1 flex items-center gap-1 text-[0.78rem] font-medium text-red-600">
@@ -342,25 +509,29 @@ const Login = () => {
           ) : (
             <div className="flex flex-col gap-1.5">
               <PasswordToggleInput
-                label="Mat khau"
+                label="Mật khẩu"
                 name="password"
                 id="login-password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Nhap mat khau"
+                placeholder="Nhập mật khẩu"
                 autoComplete="current-password"
                 required
               />
-              <div className="cursor-pointer text-right text-[0.78rem] font-medium text-primary">
-                Quen mat khau?
-              </div>
+              <button
+                type="button"
+                onClick={openForgotModal}
+                className="text-right text-[0.78rem] font-medium text-primary hover:underline"
+              >
+                Quên mật khẩu?
+              </button>
             </div>
           )}
 
           {tab === 'register' && (
             <div className="flex flex-col gap-1.5">
               <PasswordToggleInput
-                label="Xac nhan mat khau"
+                label="Xác nhận mật khẩu"
                 name="confirmPassword"
                 id="confirm-password"
                 value={form.confirmPassword}
@@ -369,13 +540,13 @@ const Login = () => {
                   setConfirmError('');
                 }}
                 error={confirmError}
-                placeholder="Nhap lai mat khau"
+                placeholder="Nhập lại mật khẩu"
                 autoComplete="new-password"
                 required
               />
               {confirmError && (
                 <div className="mt-2 flex items-center gap-1 text-[0.78rem] font-medium text-red-600">
-                  Canh bao: {confirmError}
+                  Cảnh báo: {confirmError}
                 </div>
               )}
             </div>
@@ -386,44 +557,47 @@ const Login = () => {
             disabled={submitting}
             className="mt-1 w-full rounded-xl bg-gradient-to-br from-primary to-primary-dark py-3.5 text-[0.95rem] font-bold tracking-wide text-white transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,177,79,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0"
           >
-            {submitting ? 'Dang xu ly...' : tab === 'login' ? 'Dang nhap' : 'Tao tai khoan'}
+            {submitting ? 'Đang xử lý...' : tab === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
           </button>
-        </form>
+          </form>
+        )}
 
-        <div className="mt-5 space-y-2 text-center text-[0.83rem] text-gray-500">
+        {!forgotInlineOpen && (
+          <div className="mt-5 space-y-2 text-center text-[0.83rem] text-gray-500">
           {tab === 'login' ? (
             <>
-              Chua co tai khoan?{' '}
+              Chưa có tài khoản?{' '}
               <button
                 type="button"
                 className="font-semibold text-primary"
                 onClick={() => setTab('register')}
               >
-                Dang ky ngay
+                Đăng ký ngay
               </button>
             </>
           ) : (
             <>
-              Da co tai khoan?{' '}
+              Đã có tài khoản?{' '}
               <button
                 type="button"
                 className="font-semibold text-primary"
                 onClick={() => setTab('login')}
               >
-                Dang nhap
+                Đăng nhập
               </button>
             </>
           )}
 
           {tab === 'register' && (
             <div>
-              Ban la doanh nghiep / showroom?{' '}
+              Bạn là doanh nghiệp / showroom?{' '}
               <Link to="/partner/register" className="font-semibold text-primary hover:underline">
-                Dang ky doi tac
+                Đăng ký đối tác
               </Link>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
