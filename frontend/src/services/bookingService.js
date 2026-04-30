@@ -275,6 +275,20 @@ export const bookingService = {
     return res.data;
   },
 
+  async getUnavailableDateIntervals(vehicleId, { from, to } = {}) {
+    if (!vehicleId) {
+      throw new Error('Thieu vehicleId de lay lich ban.');
+    }
+
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await apiClient.get(`/api/booking/unavailableDates/${vehicleId}${query}`);
+    return res.data?.data || null;
+  },
+
   async cancelBooking(id) {
     const res = await apiClient.post(`/api/booking/cancelBookingWithRefund/${id}`);
     return res.data.data;

@@ -16,8 +16,9 @@ const BOOKING_STATUSES = ['pending',
 
 class BookingValidation {
   createBooking = [
+    // user_id được lấy từ authMiddleware (req.user.userId), không bắt buộc client truyền lên
     body("user_id")
-      .notEmpty().withMessage("Không được để trống")
+      .optional()
       .isMongoId().withMessage("Phải là MongoId hợp lệ"),
 
     body("vehicle_id")
@@ -101,6 +102,14 @@ class BookingValidation {
     param("bookingId")
       .notEmpty().withMessage("Không được để trống")
       .isMongoId().withMessage("Phải là MongoId hợp lệ"),
+  ];
+
+  getUnavailableDates = [
+    param("vehicleId")
+      .notEmpty().withMessage("Không được để trống")
+      .isMongoId().withMessage("Phải là MongoId hợp lệ"),
+    // query params `from`, `to` sẽ được parse ở controller; validation nhẹ để tránh lỗi format.
+    // express-validator không validate query ở đây vì route đang dùng param/body nhiều nơi.
   ];
 }
 

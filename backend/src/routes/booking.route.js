@@ -16,6 +16,7 @@ router.get("/getMyBooking", authMiddleware, bookingController.getMyBookings);
 router.post("/cancelBookingWithRefund/:bookingId", authMiddleware, bookingController.cancelBookingWithRefund);
 router.post("/cancelBooking/:bookingId", authMiddleware, bookingController.cancelBooking)
 router.post("/checkAvailability", bookingController.checkAvailability);
+router.get("/unavailableDates/:vehicleId", bookingValidation.getUnavailableDates, validate, bookingController.getUnavailableDates);
 
 router.post("/createBooking", authMiddleware, bookingValidation.createBooking, validate, bookingController.createBooking);
 router.post("/getListBookings", authMiddleware, bookingValidation.getListBookings, validate, bookingController.getListBookings);
