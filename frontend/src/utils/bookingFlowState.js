@@ -35,12 +35,14 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
   const isCompleted = status === 'completed';
   const hasSuccessfulPayment = paymentStatus === 'successful';
   const requiresRetryPayment = ['failed', 'declined'].includes(paymentStatus);
+
   const isAwaitingPayment =
     !isCancelled
     && !isCompleted
     && AWAITING_PAYMENT_STATUSES.includes(status)
     && !hasSuccessfulPayment
     && paymentStatus !== 'refunded';
+
   const isAwaitingShowroomProcessing =
     !isCancelled
     && !isCompleted
@@ -48,6 +50,7 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
     && paymentStatus !== 'refunded'
     && hasSuccessfulPayment
     && SHOWROOM_PROCESSING_STATUSES.includes(status);
+
   const isAwaitingPickup =
     !isCancelled
     && !isCompleted
@@ -56,11 +59,9 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
     && paymentStatus !== 'refunded'
     && hasSuccessfulPayment
     && AWAITING_PICKUP_STATUSES.includes(status);
+
   const pickupReadyByTime = startAt ? hasStarted : hasSuccessfulPayment;
-  const canConfirmPickup =
-    status === 'waiting_handover'
-    && hasSuccessfulPayment
-    && pickupReadyByTime;
+  const canConfirmPickup = false;
   const timeBasedRentalAccess = false;
 
   const canOpenRentalFlow = RENTAL_FLOW_STATUSES.includes(status) || timeBasedRentalAccess;
@@ -87,33 +88,34 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
       : 'waiting_handover';
 
   const rentalActionLabel = isCompleted
-    ? 'Xem biên bản'
+    ? 'Xem bien ban'
     : status === 'waiting_return_confirmation'
-      ? 'Đang chờ xác nhận'
+      ? 'Dang cho xac nhan'
       : canHandleReturn && hasEnded
-        ? 'Trả xe ngay'
+        ? 'Tra xe ngay'
         : status === 'waiting_handover'
-          ? 'Nhận xe'
+          ? 'Cho showroom ban giao'
           : canOpenRentalFlow
-            ? 'Nhận / Trả xe'
+            ? 'Nhan / Tra xe'
             : '';
 
   const rentalAccessHint = timeBasedRentalAccess
     ? hasEnded
-      ? 'Đã quá hạn trả xe. Bạn có thể mở giao diện trả xe ngay.'
-      : 'Đã đến lịch thuê. Bạn có thể mở quy trình nhận / trả xe.'
+      ? 'Da qua han tra xe. Ban co the mo giao dien tra xe ngay.'
+      : 'Da den lich thue. Ban co the mo quy trinh nhan / tra xe.'
     : '';
+
   const pickupConfirmationHint = !(isAwaitingPickup || isAwaitingShowroomProcessing)
     ? ''
     : requiresRetryPayment
-      ? 'Thanh toán trước đó chưa thành công. Vui lòng thanh toán lại để tiếp tục quy trình nhận xe.'
+      ? 'Thanh toan truoc do chua thanh cong. Vui long thanh toan lai de tiep tuc quy trinh nhan xe.'
       : !hasSuccessfulPayment
-        ? 'Booking đang chờ thanh toán. Sau khi payment thành công, showroom mới có thể bàn giao xe.'
+        ? 'Booking dang cho thanh toan. Sau khi payment thanh cong, showroom moi co the ban giao xe.'
         : isAwaitingShowroomProcessing
-          ? 'Showroom đang xử lý booking và chuẩn bị bàn giao xe. Nút xác nhận sẽ mở khi booking chuyển sang Chờ bàn giao.'
+          ? 'Showroom dang xu ly booking va chuan bi ban giao xe. Booking se chuyen sang Cho ban giao khi showroom hoan tat xu ly.'
           : !pickupReadyByTime && startAt
-            ? `Nút xác nhận sẽ mở từ ${startAt.toLocaleString('vi-VN')}.`
-            : 'Sau khi xác nhận đã nhận xe, booking sẽ được chuyển sang Chuyến đi của tôi.';
+            ? `Showroom se hoan tat ban giao khi den moc ${startAt.toLocaleString('vi-VN')}.`
+            : 'Backend hien dang de showroom hoan tat buoc ban giao. Booking se chuyen vao Chuyen di cua toi khi showroom cap nhat da ban giao.';
 
   return {
     canConfirmPickup,

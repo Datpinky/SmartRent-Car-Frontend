@@ -17,7 +17,6 @@ import {
 import Modal from '../../../components/common/Modal';
 import FileUpload from '../../../components/common/FileUpload';
 import StatusBadge from '../../../components/common/StatusBadge';
-import bookingService from '../../../services/bookingService';
 import uploadService from '../../../services/uploadService';
 import { getAiInspectionSummaryMeta } from '../../../utils/aiInspectionReport';
 import { getBookingFlowState } from '../../../utils/bookingFlowState';
@@ -215,10 +214,10 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
     }
 
     return {
-      tone: 'success',
-      eyebrow: 'San sang gui',
-      title: 'Ban da den buoc tra xe cho showroom',
-      description: 'Hoan tat checklist, tai anh ro net va gui mot lan de showroom xac nhan hoan tat chuyen.',
+      tone: 'warning',
+      eyebrow: 'Luu ho so local',
+      title: 'Ban dang hoan tat ho so tra xe tren frontend',
+      description: 'Hoan tat checklist, tai anh ro net va luu mot lan. Sau do lien he showroom de doi chieu, vi backend hien chua co buoc renter tu cap nhat trang thai tra xe.',
     };
   }, [booking?.status, returnDueDate, returnWindowOpened]);
 
@@ -296,7 +295,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
         return;
       }
 
-      let nextStatus = booking?.status;
+      const nextStatus = booking?.status;
       const noticeParts = [];
 
       const beforeImageUrl = workflow.receiveImages?.[0] || '';
@@ -329,19 +328,11 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
         noticeParts.push('Chua co anh nhan xe doi chieu, vi vay AI tam thoi chua phan tich duoc.');
       }
 
-      try {
-        if (!['waiting_return_confirmation', 'completed'].includes(booking?.status)) {
-          await bookingService.requestReturn(booking.id);
-          nextStatus = 'waiting_return_confirmation';
-        }
+      noticeParts.unshift('Da luu bien ban tra xe va anh tra xe trong frontend.');
+      noticeParts.push('Backend hien chua co buoc de renter tu cap nhat trang thai tra xe, vui long lien he showroom de doi chieu va xac nhan.');
 
-        noticeParts.unshift('Da gui yeu cau tra xe cho showroom va luu anh tra xe trong frontend.');
-        setNotice(noticeParts.join(' '));
-      } catch (statusError) {
-        noticeParts.unshift('Da luu bien ban tra xe va anh tra xe trong frontend, nhung chua cap nhat duoc trang thai tra xe.');
-        setNotice(noticeParts.join(' '));
-        setError(statusError.message || 'Khong the cap nhat trang thai tra xe luc nay. Vui long thu lai.');
-      }
+      const localReturnNotice = noticeParts.join(' ');
+      setNotice(localReturnNotice);
 
       setReturnFiles([]);
 
@@ -349,6 +340,10 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
         await onSaved({
           workflow: saved,
           status: nextStatus,
+          notice: {
+            tone: 'warning',
+            text: localReturnNotice,
+          },
         });
       }
     } catch (err) {
@@ -1162,8 +1157,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               lineHeight: 1.6,
             }}
           >
-            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va gui trang thai tra xe cho showroom.
-            Bien ban renter va bao cao AI trong modal nay hien van duoc FE luu local tren trinh duyet hien tai.
+            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va tao bao cao AI doi chieu tren trinh duyet hien tai.
+            Backend hien chua co buoc rieng de renter tu cap nhat trang thai tra xe, vi vay bien ban renter va bao cao AI trong modal nay van la du lieu local.
           </div>
 
           {false && (
