@@ -74,7 +74,7 @@ const loadFavoriteIds = async () => {
 
   if (!favoriteIdsPromise) {
     favoriteIdsPromise = favoriteService
-      .getMyFavorites({ page: 1, limit: 200 })
+      .getMyFavorites({ page: 1, limit: 100 })
       .then((payload) => {
         favoriteIdsCache = extractFavoriteIds(payload);
         return favoriteIdsCache;
