@@ -23,12 +23,19 @@ const parsePositiveInt = (value, fallback, max) => {
 };
 
 class ShowroomController {
-  async findApprovedShowroom(userId) {
+  constructor() {
+    this.getPublicProfile = this.getPublicProfile.bind(this);
+    this.getPublicVehicles = this.getPublicVehicles.bind(this);
+  }
+
+  findPublicProvider(userId) {
     return userModel.findOne({
       _id: userId,
-      role: 'showroom',
       is_active: true,
-      showroom_status: 'approved',
+      $or: [
+        { role: 'showroom', showroom_status: 'approved' },
+        { role: 'owner' },
+      ],
     });
   }
 
@@ -39,7 +46,7 @@ class ShowroomController {
         return res.status(400).json({ message: 'Invalid showroom id' });
       }
 
-      const user = await this.findApprovedShowroom(userId)
+      const user = await this.findPublicProvider(userId)
         .select(SHOWROOM_PUBLIC_FIELDS)
         .lean();
 
@@ -63,7 +70,7 @@ class ShowroomController {
         return res.status(400).json({ message: 'Invalid showroom id' });
       }
 
-      const showroom = await this.findApprovedShowroom(userId)
+      const showroom = await this.findPublicProvider(userId)
         .select('_id business_name name')
         .lean();
 

@@ -97,8 +97,8 @@ const PartnerRegister = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      <div className="flex-1 hidden md:flex items-center justify-center bg-gradient-to-br from-secondary via-[#0f3460] to-[#16213e] px-10 py-14">
+    <div className="fixed inset-0 flex overflow-hidden bg-gray-50">
+      <div className="hidden h-full flex-1 items-center justify-center bg-gradient-to-br from-secondary via-[#0f3460] to-[#16213e] px-10 py-[60px] md:flex">
         <div className="max-w-md text-white">
           <div className="flex items-center gap-3 text-2xl font-black mb-6">
             <div className="w-11 h-11 bg-primary rounded-full flex items-center justify-center">
@@ -113,7 +113,7 @@ const PartnerRegister = () => {
         </div>
       </div>
 
-      <div className="w-full md:w-[520px] flex flex-col justify-center bg-white px-10 py-12 max-[480px]:px-5">
+      <div className="flex h-full w-full flex-col overflow-y-auto overscroll-contain bg-white px-12 py-[60px] md:w-[480px] max-[480px]:px-6 max-[480px]:py-10">
         <h1 className="text-[1.65rem] font-extrabold text-gray-900 mb-1">Đăng ký đối tác</h1>
         <p className="text-[0.875rem] text-gray-500 mb-6">Dành cho showroom / doanh nghiệp cho thuê xe</p>
 

@@ -38,7 +38,7 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY, {
   },
 });
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Helpers 
 const defaultPickup = () => {
   const d = new Date();
   d.setHours(10, 0, 0, 0);
@@ -102,7 +102,7 @@ function normalizeIncomingRentalWindow(pickupValue, returnValue, minPickupValue)
 
 function formatDateTimeInputLabel(isoLocal) {
   const d = parseLocalDateTime(isoLocal);
-  if (!d) return 'Chon ngay gio';
+  if (!d) return 'Chọn ngày giờ';
   const hour12 = d.getHours() % 12 || 12;
   const ampm = d.getHours() >= 12 ? 'CH' : 'SA';
   return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(hour12)}:${pad2(d.getMinutes())} ${ampm}`;
@@ -110,18 +110,18 @@ function formatDateTimeInputLabel(isoLocal) {
 
 const CALENDAR_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const CALENDAR_MONTHS = [
-  'Thang 1',
-  'Thang 2',
-  'Thang 3',
-  'Thang 4',
-  'Thang 5',
+  'Tháng 1',
+  'Tháng 2',
+  'Tháng 3',
+  'Tháng 4',
+  'Tháng 5',
   'Thang 6',
-  'Thang 7',
-  'Thang 8',
-  'Thang 9',
-  'Thang 10',
-  'Thang 11',
-  'Thang 12',
+  'Tháng 7',
+  'Tháng 8',
+  'Tháng 9',
+  'Tháng 10',
+  'Tháng 11',
+  'Tháng 12',
 ];
 
 function DateTimeField({ id, label, value, minValue, onChange }) {
@@ -354,7 +354,6 @@ function DateTimeField({ id, label, value, minValue, onChange }) {
   );
 }
 
-// â”€â”€â”€ Inner card form (must be inside <Elements>) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -372,7 +371,7 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
     });
 
     if (error) {
-      onError(error.message || 'Thanh toan that bai. Vui long thu lai.');
+      onError(error.message || 'Thanh toán thất bại. Vui lòng thử lại.');
       setProcessing(false);
     }
   };
@@ -399,10 +398,10 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
       >
         {processing ? (
           <>
-            <FaSpinner aria-hidden="true" className="animate-spin" /> Dang xu ly...
+            <FaSpinner aria-hidden="true" className="animate-spin" /> Đang xử lý...
           </>
         ) : (
-          'Thanh toan ngay'
+          'Thanh toán ngay'
         )}
       </button>
     </form>
@@ -438,7 +437,7 @@ function OrderSummaryPanel({
     <aside className="lg:sticky lg:top-24 h-fit">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 text-[0.95rem]">Tom tat don hang</h3>
+          <h3 className="font-bold text-gray-900 text-[0.95rem]">Tóm tắt đơn hàng</h3>
         </div>
 
         <div className="p-5 space-y-4">
@@ -456,13 +455,13 @@ function OrderSummaryPanel({
 
           <dl className="space-y-2 text-[0.82rem] text-gray-600">
             <div className="flex justify-between gap-3">
-              <dt className="text-gray-500 shrink-0">Nhan xe</dt>
+              <dt className="text-gray-500 shrink-0">Nhận xe</dt>
               <dd className="tabular-nums text-right text-gray-800 font-medium">
                 {formatDateTimeVi(pickupDate)}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-gray-500 shrink-0">Tra xe</dt>
+              <dt className="text-gray-500 shrink-0">Trả xe</dt>
               <dd className="tabular-nums text-right text-gray-800 font-medium">
                 {formatDateTimeVi(returnDate)}
               </dd>
@@ -474,7 +473,7 @@ function OrderSummaryPanel({
           <div className="space-y-2.5 text-[0.82rem]">
             <div className="flex justify-between gap-3 text-gray-600">
               <span>
-                {formatVndPerDay(vehicle.price)} x {days} ngay
+                {formatVndPerDay(vehicle.price)} x {days} ngày
               </span>
               <span className="tabular-nums font-medium text-gray-800">
                 {formatVnd(subtotal)}
@@ -483,7 +482,7 @@ function OrderSummaryPanel({
             <div className="flex justify-between gap-3 text-gray-600">
               <span className="inline-flex items-center gap-1.5">
                 <FaTag aria-hidden="true" className="opacity-70 text-[0.7rem]" />
-                Phi dich vu (5%)
+                Phí dịch vụ (5%)
               </span>
               <span className="tabular-nums font-medium text-gray-800">
                 {formatVnd(serviceFee)}
@@ -491,7 +490,7 @@ function OrderSummaryPanel({
             </div>
             {deliveryFee > 0 && (
               <div className="flex justify-between gap-3 text-gray-600">
-                <span>Giao tan noi</span>
+                <span>Giao tại nội thành</span>
                 <span className="tabular-nums font-medium text-gray-800">
                   +{formatVnd(deliveryFee)}
                 </span>
@@ -508,22 +507,22 @@ function OrderSummaryPanel({
 
           <div className="rounded-xl border border-primary/20 bg-primary-light/50 px-3.5 py-3 text-[0.72rem] text-gray-600 leading-relaxed">
             <ul className="list-disc pl-4 space-y-1.5 marker:text-primary">
-              <li>Mien phi huy truoc 1 gio so voi gio nhan xe (theo chinh sach don cu the).</li>
-              <li>Thanh toan qua Stripe, thong tin the duoc ma hoa.</li>
+              <li>Miễn phí hủy trước 1 giờ so với giờ nhận xe (theo chính sách đơn cụ thể).</li>
+              <li>Thanh toán qua Stripe, thông tin thẻ được mã hóa.</li>
               <li>
-                Dieu kien bao hiem va trach nhiem theo hop dong thue - SmartRent khong cam ket muc bao hiem cu the trong chuyen di.
+                Điều kiện bảo hiểm và trách nhiệm theo hợp đồng thuê - SmartRent không cam kết mức bảo hiểm cụ thể trong chuyến đi.
               </li>
             </ul>
           </div>
 
           <p className="text-[0.7rem] text-gray-400 leading-relaxed">
-            Bang cach dat xe, ban dong y voi{' '}
+            Bằng cách đặt xe, bạn đồng ý với{' '}
             <span className="underline text-primary">
-              Dieu khoan su dung
+              Điều khoản sử dụng
             </span>{' '}
-            va{' '}
+            và{' '}
             <span className="underline text-primary">
-              Chinh sach bao mat
+              Chính sách bảo mật
             </span>
             .
           </p>
@@ -533,7 +532,7 @@ function OrderSummaryPanel({
   );
 }
 
-// â”€â”€â”€ Main Checkout page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Main Checkout page 
 const Checkout = () => {
   const { carId } = useParams();
   const navigate = useNavigate();
@@ -567,17 +566,17 @@ const Checkout = () => {
 
   const fetchVehicle = useCallback(async () => {
     if (!carId) {
-      setVehError('Khong tim thay thong tin xe.');
+      setVehError('Không tìm thấy thông tin xe.');
       setLoadVeh(false);
       return;
     }
     setLoadVeh(true);
     try {
       const v = await vehicleService.getById(carId);
-      if (!v) throw new Error('Xe khong ton tai');
+      if (!v) throw new Error('Xe không tồn tại');
       setVehicle(v);
     } catch {
-      setVehError('Khong the tai thong tin xe. Vui long thu lai.');
+      setVehError('Không thể tải thông tin xe. Vui lòng thử lại.');
     } finally {
       setLoadVeh(false);
     }
@@ -644,15 +643,15 @@ const Checkout = () => {
       const ret = parseLocalDateTime(returnDate);
 
       if (!pickup || !ret) {
-        throw new Error('Vui long chon day du thoi gian nhan xe va tra xe.');
+        throw new Error('Vui lòng chọn đầy đủ thời gian nhận xe và trả xe.');
       }
 
       if (minPickup && pickup < minPickup) {
-        throw new Error('Thoi gian nhan xe khong hop le. Vui long chon mot moc thoi gian o hien tai hoac trong tuong lai.');
+        throw new Error('Thời gian nhận xe không hợp lệ. Vui lòng chọn một mốc thời gian ở hiện tại hoặc trong tương lai.');
       }
 
       if (ret <= pickup) {
-        throw new Error('Thoi gian tra xe phai sau thoi gian nhan xe.');
+        throw new Error('Thời gian trả xe phải sau thời gian nhận xe.');
       }
 
       const availability = await bookingService.checkAvailability({
@@ -664,7 +663,7 @@ const Checkout = () => {
       if (!availability?.isAvailable) {
         throw new Error(
           availability?.message
-          || 'Xe da co lich thue trung trong khung thoi gian ban chon. Vui long doi sang moc thoi gian khac.'
+          || 'Xe đã có lịch thuê trùng trong khung thời gian bạn chọn. Vui lòng đợi sang mốc thời gian khác.'
         );
       }
 
@@ -686,11 +685,11 @@ const Checkout = () => {
 
 
 
-      if (!secret) throw new Error('Khong nhan duoc thong tin thanh toan tu server.');
+      if (!secret) throw new Error('Không nhận được thông tin thanh toán từ server.');
       setClientSecret(secret);
       setStep(2);
     } catch (err) {
-      setPrepError(err?.response?.data?.message || err?.message || 'Da co loi xay ra.');
+      setPrepError(err?.response?.data?.message || err?.message || 'Đã có lỗi xảy ra.');
     } finally {
       setPreparingPay(false);
     }
@@ -700,7 +699,7 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center gap-3 text-gray-500">
         <FaSpinner aria-hidden="true" className="animate-spin text-primary text-xl" />
-        <span>Dang tai thong tin xe...</span>
+        <span>Đang tải thông tin xe...</span>
       </div>
     );
   }
@@ -709,9 +708,9 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4 text-gray-500 px-5">
         <FaExclamationCircle aria-hidden="true" className="text-red-500 text-4xl" />
-        <p className="text-center text-red-600">{vehicleError || 'Khong tim thay xe.'}</p>
+        <p className="text-center text-red-600">{vehicleError || 'Không tìm thấy xe.'}</p>
         <button type="button" className="btn-primary" onClick={() => navigate('/')}>
-          Ve trang chu
+          Về trang chủ
         </button>
       </div>
     );
@@ -756,7 +755,7 @@ const Checkout = () => {
             ))}
           </div>
           <p className="text-[0.75rem] text-gray-500">
-            {step === 1 ? 'Thong tin dat xe' : 'Thanh toan'}
+            {step === 1 ? 'Thông tin đặt xe' : 'Thanh toán'}
           </p>
         </div>
 
@@ -769,7 +768,7 @@ const Checkout = () => {
                     <FaCar aria-hidden="true" className="text-xl" />
                   </span>
                   <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
-                    Thong tin dat xe
+                    Thông tin đặt xe
                   </h2>
                 </div>
 
@@ -778,7 +777,7 @@ const Checkout = () => {
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
                     <div className="shrink-0 mx-auto sm:mx-0">
                       <img
-                        src={vehicle.image || ''}
+                        src={vehicle.image || null}
                         alt={vehicle.name}
                         width={160}
                         height={112}
@@ -820,18 +819,18 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Thoi gian thue</p>
+                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Thời gian thuê</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                   <DateTimeField
                     id="pickup-date"
-                    label="Thoi gian nhan xe"
+                    label="Thời gian nhận xe"
                     value={pickupDate}
                     minValue={minPickupDateTime}
                     onChange={setPickupDate}
                   />
                   <DateTimeField
                     id="return-date"
-                    label="Thoi gian tra xe"
+                    label="Thời gian trả xe"
                     value={returnDate}
                     minValue={pickupDate}
                     onChange={setReturnDate}
@@ -839,15 +838,15 @@ const Checkout = () => {
                 </div>
                 <div className="mb-8">
                   <span className="inline-flex items-center rounded-full bg-primary-light px-3 py-1 text-[0.75rem] font-semibold text-primary border border-primary/20">
-                    Tong thue: {days} ngay
+                    Tổng thuê: {days} ngày
                   </span>
                 </div>
 
-                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Hinh thuc nhan xe</p>
+                <p className="text-[0.8rem] font-semibold text-gray-800 mb-3">Hình thức nhận xe</p>
                 <div
                   className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8"
                   role="radiogroup"
-                  aria-label="Hinh thuc nhan xe"
+                  aria-label="Hình thức nhận xe"
                 >
                   <button
                     type="button"
@@ -859,8 +858,8 @@ const Checkout = () => {
                       : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                   >
-                    <p className="font-bold text-gray-900 text-[0.9rem]">Tu den lay</p>
-                    <p className="text-primary font-semibold text-[0.85rem] mt-1">Mien phi</p>
+                    <p className="font-bold text-gray-900 text-[0.9rem]">Tới để lấy</p>
+                    <p className="text-primary font-semibold text-[0.85rem] mt-1">Miễn phí</p>
                   </button>
                   <button
                     type="button"
@@ -872,7 +871,7 @@ const Checkout = () => {
                       : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                   >
-                    <p className="font-bold text-gray-900 text-[0.9rem]">Giao tan noi</p>
+                    <p className="font-bold text-gray-900 text-[0.9rem]">Giao tại nội thành</p>
                     <p className="text-gray-600 font-semibold text-[0.85rem] mt-1">
                       + {formatVnd(DELIVERY_FEE_VND)}
                     </p>
@@ -896,11 +895,11 @@ const Checkout = () => {
                 >
                   {preparingPay ? (
                     <>
-                      <FaSpinner aria-hidden="true" className="animate-spin" /> Dang chuan bi...
+                      <FaSpinner aria-hidden="true" className="animate-spin" /> Đang chuẩn bị...
                     </>
                   ) : (
                     <>
-                      Tiep tuc
+                      Tiếp tục
                       <FaArrowRight aria-hidden="true" />
                     </>
                   )}
@@ -910,9 +909,9 @@ const Checkout = () => {
 
             {step === 2 && clientSecret && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Thanh toan qua Stripe</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Thanh toán qua Stripe</h2>
                 <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                  Thong tin the duoc bao mat boi Stripe - chung toi khong luu du lieu the cua ban.
+                  Thông tin thẻ được bảo mật bởi Stripe - chúng tôi không lưu dữ liệu thẻ của bạn.
                 </p>
 
                 {payError && (
@@ -941,7 +940,7 @@ const Checkout = () => {
                     setClientSecret('');
                   }}
                 >
-                  Quay lai chinh thong tin
+                  Quay lại chỉnh sửa thông tin
                 </button>
               </div>
             )}

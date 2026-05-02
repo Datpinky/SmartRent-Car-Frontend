@@ -9,6 +9,7 @@ router.post('/register', authValidation.register, validate, authController.regis
 router.post('/register-showroom', authValidation.registerShowroom, validate, authController.registerShowroom);
 
 router.post('/login', authValidation.login, validate, authController.login);
+router.post('/forgot-password', authValidation.forgotPassword, validate, authController.forgotPassword);
 
 router.get('/me', authMiddleware, authController.getMe);
 router.patch('/me', authMiddleware, authValidation.updateProfile, validate, authController.updateProfile);

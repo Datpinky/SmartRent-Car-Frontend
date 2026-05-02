@@ -273,6 +273,18 @@ class AuthService {
         const token = signAccessToken({ userId: user._id, role: user.role, jti });
         return { ok: true, token };
     }
+
+    async forgotPassword(email, newPassword) {
+        const normalizedEmail = String(email || "").trim().toLowerCase();
+        const user = await userModel.findOne({ email: normalizedEmail }).select("+password");
+        if (!user) throwError("Khong tim thay tai khoan voi email nay", 404);
+
+        user.password = newPassword;
+        await user.save();
+
+        await sessionModel.deleteMany({ user_id: user._id });
+        return { ok: true };
+    }
 }
 
 module.exports = new AuthService();
