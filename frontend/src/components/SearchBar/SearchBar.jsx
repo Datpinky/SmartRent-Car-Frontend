@@ -258,39 +258,6 @@ const SearchBar = ({ onSearch }) => {
                   />
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
-                    Ngày nhận xe
-                  </label>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
-                    <input
-                      type="datetime-local"
-                      className="w-full border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
-                      value={pickupDate}
-                      min={buildDefaultPickupDate()}
-                      onChange={(event) => setPickupDate(event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[0.78rem] font-semibold uppercase tracking-wide text-gray-600">
-                    Ngày trả xe
-                  </label>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5">
-                    <input
-                      type="datetime-local"
-                      className="w-full border-none bg-transparent text-[0.88rem] text-gray-800 outline-none"
-                      value={returnDate}
-                      min={pickupDate}
-                      onChange={(event) => setReturnDate(event.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {searchError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[0.82rem] text-red-700">
                   {searchError}

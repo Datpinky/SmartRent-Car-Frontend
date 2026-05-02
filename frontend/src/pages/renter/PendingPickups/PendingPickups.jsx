@@ -47,7 +47,7 @@ const PendingPickups = () => {
       setError('');
     } catch (err) {
       setBookings([]);
-      setError(err.message || 'Khong the tai danh sach cho nhan xe.');
+      setError(err.message || 'Không thể tải danh sách chờ nhận xe.');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ const PendingPickups = () => {
     [bookings]
   );
 
-  const waitingLabel = 'Dang cho showroom hoan tat ban giao';
+  const waitingLabel = 'Đang cho showroom hoàn thành bàn giao';
 
   return (
     <div className="pending-pickups">
@@ -94,15 +94,15 @@ const PendingPickups = () => {
         <div>
           <h1 className="page-title">Cho nhan xe</h1>
           <p className="page-subtitle">
-            Theo doi cac booking da sang muc Cho ban giao. Hien backend van de showroom hoan tat buoc ban giao tren he thong.
+            Theo dõi các booking đã sang mục Chờ bàn giao. Hiện backend vẫn đang chờ showroom hoàn thành bàn giao trên hệ thống.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-showroom-processing')}>
-            Cho showroom xu ly
+            Cho showroom xử lý
           </button>
           <button className="btn-primary" onClick={() => navigate('/')}>
-            Dat xe moi
+            Đặt xe mới
           </button>
         </div>
       </div>
@@ -125,10 +125,10 @@ const PendingPickups = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Tong booking', val: summary.total, color: '#374151' },
-          { label: 'Dang cho ban giao', val: summary.waiting, color: '#d97706' },
-          { label: 'Da san sang giao', val: summary.readyForHandover, color: '#2563eb' },
-          { label: 'Co email showroom', val: summary.contactable, color: '#059669' },
+          { label: 'Tổng booking', val: summary.total, color: '#374151' },
+          { label: 'Đang chờ bàn giao', val: summary.waiting, color: '#d97706' },
+          { label: 'Đã sẵn sàng giao', val: summary.readyForHandover, color: '#2563eb' },
+          { label: 'Có email showroom', val: summary.contactable, color: '#059669' },
         ].map((item) => (
           <div
             key={item.label}
@@ -148,21 +148,21 @@ const PendingPickups = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7280' }}>
           <FaSpinner className="animate-spin" style={{ fontSize: '1.4rem', marginBottom: 10 }} />
-          <div>Dang tai danh sach cho nhan xe...</div>
+          <div>Đang tải danh sách chờ nhận xe...</div>
         </div>
       ) : bookings.length === 0 ? (
         <div style={{ ...cardInfoStyle, textAlign: 'center', padding: 30 }}>
           <MdDirectionsCar style={{ fontSize: '3rem', color: '#94a3b8', marginBottom: 14 }} />
-          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Khong co booking nao dang cho nhan xe</div>
+          <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>Không có booking nào đang chờ nhận xe</div>
           <div style={{ fontSize: '0.84rem', color: '#6b7280', lineHeight: 1.6, marginBottom: 16 }}>
-            Booking se hien tai day khi showroom da chuyen sang Cho ban giao va dang hoan tat buoc giao xe tren he thong.
+            Booking sẽ hiện tại đây khi showroom đã chuyển sang Chờ bàn giao và đang hoàn thành bước giao xe trên hệ thống.
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="renter-btn-soft" onClick={() => navigate('/renter/bookings')}>
-              Mo Chuyen di cua toi
+              Mở Chuyến đi của tôi
             </button>
             <button className="btn-primary" onClick={() => navigate('/')}>
-              Dat xe moi
+              Đặt xe mới
             </button>
           </div>
         </div>
@@ -257,7 +257,7 @@ const PendingPickups = () => {
                       href={`mailto:${booking.showroomEmail}`}
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <FaEnvelope /> Lien he showroom
+                      <FaEnvelope /> Liên hệ showroom
                     </a>
                   )}
                 </div>
@@ -267,7 +267,7 @@ const PendingPickups = () => {
         </div>
       )}
 
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiet cho nhan xe" width={560}>
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết chờ nhận xe" width={560}>
         {detailModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
@@ -291,22 +291,22 @@ const PendingPickups = () => {
                 {detailModal.waitingOwnerLabel}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>
-                Buoc tiep theo: {detailModal.nextStepLabel}
+                Bước tiếp theo: {detailModal.nextStepLabel}
               </div>
               <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#0f766e', lineHeight: 1.6 }}>
-                Viec ban nen lam: {detailModal.renterActionHint}
+                Việc bạn nên làm: {detailModal.renterActionHint}
               </div>
             </div>
 
             {[
-              ['Ma booking', detailModal.id],
-              ['Ngay nhan xe', formatDateTime(detailModal.startDate)],
-              ['Ngay tra xe', formatDateTime(detailModal.endDate)],
-              ['Tong tien', formatMoney(detailModal.totalPrice)],
-              ['Trang thai booking', detailModal.status],
-              ['Trang thai thanh toan', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
-              ['Phuong thuc thanh toan', detailModal.paymentMethod],
-              ['Dia diem giao nhan', detailModal.locationLabel],
+              ['Mã booking', detailModal.id],
+              ['Ngày nhận xe', formatDateTime(detailModal.startDate)],
+              ['Ngày trả xe', formatDateTime(detailModal.endDate)],
+              ['Tổng tiền', formatMoney(detailModal.totalPrice)],
+              ['Trạng thái booking', detailModal.status],
+              ['Trạng thái thanh toán', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
+              ['Phương thức thanh toán', detailModal.paymentMethod],
+              ['Địa điểm giao nhận', detailModal.locationLabel],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -363,7 +363,7 @@ const PendingPickups = () => {
                 href={`mailto:${detailModal.showroomEmail}`}
                 style={{ justifyContent: 'center' }}
               >
-                <FaEnvelope /> Lien he showroom de xac nhan ban giao
+                <FaEnvelope /> Liên hệ showroom để xác nhận bàn giao
               </a>
             )}
           </div>

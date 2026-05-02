@@ -20,6 +20,7 @@ import {
 import { MdLocationOn } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import bookingService from '../../../services/bookingService';
+import reviewService from '../../../services/reviewService';
 import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import { resolveRentalWindow } from '../../../utils/rentalWindow';
 
@@ -540,6 +541,7 @@ const Checkout = () => {
 
   const [step, setStep] = useState(1);
   const [vehicle, setVehicle] = useState(null);
+  const [avgRating, setAvgRating] = useState(0);
   const [loadingVehicle, setLoadVeh] = useState(true);
   const [vehicleError, setVehError] = useState('');
 
@@ -572,9 +574,16 @@ const Checkout = () => {
     }
     setLoadVeh(true);
     try {
-      const v = await vehicleService.getById(carId);
+      const [v, summary] = await Promise.all([
+        vehicleService.getById(carId),
+        reviewService.getSummaryByVehicleId(carId).catch(() => null),
+      ]);
       if (!v) throw new Error('Xe không tồn tại');
       setVehicle(v);
+      const computedRating = summary?.reviewCount > 0
+        ? summary.rating
+        : Number(v.rating || 0);
+      setAvgRating(computedRating);
     } catch {
       setVehError('Không thể tải thông tin xe. Vui lòng thử lại.');
     } finally {
@@ -791,7 +800,7 @@ const Checkout = () => {
                       <h3 className="font-bold text-gray-900 text-[0.95rem] sm:text-base leading-snug">
                         {vehicle.name}
                       </h3>
-                      <StarRow rating={vehicle.rating} />
+                      <StarRow rating={avgRating} />
                       <div className="flex flex-wrap gap-2 mt-1">
                         <span className="inline-flex items-center rounded-full border border-white/80 bg-white/90 px-2.5 py-0.5 text-[0.72rem] font-medium text-gray-700 shadow-sm">
                           {vehicle.seats} cho
