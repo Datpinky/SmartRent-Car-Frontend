@@ -100,6 +100,45 @@ class BookingService {
     };
   }
 
+  /**
+   * Public: lấy các khoảng thời gian đã được đặt (để FE disable/highlight lịch).
+   * - Mặc định trả 6 tháng tới nếu không truyền from/to.
+   * - Loại trừ status "cancelled", "completed".
+   */
+  static async getUnavailableDateIntervals(vehicleId, from, to) {
+    const now = new Date();
+    const safeFrom = from instanceof Date && !Number.isNaN(from.getTime()) ? from : now;
+    const safeToRaw = to instanceof Date && !Number.isNaN(to.getTime())
+      ? to
+      : new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+
+    const safeTo = safeToRaw > safeFrom
+      ? safeToRaw
+      : new Date(safeFrom.getTime() + 180 * 24 * 60 * 60 * 1000);
+
+    const bookings = await BookingModel.find({
+      vehicle_id: vehicleId,
+      status: { $nin: IGNORED_OVERLAP_STATUSES },
+      start_date: { $lt: safeTo },
+      end_date: { $gt: safeFrom },
+    }).select('_id start_date end_date status').lean();
+
+    const intervals = (bookings || []).map((b) => ({
+      bookingId: b._id,
+      startDate: b.start_date,
+      endDate: b.end_date,
+      status: b.status,
+    }));
+
+    return {
+      vehicleId,
+      from: safeFrom,
+      to: safeTo,
+      intervals,
+      total: intervals.length,
+    };
+  }
+
 
   static async getListBookings(body = {}) {
     const { search, status, user_id, showroom_id, sort_by, sort_by_price, page, limit } = body;

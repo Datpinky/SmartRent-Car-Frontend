@@ -11,13 +11,7 @@ import { MdDirectionsCar } from 'react-icons/md';
 import Modal from '../../../components/common/Modal';
 import StatusBadge from '../../../components/common/StatusBadge';
 import bookingService from '../../../services/bookingService';
-import { getBookingFlowState } from '../../../utils/bookingFlowState';
-import {
-  PAYMENT_LABELS,
-  formatDateTime,
-  formatMoney,
-  mapRenterBooking,
-} from '../../../utils/renterBookingView';
+import { mapRenterBooking, PAYMENT_LABELS, formatDateTime, formatMoney } from '../../../utils/renterBookingView';
 import RentalFlowModal from './RentalFlowModal';
 
 const MyBookings = () => {
@@ -43,7 +37,7 @@ const MyBookings = () => {
       setError('');
     } catch (err) {
       setBookings([]);
-      setError(err.message || 'Không thể tải danh sách xe đang thuê.');
+      setError(err.message || 'Khong the tai danh sach xe dang thue.');
     } finally {
       setLoading(false);
     }
@@ -124,38 +118,31 @@ const MyBookings = () => {
 
     const updatedStatus = nextStatus || booking.status;
     const updatedRaw = booking.raw
-      ? { ...booking.raw, status: updatedStatus }
-      : booking.raw;
-    const nextFlowState = getBookingFlowState(
-      {
-        ...booking,
-        raw: updatedRaw,
+      ? {
+        ...booking.raw,
+        _id: booking.raw._id || booking.id,
         status: updatedStatus,
-      },
-      booking.paymentStatus
-    );
+        payment: booking.paymentRecord || booking.raw.payment || null,
+      }
+      : {
+        _id: booking.id,
+        start_date: booking.startDate,
+        end_date: booking.endDate,
+        total_price: booking.totalPrice,
+        note: booking.note,
+        status: updatedStatus,
+        payment: booking.paymentRecord || null,
+        vehicle: booking.raw?.vehicle || null,
+        vehicle_id: booking.raw?.vehicle_id || null,
+        showroom: booking.raw?.showroom || null,
+        showroom_id: booking.raw?.showroom_id || null,
+      };
 
+    const remapped = mapRenterBooking(updatedRaw);
     return {
-      ...booking,
-      raw: updatedRaw,
-      status: updatedStatus,
-      workflow: nextWorkflow || booking.workflow,
-      hasAiInspectionReport: Boolean((nextWorkflow || booking.workflow)?.aiInspection?.result),
-      canConfirmPickup: nextFlowState.canConfirmPickup,
-      canOpenRentalFlow: nextFlowState.canOpenRentalFlow,
-      canReportIssue: nextFlowState.isActive,
-      hasRentalEnded: nextFlowState.hasEnded,
-      hasRentalStarted: nextFlowState.hasStarted,
-      isActive: nextFlowState.isActive,
-      isAwaitingPayment: nextFlowState.isAwaitingPayment,
-      isAwaitingShowroomProcessing: nextFlowState.isAwaitingShowroomProcessing,
-      isAwaitingPickup: nextFlowState.isAwaitingPickup,
-      isCancelled: nextFlowState.isCancelled,
-      isCompleted: nextFlowState.isCompleted,
-      isUpcoming: nextFlowState.isUpcoming,
-      pickupConfirmationHint: nextFlowState.pickupConfirmationHint,
-      rentalAccessHint: nextFlowState.rentalAccessHint,
-      rentalActionLabel: nextFlowState.rentalActionLabel || booking.rentalActionLabel,
+      ...remapped,
+      workflow: nextWorkflow || remapped.workflow,
+      hasAiInspectionReport: Boolean((nextWorkflow || remapped.workflow)?.aiInspection?.result),
     };
   };
 
@@ -178,10 +165,15 @@ const MyBookings = () => {
     setDetailModal((current) => (current ? applyByTarget(current) : current));
     setRentalModalBooking((current) => (current ? applyByTarget(current) : current));
 
+    if (payload?.notice?.text) {
+      setNotice(payload.notice);
+      return;
+    }
+
     if (nextStatus === 'waiting_return_confirmation') {
       setNotice({
         tone: 'success',
-        text: 'Bạn đã gửi yêu cầu trả xe. Booking này đang chờ showroom xác nhận đã trả xe.',
+        text: 'Ban da gui yeu cau tra xe. Booking nay dang cho showroom xac nhan da tra xe.',
       });
     }
   };
@@ -199,20 +191,20 @@ const MyBookings = () => {
     >
       <MdDirectionsCar style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }} />
       <div style={{ fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>
-        Bạn chưa có xe nào đang thuê hoặc đang trong bước trả xe.
+        Ban chua co xe nao dang thue hoac dang trong buoc tra xe.
       </div>
       <div style={{ fontSize: '0.82rem', color: '#9ca3af', lineHeight: 1.6, marginBottom: 16 }}>
-        Các booking chờ thanh toán, chờ showroom xử lý, chờ nhận xe, hoàn thành hoặc đã hủy đã được tách sang menu riêng.
+        Cac booking cho thanh toan, cho showroom xu ly, cho nhan xe, hoan thanh hoac da huy da duoc tach sang menu rieng.
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
         <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-showroom-processing')}>
-          Chờ showroom xử lý
+          Cho showroom xu ly
         </button>
         <button className="renter-btn-soft" onClick={() => navigate('/renter/pending-pickups')}>
-          Chờ nhận xe
+          Cho nhan xe
         </button>
         <button className="btn-primary" onClick={() => navigate('/')}>
-          Đặt xe mới
+          Dat xe moi
         </button>
       </div>
     </div>
@@ -222,12 +214,12 @@ const MyBookings = () => {
     <div className="my-bookings">
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Chuyến đi của tôi</h1>
+          <h1 className="page-title">Chuyen di cua toi</h1>
           <p className="page-subtitle">
-            Xem danh sách xe đang thuê và thực hiện quy trình trả xe khi đến hạn.
+            Xem danh sach xe dang thue va thuc hien quy trinh tra xe khi den han.
           </p>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/')}>Hành trình mới</button>
+        <button className="btn-primary" onClick={() => navigate('/')}>Hanh trinh moi</button>
       </div>
 
       {error && (
@@ -265,9 +257,9 @@ const MyBookings = () => {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Đang thuê', val: summary.active, color: '#2563eb' },
-          { label: 'Cần trả xe', val: summary.dueReturn, color: '#d97706' },
-          { label: 'Chờ showroom xác nhận trả', val: summary.waitingReturnConfirmation, color: '#7c3aed' },
+          { label: 'Dang thue', val: summary.active, color: '#2563eb' },
+          { label: 'Can tra xe', val: summary.dueReturn, color: '#d97706' },
+          { label: 'Cho showroom xac nhan tra', val: summary.waitingReturnConfirmation, color: '#7c3aed' },
         ].map((item) => (
           <div
             key={item.label}
@@ -314,7 +306,7 @@ const MyBookings = () => {
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Tìm theo mã booking, tên xe hoặc showroom"
+            placeholder="Tim theo ma booking, ten xe hoac showroom"
             style={{
               border: 'none',
               outline: 'none',
@@ -329,7 +321,7 @@ const MyBookings = () => {
 
       <div className="booking-list">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>Đang tải danh sách xe đang thuê...</div>
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280' }}>Dang tai danh sach xe dang thue...</div>
         ) : displayedBookings.length === 0 ? (
           renderEmptyState()
         ) : (
@@ -367,7 +359,7 @@ const MyBookings = () => {
                       <FaCalendarAlt size={11} /> {formatDateTime(booking.startDate)} - {formatDateTime(booking.endDate)}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
-                      <FaClock size={11} /> {booking.durationDays} ngày
+                      <FaClock size={11} /> {booking.durationDays} ngay
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#6b7280' }}>
                       <FaMapMarkerAlt size={11} /> {booking.locationLabel}
@@ -390,7 +382,25 @@ const MyBookings = () => {
                   <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#00b14f', marginTop: 8 }}>
                     {formatMoney(booking.totalPrice)}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Mã: {booking.id}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: 2 }}>Ma: {booking.id}</div>
+                  {booking.hasAiInspectionReport && (
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginTop: 8,
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        background: '#ecfeff',
+                        color: '#0f766e',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                      }}
+                    >
+                      Bao cao AI local
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -421,7 +431,7 @@ const MyBookings = () => {
         )}
       </div>
 
-      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiết xe đang thuê" width={520}>
+      <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Chi tiet xe dang thue" width={520}>
         {detailModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ background: '#f9fafb', borderRadius: 12, padding: 16 }}>
@@ -445,22 +455,38 @@ const MyBookings = () => {
                 {detailModal.waitingOwnerLabel}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>
-                Bước tiếp theo: {detailModal.nextStepLabel}
+                Buoc tiep theo: {detailModal.nextStepLabel}
               </div>
               <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#0f766e', lineHeight: 1.6 }}>
-                Việc bạn nên làm: {detailModal.renterActionHint}
+                Viec ban nen lam: {detailModal.renterActionHint}
               </div>
             </div>
 
+            {detailModal.hasAiInspectionReport && (
+              <div
+                style={{
+                  background: '#ecfeff',
+                  border: '1px solid #a5f3fc',
+                  borderRadius: 12,
+                  padding: '12px 14px',
+                  color: '#0f766e',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.6,
+                }}
+              >
+                Booking nay dang co bao cao AI local duoc luu tren trinh duyet hien tai. Day chua phai la bao cao authoritative duoc luu chung tren backend.
+              </div>
+            )}
+
             {[
-              ['Mã booking', detailModal.id],
-              ['Ngày nhận xe', formatDateTime(detailModal.startDate)],
-              ['Ngày trả xe', formatDateTime(detailModal.endDate)],
-              ['Số ngày thuê', `${detailModal.durationDays} ngày`],
-              ['Tổng tiền', formatMoney(detailModal.totalPrice)],
-              ['Trạng thái booking', detailModal.status],
-              ['Trạng thái thanh toán', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
-              ['Địa điểm giao nhận', detailModal.locationLabel],
+              ['Ma booking', detailModal.id],
+              ['Ngay nhan xe', formatDateTime(detailModal.startDate)],
+              ['Ngay tra xe', formatDateTime(detailModal.endDate)],
+              ['So ngay thue', `${detailModal.durationDays} ngay`],
+              ['Tong tien', formatMoney(detailModal.totalPrice)],
+              ['Trang thai booking', detailModal.status],
+              ['Trang thai thanh toan', PAYMENT_LABELS[detailModal.paymentStatus] || detailModal.paymentStatus],
+              ['Dia diem giao nhan', detailModal.locationLabel],
             ].map(([label, value]) => (
               <div
                 key={label}
