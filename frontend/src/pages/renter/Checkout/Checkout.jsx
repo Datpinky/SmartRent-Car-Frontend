@@ -777,7 +777,7 @@ const Checkout = () => {
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
                     <div className="shrink-0 mx-auto sm:mx-0">
                       <img
-                        src={vehicle.image || ''}
+                        src={vehicle.image || null}
                         alt={vehicle.name}
                         width={160}
                         height={112}

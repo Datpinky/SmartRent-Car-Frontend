@@ -457,49 +457,6 @@ const RenterDashboard = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <section
-        style={{
-          background: 'linear-gradient(135deg, #f0fdf4 0%, #eff6ff 55%, #ffffff 100%)',
-          border: '1px solid #dbeafe',
-          borderRadius: 24,
-          padding: 24,
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 16,
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ maxWidth: 760 }}>
-          <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#111827' }}>
-            Tổng quan tiền đặt xe và hoàn trả
-          </div>
-          <div style={{ fontSize: '0.92rem', color: '#4b5563', marginTop: 8, lineHeight: 1.65 }}>
-            Dashboard này tổng hợp tiền đặt xe đã ghi nhận, các booking hủy có liên quan đến hoàn trả,
-            và những khoản vẫn đang chờ thanh toán. Hiện FE đang đối chiếu hoàn trả theo trạng thái
-            booking và payment hiện có. Khi backend có thêm trạng thái refund riêng, số liệu sẽ được
-            tách rõ hơn.
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => navigate('/renter/transactions')}
-          >
-            <FaExchangeAlt /> Lịch sử giao dịch
-          </button>
-          <button
-            type="button"
-            className="renter-btn-soft"
-            onClick={() => navigate('/renter/bookings')}
-          >
-            <FaArrowRight /> Chuyến đi của tôi
-          </button>
-        </div>
-      </section>
-
       {error && (
         <div
           style={{
