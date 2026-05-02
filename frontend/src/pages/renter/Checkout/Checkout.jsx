@@ -281,11 +281,10 @@ function DateTimeField({ id, label, value, minValue, onChange }) {
                   key={day}
                   type="button"
                   disabled={disabled}
-                  className={`h-9 rounded-md text-sm transition ${
-                    isSelected
-                      ? 'bg-primary text-white'
-                      : 'text-gray-700 hover:bg-primary-light'
-                  } ${disabled ? 'opacity-35 cursor-not-allowed hover:bg-transparent' : ''}`}
+                  className={`h-9 rounded-md text-sm transition ${isSelected
+                    ? 'bg-primary text-white'
+                    : 'text-gray-700 hover:bg-primary-light'
+                    } ${disabled ? 'opacity-35 cursor-not-allowed hover:bg-transparent' : ''}`}
                   onClick={() => onSelectDay(day)}
                 >
                   {day}
@@ -675,6 +674,8 @@ const Checkout = () => {
           start_date: pickup.toISOString(),
           end_date: ret.toISOString(),
           total_price: total,
+          delivery_type: pickupMethod === 'delivery' ? 'delivery' : 'self',
+          note: pickupMethod === 'delivery' ? 'Giao tan noi' : 'Tu den lay',
         });
       const bId = nextBookingId || booking?._id || booking?.id || booking;
       setBookingId(bId);
@@ -739,9 +740,8 @@ const Checkout = () => {
             {[1, 2].map((s, i) => (
               <React.Fragment key={s}>
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors ${
-                    step >= s ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
-                  }`}
+                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors ${step >= s ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+                    }`}
                 >
                   {step > s ? <FaCheckCircle aria-hidden="true" /> : s}
                 </div>
@@ -853,11 +853,10 @@ const Checkout = () => {
                     role="radio"
                     aria-checked={pickupMethod === 'self'}
                     onClick={() => setPickupMethod('self')}
-                    className={`text-left rounded-xl border-2 p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                      pickupMethod === 'self'
-                        ? 'border-primary bg-primary-light/40 shadow-sm'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
+                    className={`text-left rounded-xl border-2 p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${pickupMethod === 'self'
+                      ? 'border-primary bg-primary-light/40 shadow-sm'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
                   >
                     <p className="font-bold text-gray-900 text-[0.9rem]">Tới để lấy</p>
                     <p className="text-primary font-semibold text-[0.85rem] mt-1">Miễn phí</p>
@@ -867,11 +866,10 @@ const Checkout = () => {
                     role="radio"
                     aria-checked={pickupMethod === 'delivery'}
                     onClick={() => setPickupMethod('delivery')}
-                    className={`text-left rounded-xl border-2 p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                      pickupMethod === 'delivery'
-                        ? 'border-primary bg-primary-light/40 shadow-sm'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
+                    className={`text-left rounded-xl border-2 p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${pickupMethod === 'delivery'
+                      ? 'border-primary bg-primary-light/40 shadow-sm'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
                   >
                     <p className="font-bold text-gray-900 text-[0.9rem]">Giao tại nội thành</p>
                     <p className="text-gray-600 font-semibold text-[0.85rem] mt-1">

@@ -106,6 +106,24 @@ const normalizeBooking = ({
   showroom_id: toLegacyShowroomShape(showroom) || booking?.showroom_id || null,
 });
 
+const buildBookingFallback = (booking) => {
+  const showroomId = resolveId(booking?.showroom_id);
+  const fallbackShowroom =
+    booking?.showroom_id && typeof booking.showroom_id === 'object'
+      ? toLegacyShowroomShape(booking.showroom_id)
+      : showroomId
+        ? { _id: showroomId, id: showroomId, name: 'SmartRent', email: '', phone: '', address: '' }
+        : null;
+
+  return normalizeBooking({
+    booking,
+    vehicle: null,
+    showroom: fallbackShowroom,
+    payment: booking?.payment || null,
+    paymentState: booking?.paymentState || null,
+  });
+};
+
 const enrichBooking = async (booking) => {
   const vehicleId = resolveId(booking?.vehicle_id);
   const showroomId = resolveId(booking?.showroom_id);
@@ -130,37 +148,21 @@ const enrichBooking = async (booking) => {
     booking,
     vehicle,
     showroom: showroomFromVehicle || fallbackShowroom,
-    payment: paymentResult.status === 'fulfilled' ? paymentResult.value : null,
-    paymentState: paymentStateResult.status === 'fulfilled' ? paymentStateResult.value : null,
+    payment: paymentResult.status === 'fulfilled' ? paymentResult.value : booking?.payment || null,
+    paymentState: paymentStateResult.status === 'fulfilled' ? paymentStateResult.value : booking?.paymentState || null,
   });
 };
 
-const runStatusTransitions = async (bookingId, transitions = []) => {
-  let latestBooking = null;
-
-  for (const status of transitions) {
-    const res = await apiClient.patch(`/api/booking/updateBookingStatus/${bookingId}`, { status });
-    latestBooking = res.data?.data ?? null;
-  }
-
-  return latestBooking;
-};
-
-const PICKUP_CONFIRMATION_PATHS = {
-  pending: [],
-  waiting_payment: [],
-  paid: [],
-  confirmed: [],
-  waiting_handover: ['handed_over'],
-  handed_over: [],
-};
-
-const RETURN_REQUEST_PATHS = {
-  handed_over: ['in_use', 'waiting_return_confirmation'],
-  in_use: ['waiting_return_confirmation'],
-  waiting_return_confirmation: [],
-  completed: [],
-};
+const enrichBookingsSafely = async (bookings = []) =>
+  Promise.all(
+    (bookings || []).map(async (booking) => {
+      try {
+        return await enrichBooking(booking);
+      } catch {
+        return buildBookingFallback(booking);
+      }
+    })
+  );
 
 export const bookingService = {
   async createBooking(payload = {}) {
@@ -224,11 +226,7 @@ export const bookingService = {
 
   async getCurrentRoleBookingsDetailed() {
     const bookings = await this.getCurrentRoleBookings();
-    const detailResults = await Promise.allSettled(bookings.map((booking) => enrichBooking(booking)));
-
-    return detailResults
-      .filter((result) => result.status === 'fulfilled')
-      .map((result) => result.value);
+    return enrichBookingsSafely(bookings);
   },
 
   async getListBookings(filters = {}) {
@@ -243,11 +241,7 @@ export const bookingService = {
 
   async getMyBookingsDetailed(filters = {}) {
     const bookings = await this.getMyBookings(filters);
-    const detailResults = await Promise.allSettled(bookings.map((booking) => enrichBooking(booking)));
-
-    return detailResults
-      .filter((result) => result.status === 'fulfilled')
-      .map((result) => result.value);
+    return enrichBookingsSafely(bookings);
   },
 
   async getBookingById(id) {
@@ -257,7 +251,11 @@ export const bookingService = {
       return null;
     }
 
-    return enrichBooking(booking);
+    try {
+      return await enrichBooking(booking);
+    } catch {
+      return buildBookingFallback(booking);
+    }
   },
 
   async checkAvailability({ vehicleId, pickupDate, returnDate, excludeBookingId } = {}) {
@@ -273,6 +271,20 @@ export const bookingService = {
     });
 
     return res.data;
+  },
+
+  async getUnavailableDateIntervals(vehicleId, { from, to } = {}) {
+    if (!vehicleId) {
+      throw new Error('Thieu vehicleId de lay lich ban.');
+    }
+
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await apiClient.get(`/api/booking/unavailableDates/${vehicleId}${query}`);
+    return res.data?.data || null;
   },
 
   async cancelBooking(id) {
@@ -317,35 +329,11 @@ export const bookingService = {
   },
 
   async confirmPickup(id) {
-    const booking = await this.getBookingById(id);
-    const currentStatus = booking?.status || '';
-    const transitions = PICKUP_CONFIRMATION_PATHS[currentStatus];
-
-    if (!transitions) {
-      throw new Error(`Khong the xac nhan nhan xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
-    }
-
-    if (transitions.length === 0) {
-      return booking;
-    }
-
-    return runStatusTransitions(id, transitions);
+    throw new Error('Backend hien chi cho showroom cap nhat buoc ban giao xe. Renter chua the tu xac nhan nhan xe bang status API nay.');
   },
 
   async requestReturn(id) {
-    const booking = await this.getBookingById(id);
-    const currentStatus = booking?.status || '';
-    const transitions = RETURN_REQUEST_PATHS[currentStatus];
-
-    if (!transitions) {
-      throw new Error(`Khong the gui yeu cau tra xe tu trang thai ${currentStatus || 'khong xac dinh'}.`);
-    }
-
-    if (transitions.length === 0) {
-      return booking;
-    }
-
-    return runStatusTransitions(id, transitions);
+    throw new Error('Backend hien chua ho tro renter gui yeu cau tra xe bang status API rieng. FE chi co the luu bien ban va anh doi chieu tren trinh duyet hien tai.');
   },
 
   async confirmPickupForRenter(id) {

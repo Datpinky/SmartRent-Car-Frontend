@@ -23,7 +23,7 @@ const normalizeNotificationLink = (link) => {
   try {
     const url = new URL(link, window.location.origin);
 
-    if (url.pathname === '/renter/bookings' && url.searchParams.get('bookingId')) {
+    if (url.pathname.startsWith('/renter/') && url.searchParams.get('bookingId')) {
       url.searchParams.set('fromNotification', '1');
     }
 

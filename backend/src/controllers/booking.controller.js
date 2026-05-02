@@ -110,6 +110,33 @@ class BookingController {
     }
   }
 
+  /**
+   * Public API: trả về các khoảng thời gian đã được đặt của 1 xe
+   * Query: ?from=ISO&to=ISO (optional)
+   */
+  async getUnavailableDates(req, res, next) {
+    try {
+      const { vehicleId } = req.params;
+      const fromRaw = req.query?.from;
+      const toRaw = req.query?.to;
+
+      const from = fromRaw ? new Date(fromRaw) : null;
+      const to = toRaw ? new Date(toRaw) : null;
+
+      const safeFrom = from && !Number.isNaN(from.getTime()) ? from : null;
+      const safeTo = to && !Number.isNaN(to.getTime()) ? to : null;
+
+      const result = await bookingService.getUnavailableDateIntervals(vehicleId, safeFrom, safeTo);
+      return res.status(200).json({
+        success: true,
+        message: "Lấy lịch bận của xe thành công",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateBookingStatus(req, res, next) {
     try {
       const { bookingId } = req.params;
