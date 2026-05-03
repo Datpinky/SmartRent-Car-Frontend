@@ -70,7 +70,7 @@ const Transactions = () => {
     const loadTransactions = async () => {
       setLoading(true);
       try {
-        const bookings = await bookingService.getMyBookingsDetailed();
+        const bookings = await bookingService.getMyBookingsForTransactions();
         const transactionRows = await paymentService.getMyTransactions(bookings || []);
         if (!mounted) {
           return;

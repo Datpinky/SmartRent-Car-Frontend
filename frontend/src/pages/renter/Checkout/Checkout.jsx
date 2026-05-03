@@ -20,6 +20,7 @@ import {
 import { MdLocationOn } from 'react-icons/md';
 import vehicleService from '../../../services/vehicleService';
 import bookingService from '../../../services/bookingService';
+import reviewService from '../../../services/reviewService';
 import { formatVnd, formatVndPerDay } from '../../../utils/currencyFormat';
 import { resolveRentalWindow } from '../../../utils/rentalWindow';
 
@@ -357,10 +358,11 @@ function DateTimeField({ id, label, value, minValue, onChange }) {
 const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const [elementReady, setElementReady] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements || processing) return;
+    if (!stripe || !elements || processing || !elementReady) return;
     setProcessing(true);
     onError('');
 
@@ -376,6 +378,21 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
     }
   };
 
+  const handleLoadError = (event) => {
+    setElementReady(false);
+    const msg = event?.error?.message || event?.message || '';
+    const isExpired =
+      msg.toLowerCase().includes('client secret')
+      || msg.toLowerCase().includes('payment intent')
+      || msg.toLowerCase().includes('expired')
+      || msg.toLowerCase().includes('invalid');
+    onError(
+      isExpired
+        ? 'Phiên thanh toán không còn hợp lệ. Vui lòng quay lại và tạo booking mới.'
+        : 'Cổng thanh toán Stripe không tải được. Vui lòng thử lại hoặc tải lại trang.'
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-5">
@@ -388,17 +405,24 @@ const StripeCardForm = ({ onError, bookingId, processing, setProcessing }) => {
               layout: 'tabs',
               wallets: { applePay: 'never', googlePay: 'never' },
             }}
+            onLoaderStart={() => setElementReady(false)}
+            onReady={() => setElementReady(true)}
+            onLoaderror={handleLoadError}
           />
         </div>
       </div>
       <button
         type="submit"
-        disabled={!stripe || processing}
+        disabled={!stripe || processing || !elementReady}
         className="btn-primary w-full justify-center py-3 text-base"
       >
         {processing ? (
           <>
             <FaSpinner aria-hidden="true" className="animate-spin" /> Đang xử lý...
+          </>
+        ) : !elementReady ? (
+          <>
+            <FaSpinner aria-hidden="true" className="animate-spin" /> Đang tải cổng thanh toán...
           </>
         ) : (
           'Thanh toán ngay'
@@ -540,6 +564,7 @@ const Checkout = () => {
 
   const [step, setStep] = useState(1);
   const [vehicle, setVehicle] = useState(null);
+  const [avgRating, setAvgRating] = useState(0);
   const [loadingVehicle, setLoadVeh] = useState(true);
   const [vehicleError, setVehError] = useState('');
 
@@ -572,9 +597,16 @@ const Checkout = () => {
     }
     setLoadVeh(true);
     try {
-      const v = await vehicleService.getById(carId);
+      const [v, summary] = await Promise.all([
+        vehicleService.getById(carId),
+        reviewService.getSummaryByVehicleId(carId).catch(() => null),
+      ]);
       if (!v) throw new Error('Xe không tồn tại');
       setVehicle(v);
+      const computedRating = summary?.reviewCount > 0
+        ? summary.rating
+        : Number(v.rating || 0);
+      setAvgRating(computedRating);
     } catch {
       setVehError('Không thể tải thông tin xe. Vui lòng thử lại.');
     } finally {
@@ -660,10 +692,11 @@ const Checkout = () => {
         returnDate: ret.toISOString(),
       });
 
-      if (!availability?.isAvailable) {
+      const isAvailable = availability?.isAvailable ?? true;
+      if (!isAvailable) {
         throw new Error(
           availability?.message
-          || 'Xe đã có lịch thuê trùng trong khung thời gian bạn chọn. Vui lòng đợi sang mốc thời gian khác.'
+          || 'Xe đã có lịch thuê trùng trong khung thời gian bạn chọn. Vui lòng chọn ngày giờ khác.'
         );
       }
 
@@ -791,7 +824,7 @@ const Checkout = () => {
                       <h3 className="font-bold text-gray-900 text-[0.95rem] sm:text-base leading-snug">
                         {vehicle.name}
                       </h3>
-                      <StarRow rating={vehicle.rating} />
+                      <StarRow rating={avgRating} />
                       <div className="flex flex-wrap gap-2 mt-1">
                         <span className="inline-flex items-center rounded-full border border-white/80 bg-white/90 px-2.5 py-0.5 text-[0.72rem] font-medium text-gray-700 shadow-sm">
                           {vehicle.seats} cho

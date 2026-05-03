@@ -23,47 +23,47 @@ import { getBookingFlowState } from '../../../utils/bookingFlowState';
 import { getRentalWorkflow, saveRentalWorkflow } from '../../../utils/rentalWorkflowStorage';
 
 const FLOW_STEPS = [
-  { status: 'waiting_handover', label: 'Cho ban giao' },
-  { status: 'handed_over', label: 'Da ban giao' },
-  { status: 'in_use', label: 'Dang su dung' },
-  { status: 'waiting_return_confirmation', label: 'Cho xac nhan tra' },
-  { status: 'completed', label: 'Hoan thanh' },
+  { status: 'waiting_handover', label: 'Chờ bàn giao' },
+  { status: 'handed_over', label: 'Đã bàn giao' },
+  { status: 'in_use', label: 'Đang sử dụng' },
+  { status: 'waiting_return_confirmation', label: 'Chờ xác nhận trả' },
+  { status: 'completed', label: 'Hoàn thành' },
 ];
 
 const RECEIVE_FIELDS = [
-  { key: 'exterior', label: 'Ngoai that khong co va cham bat thuong' },
-  { key: 'interior', label: 'Noi that sach se, du phu kien' },
-  { key: 'documents', label: 'Da nhan giay to va huong dan xe' },
-  { key: 'fuelLevel', label: 'Muc nhien lieu / pin dung nhu ban giao' },
+  { key: 'exterior', label: 'Ngoại thất không có và chấm bất thường' },
+  { key: 'interior', label: 'Nội thất sạch sẽ, đủ phụ kiện' },
+  { key: 'documents', label: 'Đã nhận giấy tờ và hướng dẫn xe' },
+  { key: 'fuelLevel', label: 'Mức nhiên liệu / pin dựng như bàn giao' },
 ];
 
 const RETURN_FIELDS = [
-  { key: 'belongings', label: 'Da lay het do ca nhan ra khoi xe' },
-  { key: 'cleanliness', label: 'Tinh trang ve sinh da duoc kiem tra' },
-  { key: 'damagesChecked', label: 'Da doi chieu vet tray xuoc / hu hong' },
-  { key: 'fuelLevel', label: 'Da ghi nhan lai muc nhien lieu / pin' },
+  { key: 'belongings', label: 'Đã lấy hết đồ cá nhân ra khỏi xe' },
+  { key: 'cleanliness', label: 'Tinh trạng vệ sinh đã được kiểm tra' },
+  { key: 'damagesChecked', label: 'Đã đối chiếu vết trầy / hư hỏng' },
+  { key: 'fuelLevel', label: 'Đã ghi nhận lại mức nhiên liệu / pin' },
 ];
 
 const RETURN_FLOW_STEPS = [
   {
     title: 'Kiểm tra nhanh',
-    description: 'Chot tinh trang xe, muc nhien lieu va do dung truoc khi chup anh.',
+    description: 'Chọt tình trạng xe, mức nhiên liệu và đồ dùng trước khi chụp ảnh.',
   },
   {
-    title: 'Tai anh tra xe',
-    description: 'Them cac goc chup ro net de showroom doi chieu nhanh hon.',
+    title: 'Tải ảnh trả xe',
+    description: 'Thêm các góc chụp rõ net để showroom đối chiếu nhanh hơn.',
   },
   {
     title: 'Gửi cho showroom',
-    description: 'Gui mot lan de booking chuyen sang cho xac nhan tra xe.',
+    description: 'Gửi một lần để booking chuyển sang cho xác nhận trả xe.',
   },
 ];
 
 const RETURN_PHOTO_TIPS = [
-  'Chup toan canh dau xe, hong xe va duoi xe / cop sau neu co.',
-  'Neu co tray xuoc hoac meo, chup can canh va them mot anh toan canh.',
-  'Uu tien anh sang tot, ro net, khong bi che boi nguoi hoac vat dung.',
-  'Neu noi that co van de, chup them ghe, tableau va khoang hanh ly.',
+  'Chụp toàn cảnh đầu xe, hư xe và dưới xe / cốp sau nếu có.',
+  'Nếu có vết trầy hoặc méo, chụp cảnh và thêm một ảnh toàn cảnh.',
+  'Ưu tiên ảnh sáng tốt, rõ net, không bị che bởi người hoặc vật dụng.',
+  'Nếu nội thất có vấn đề, chụp thêm gương, bàn làm việc và khoảng hành lý.',
 ];
 
 const getCurrentStepIndex = (status) => {
@@ -126,7 +126,7 @@ const createFileFromSource = async (source, fallbackName) => {
 
   const response = await fetch(source);
   if (!response.ok) {
-    throw new Error('Khong the doc anh doi chieu cho AI luc nay.');
+    throw new Error('Không thể đọc ảnh đối chiếu cho AI lúc này.');
   }
 
   const blob = await response.blob();
@@ -189,35 +189,35 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
     if (booking?.status === 'completed') {
       return {
         tone: 'success',
-        eyebrow: 'Da hoan tat',
-        title: 'Showroom da xac nhan viec tra xe',
-        description: 'Anh va bien ban tra xe da duoc chot. Ban chi can luu lai thong tin doi chieu khi can.',
+        eyebrow: 'Đã hoàn thành',
+        title: 'Showroom đã xác nhận việc trả xe',
+        description: 'Ảnh và biên bản trả xe đã được chọt. Bạn chỉ cần lưu lại thông tin đối chiếu khi cần.',
       };
     }
 
     if (booking?.status === 'waiting_return_confirmation') {
       return {
         tone: 'info',
-        eyebrow: 'Dang cho doi chieu',
-        title: 'Yeu cau tra xe da duoc gui thanh cong',
-        description: 'Showroom dang kiem tra anh va tinh trang xe. Ban tam thoi khong can gui them lan nua.',
+        eyebrow: 'Đang chờ đối chiếu',
+        title: 'Yêu cầu trả xe đã được gửi thành công',
+        description: 'Showroom đang kiểm tra ảnh và tình trạng xe. Bạn tạm thời không cần gửi thêm lần nữa.',
       };
     }
 
     if (!returnWindowOpened && returnDueDate) {
       return {
         tone: 'warning',
-        eyebrow: 'Chua den han',
-        title: 'Chua mo cua so gui tra xe',
-        description: `Ban co the chup va chuan bi truoc, nhung chi duoc gui yeu cau tu ${formatDateTime(returnDueDate)}.`,
+        eyebrow: 'Chưa đến hạn',
+        title: 'Chưa mở cửa sổ gửi trả xe',
+        description: `Bạn có thể chụp và chuẩn bị trước, nhưng chỉ được gửi yêu cầu từ ${formatDateTime(returnDueDate)}.`,
       };
     }
 
     return {
       tone: 'warning',
-      eyebrow: 'Luu ho so local',
-      title: 'Ban dang hoan tat ho so tra xe tren frontend',
-      description: 'Hoan tat checklist, tai anh ro net va luu mot lan. Sau do lien he showroom de doi chieu, vi backend hien chua co buoc renter tu cap nhat trang thai tra xe.',
+      eyebrow: 'Lưu hồ sơ local',
+      title: 'Bạn đang hoàn thành hồ sơ trả xe trên frontend',
+      description: 'Hoàn thành checklist, tải ảnh rõ net và lưu một lần. Sau đó liên hệ showroom để đối chiếu, vì backend hiện chưa có bước renter tự cập nhật trạng thái trả xe.',
     };
   }, [booking?.status, returnDueDate, returnWindowOpened]);
 
@@ -244,7 +244,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
 
     if (!isReceive) {
       if (!returnWindowOpened && returnDueDate) {
-        setError(`Chua den han tra xe. Ban co the gui yeu cau tra xe tu ${formatDateTime(returnDueDate)}.`);
+        setError(`Chưa đến hạn trả xe. Bạn có thể gửi yêu cầu trả xe từ ${formatDateTime(returnDueDate)}.`);
         setNotice('');
         return;
       }
@@ -253,15 +253,15 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
         setError('');
         setNotice(
           booking?.status === 'completed'
-            ? 'Booking nay da hoan tat, khong the gui lai yeu cau tra xe.'
-            : 'Yeu cau tra xe da duoc gui truoc do. Vui long cho showroom xac nhan.'
+            ? 'Booking này đã hoàn thành, không thể gửi lại yêu cầu trả xe.'
+            : 'Yêu cầu trả xe đã được gửi trước đó. Vui lòng cho showroom xác nhận.'
         );
         return;
       }
 
       const existingReturnImages = workflow[imageKey] || [];
       if (!selectedFiles.length && !existingReturnImages.length) {
-        setError('Vui long tai len it nhat 1 anh tra xe truoc khi gui yeu cau cho showroom.');
+        setError('Vui lòng tải lên ít nhất 1 ảnh trả xe trước khi gửi yêu cầu cho showroom.');
         setNotice('');
         return;
       }
@@ -287,7 +287,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
       setWorkflow(saved);
       if (isReceive) {
         setReceiveFiles([]);
-        setNotice('Da luu bien ban nhan xe trong frontend va cac link anh da upload.');
+        setNotice('Đã lưu biên bản nhận xe trên frontend và các link ảnh đã upload.');
 
         if (onSaved) {
           await onSaved({ workflow: saved });
@@ -318,18 +318,18 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
           setWorkflow(saved);
           noticeParts.push(
             aiResult?.damage_detected
-              ? 'Bao cao thiet hai da duoc tao va ghi nhan co diem can doi chieu.'
-              : 'Bao cao thiet hai da duoc tao va khong ghi nhan hu hong moi ro ret.'
+              ? 'Báo cáo thiệt hại đã được tạo và ghi nhận có điểm cần đối chiếu.'
+              : 'Báo cáo thiệt hại đã được tạo và không ghi nhận hư hỏng mới rõ ràng.'
           );
         } catch (aiError) {
-          noticeParts.push('Anh tra xe da duoc luu, nhung AI chua tao duoc bao cao luc nay.');
+          noticeParts.push('Ảnh trả xe đã được lưu, nhưng AI chưa tạo được báo cáo lúc này.');
         }
       } else if (!beforeImageUrl) {
-        noticeParts.push('Chua co anh nhan xe doi chieu, vi vay AI tam thoi chua phan tich duoc.');
+        noticeParts.push('Chưa có ảnh nhận xe đối chiếu, vì vậy AI tạm thời chưa phân tích được.');
       }
 
-      noticeParts.unshift('Da luu bien ban tra xe va anh tra xe trong frontend.');
-      noticeParts.push('Backend hien chua co buoc de renter tu cap nhat trang thai tra xe, vui long lien he showroom de doi chieu va xac nhan.');
+      noticeParts.unshift('Đã lưu biên bản trả xe và ảnh trả xe trên frontend.');
+      noticeParts.push('Backend hiện chưa có bước để renter tự cập nhật trạng thái trả xe, vui lòng liên hệ showroom để đối chiếu và xác nhận.');
 
       const localReturnNotice = noticeParts.join(' ');
       setNotice(localReturnNotice);
@@ -347,7 +347,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
         });
       }
     } catch (err) {
-      setError(err.message || 'Khong the luu bien ban cho booking nay.');
+      setError(err.message || 'Không thể lưu biên bản cho booking này.');
     } finally {
       setSavingSection('');
     }
@@ -366,7 +366,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
             color: '#6b7280',
           }}
         >
-          Chua co anh nao duoc luu cho buoc nay.
+          Chưa có ảnh nào được lưu cho bước này.
         </div>
       );
     }
@@ -397,8 +397,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
   const renderReturnExperience = () => {
     const summaryStats = [
       { label: 'Checklist', value: `${returnChecklistCount}/${RETURN_FIELDS.length}` },
-      { label: 'Anh da luu', value: String(savedReturnImages) },
-      { label: 'Anh dang chon', value: String(draftReturnImages) },
+      { label: 'Ảnh đã lưu', value: String(savedReturnImages) },
+      { label: 'Ảnh đang chọn', value: String(draftReturnImages) },
     ];
 
     const actionDisabled = returnLocked || (!returnWindowOpened && Boolean(returnDueDate));
@@ -454,10 +454,10 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.74rem', color: 'rgba(255,255,255,0.78)', marginBottom: 6 }}>
                   <FaRegClock />
-                  Han gui yeu cau tra xe
+                    Hạn gửi yêu cầu trả xe
                 </div>
                 <div style={{ fontWeight: 800, fontSize: '0.98rem' }}>
-                  {returnDueDate ? formatDateTime(returnDueDate) : 'Ngay ket thuc chuyen'}
+                  {returnDueDate ? formatDateTime(returnDueDate) : 'Ngày kết thúc chuyến'}
                 </div>
               </div>
 
@@ -474,7 +474,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   Bo ho so tra xe
                 </div>
                 <div style={{ fontWeight: 800, fontSize: '0.98rem' }}>
-                  {totalReturnImagesReady} anh san sang, {returnChecklistCount}/{RETURN_FIELDS.length} muc da check
+                  {totalReturnImagesReady} ảnh sẵn sàng, {returnChecklistCount}/{RETURN_FIELDS.length} mục đã check
                 </div>
               </div>
             </div>
@@ -531,9 +531,9 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   <FaShieldAlt />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>Checklist truoc khi gui tra xe</div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>Checklist trước khi gửi trả xe</div>
                   <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                    Hoan tat tung muc de showroom doi chieu nhanh hon.
+                    Hoàn thành từng mục để showroom đối chiếu nhanh hơn.
                   </div>
                 </div>
               </div>
@@ -567,7 +567,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                       <div>
                         <div style={{ fontSize: '0.82rem', color: '#111827', fontWeight: 700 }}>{field.label}</div>
                         <div style={{ fontSize: '0.74rem', color: '#6b7280', marginTop: 3 }}>
-                          {checked ? 'Da danh dau xong.' : 'Danh dau sau khi ban da tu kiem tra xong.'}
+                          {checked ? 'Đã đánh dấu xong.' : 'Đánh dấu sau khi bạn đã tự kiểm tra xong.'}
                         </div>
                       </div>
                     </label>
@@ -592,9 +592,9 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   <FaInfoCircle />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>Ghi chu tra xe</div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>Ghi chú trả xe</div>
                   <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                    Them ghi chu neu co vet tray, phu kien thieu hoac thong tin can showroom luu y.
+                    Thêm ghi chú nếu có vết trầy, phụ kiện thiếu hoặc thông tin cần showroom lưu ý.
                   </div>
                 </div>
               </div>
@@ -610,7 +610,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   }))
                 }
                 disabled={returnLocked}
-                placeholder="Vi du: da nap day xang, co vet xuoc nho o canh cua sau, da de lai chia khoa va giay to..."
+                placeholder="Ví dụ: đã nạp đầy xăng, có vết xuốc nhỏ ở cạnh cốp sau, đã để lại chia khóa và giấy tờ..."
                 style={{
                   width: '100%',
                   border: '1px solid #d1d5db',
@@ -626,8 +626,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
 
               <div style={{ marginTop: 10, fontSize: '0.74rem', color: '#6b7280' }}>
                 {workflow.returnNote?.trim()
-                  ? `${workflow.returnNote.trim().length} ky tu da nhap.`
-                  : 'Them mot ghi chu ngan gon se giup showroom doi chieu nhanh hon.'}
+                  ? `${workflow.returnNote.trim().length} ký tự đã nhập.`
+                  : 'Thêm một ghi chú ngắn gọn sẽ giúp showroom đối chiếu nhanh hơn.'}
               </div>
             </div>
 
@@ -653,9 +653,9 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   <FaUpload />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>Upload anh tra xe</div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>Tải ảnh trả xe</div>
                   <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                    Tai toi da 5 anh. Bo anh nay duoc dung chung cho bien ban tra xe va bao cao AI doi chieu.
+                    Tải tối đa 5 ảnh. Ảnh này được dùng chung cho biên bản trả xe và báo cáo AI đối chiếu.
                   </div>
                 </div>
               </div>
@@ -670,7 +670,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                     lineHeight: 1.6,
                   }}
                 >
-                  Anh tra xe da duoc chot cho buoc hien tai. Neu can bo sung, vui long lien he showroom.
+                  Ảnh trả xe đã được chọt cho bước hiện tại. Nếu cần bổ sung, vui lòng liên hệ showroom.
                 </div>
               ) : (
                 <div
@@ -683,8 +683,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                 >
                   <FileUpload
                     key={`return-${workflow.updatedAt || 'empty'}-${booking?.id || 'booking'}`}
-                    label="Anh tra xe"
-                    hint="Anh tra xe dau tien se duoc dung de AI doi chieu voi anh nhan xe dau tien cua booking nay."
+                    label="Ảnh trả xe"
+                    hint="Ảnh trả xe đầu tiên sẽ được dùng để AI đối chiếu với ảnh nhận xe đầu tiên của booking này."
                     multiple
                     autoUpload={false}
                     onFiles={setReturnFiles}
@@ -694,7 +694,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
 
               <div style={{ marginTop: 14 }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', marginBottom: 10 }}>
-                  Anh da luu cho bien ban tra xe
+                  Ảnh đã lưu cho biên bản trả xe
                 </div>
                 {renderSavedImages(workflow.returnImages || [])}
               </div>
@@ -723,9 +723,9 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                     <FaRobot />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 800, color: '#111827' }}>Bao cao AI thiet hai phat sinh</div>
+                    <div style={{ fontWeight: 800, color: '#111827' }}>Báo cáo AI thiệt hại phát sinh</div>
                     <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                      FE renter dung bo anh nhan / tra xe da luu trong trinh duyet nay de tao bao cao AI.
+                      FE renter dùng bo ảnh nhận / trả xe đã lưu trong trình duyện nay để tạo báo cáo AI.
                     </div>
                     <div
                       style={{
@@ -742,14 +742,14 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                         fontWeight: 800,
                       }}
                     >
-                      Luu cuc bo tren trinh duyet nay
+                      Lưu cục bộ trên trình duyện này
                     </div>
                   </div>
                 </div>
 
                 {!receiveReferenceImage ? (
                   <div style={{ fontSize: '0.8rem', color: '#9a3412', lineHeight: 1.65 }}>
-                    Chua co anh nhan xe doi chieu trong booking nay, nen AI se bo qua cho den khi co anh truoc thue.
+                    Chưa có ảnh nhận xe đối chiếu trong booking này, vì vậy AI sẽ bỏ qua cho đến khi có ảnh trước thuê.
                   </div>
                 ) : hasAiInspectionReport ? (
                   <>
@@ -765,13 +765,13 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                       onClick={() => navigate(`/renter/ai-reports?bookingId=${booking.id}`)}
                       style={{ justifyContent: 'center' }}
                     >
-                      Xem bao cao AI day du
+                      Xem báo cáo AI đầy đủ
                     </button>
                   </>
                 ) : (
                   <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.65 }}>
-                    Bao cao AI se duoc tao sau khi ban gui yeu cau tra xe. Du lieu nay hien duoc FE renter luu local,
-                    vi vay doi may, doi trinh duyet hoac xoa local data co the lam mat report.
+                    Báo cáo AI sẽ được tạo sau khi bạn gửi yêu cầu trả xe. Dữ liệu này hiện được FE renter lưu cục bộ,
+                    vì vậy đổi máy, đổi trình duyện hoặc xóa dữ liệu cục bộ có thể làm mất báo cáo.
                   </div>
                 )}
               </div>
@@ -782,7 +782,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
             <div style={{ ...baseCardStyle, ...noticeTheme }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <FaInfoCircle />
-                <div style={{ fontWeight: 800 }}>Trang thai gui tra xe</div>
+                <div style={{ fontWeight: 800 }}>Trạng thái gửi trả xe</div>
               </div>
               <div style={{ fontSize: '0.84rem', lineHeight: 1.7 }}>{returnStateMeta.description}</div>
             </div>
@@ -803,9 +803,9 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   <FaCamera />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>Huong dan chup anh</div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>Hướng dẫn chụp ảnh</div>
                   <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                    Bo anh ro rang se giup showroom xac nhan tra xe nhanh hon.
+                    Ảnh rõ ràng sẽ giup showroom xác nhận trả xe nhanh hơn.
                   </div>
                 </div>
               </div>
@@ -868,9 +868,9 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                   <FaClipboardCheck />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>Tom tat truoc khi gui</div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>Tóm tắt trước khi gửi</div>
                   <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                    Kiem tra nhanh xem bo ho so tra xe da san sang chua.
+                    Kiểm tra nhanh xem hồ sơ trả xe đã sẵn sàng chưa.
                   </div>
                 </div>
               </div>
@@ -928,22 +928,22 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#6b7280', marginBottom: 8 }}>
                   <FaCalendarAlt />
-                  Khung thoi gian tra xe
+                  Khung thời gian trả xe
                 </div>
                 <div style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>
-                  {returnDueDate ? formatDateTime(returnDueDate) : 'Ngay ket thuc chuyen'}
+                  {returnDueDate ? formatDateTime(returnDueDate) : 'Ngày kết thúc chuyến'}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.6 }}>
                   {returnWindowOpened
-                    ? 'Ban da co the gui yeu cau tra xe ngay luc nay.'
-                    : 'He thong chi cho phep gui sau khi den han tra xe.'}
+                    ? 'Bạn có thể gửi yêu cầu trả xe ngay lúc này.'
+                    : 'Hệ thống chỉ cho phép gửi sau khi đến hạn trả xe.'}
                 </div>
               </div>
 
               <div style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.6, marginBottom: 14 }}>
                 {workflow.returnNote?.trim()
-                  ? `Ghi chu hien tai: "${workflow.returnNote.trim().slice(0, 120)}${workflow.returnNote.trim().length > 120 ? '...' : ''}"`
-                  : 'Chua co ghi chu nao duoc them cho bien ban tra xe.'}
+                  ? `Ghi chú hiện tại: "${workflow.returnNote.trim().slice(0, 120)}${workflow.returnNote.trim().length > 120 ? '...' : ''}"`
+                  : 'Chưa có ghi chú nào được thêm cho biên bản trả xe.'}
               </div>
 
               <button
@@ -959,15 +959,15 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                 }}
               >
                 {savingSection === 'return'
-                  ? 'Dang gui yeu cau tra xe...'
+                  ? 'Đang gửi yêu cầu trả xe...'
                   : returnLocked
-                    ? 'Da gui yeu cau tra xe'
-                    : 'Gui yeu cau tra xe cho showroom'}
+                    ? 'Đã gửi yêu cầu trả xe'
+                    : 'Gửi yêu cầu trả xe cho showroom'}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: '0.74rem', color: '#6b7280' }}>
                 <FaInfoCircle />
-                Sau khi gui, booking se chuyen sang trang thai cho showroom xac nhan.
+                Sau khi gửi, booking sẽ chuyển sang trạng thái cho showroom xác nhận.
               </div>
             </div>
           </div>
@@ -1044,7 +1044,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <label className="form-label">Ghi chu</label>
+        <label className="form-label">Ghi chú</label>
         <textarea
           rows={3}
           value={workflow[noteKey]}
@@ -1056,7 +1056,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
             }))
           }
           disabled={options.readOnly}
-          placeholder="Ghi lai tinh trang xe, vat dung di kem, trao doi voi showroom..."
+          placeholder="Ghi lại tình trạng xe, vật dụng đi kèm, trao đổi với showroom..."
           style={{
             width: '100%',
             border: '1px solid #d1d5db',
@@ -1082,15 +1082,15 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               color: '#6b7280',
             }}
           >
-            Anh tra xe da duoc chot cho buoc hien tai. Neu can bo sung, vui long lien he showroom.
+            Ảnh trả xe đã được chọt cho bước hiện tại. Nếu cần bổ sung, vui lòng liên hệ showroom.
           </div>
         ) : (
           <FileUpload
             key={`${saveKey}-${workflow.updatedAt || 'empty'}-${booking?.id || 'booking'}`}
-            label="Anh doi chieu"
+            label="Ảnh đối chiếu"
             hint={
               options.uploadHint ||
-              'Anh nay duoc upload len storage. Workflow renter van dang luu local tren trinh duyet hien tai, nen doi trinh duyet hoac xoa local data co the lam mat lich su doi chieu.'
+              'Ảnh này được upload lên storage. Workflow renter vẫn đang lưu cục bộ trên trình duyện hiện tại, vì vậy đổi trình duyện hoặc xóa dữ liệu cục bộ có thể làm mất lịch sử đối chiếu.'
             }
             multiple
             autoUpload={false}
@@ -1102,7 +1102,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
       {Array.isArray(workflow[imageKey]) && workflow[imageKey].length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>
-            Anh da luu
+            Ảnh đã lưu
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10 }}>
             {workflow[imageKey].map((url) => (
@@ -1122,7 +1122,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ fontSize: '0.76rem', color: '#6b7280' }}>
-          {files.length > 0 ? `${files.length} file dang cho luu.` : 'Co the luu checklist ma khong can chon them anh.'}
+          {files.length > 0 ? `${files.length} file đang cho lưu.` : 'Có thể lưu checklist mà không cần chọn thêm ảnh.'}
         </div>
         <button
           type="button"
@@ -1131,7 +1131,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
           disabled={savingSection === saveKey || options.disableSave}
           style={{ opacity: savingSection === saveKey || options.disableSave ? 0.65 : 1 }}
         >
-          {savingSection === saveKey ? 'Dang luu...' : options.saveLabel || 'Luu bien ban'}
+          {savingSection === saveKey ? 'Đang lưu...' : options.saveLabel || 'Lưu biên bản'}
         </button>
       </div>
     </div>
@@ -1141,7 +1141,7 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Yeu cau tra xe - ${booking?.vehicleName || ''}`}
+      title={`Yêu cầu trả xe - ${booking?.vehicleName || ''}`}
       width={1040}
     >
       {booking && (
@@ -1157,8 +1157,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               lineHeight: 1.6,
             }}
           >
-            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va tao bao cao AI doi chieu tren trinh duyet hien tai.
-            Backend hien chua co buoc rieng de renter tu cap nhat trang thai tra xe, vi vay bien ban renter va bao cao AI trong modal nay van la du lieu local.
+            FE hiện cho phép renter lưu biên bản nhận xe, upload ảnh trả xe và tạo báo cáo AI đối chiếu trên trình duyện hiện tại.
+            Backend hiện chưa có bước riêng để renter tự cập nhật trạng thái trả xe, vì vậy biên bản renter và báo cáo AI trong modal này vẫn là dữ liệu cục bộ.
           </div>
 
           {false && (
@@ -1173,8 +1173,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
               lineHeight: 1.6,
             }}
           >
-            FE hien cho phep renter luu bien ban nhan xe, upload anh tra xe va gui trang thai tra xe cho showroom.
-            Neu backend chua day kip trang thai nhan / tra xe, giao dien se mo flow theo lich thue thuc te.
+            FE hiện cho phép renter lưu biên bản nhận xe, upload ảnh trả xe và gửi trạng thái trả xe cho showroom.
+            Nếu backend chưa đến kịp trạng thái nhận / trả xe, giao diện sẽ mở flow theo lịch thuê thực tế.
           </div>
           )}
 
@@ -1190,8 +1190,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
                 lineHeight: 1.6,
               }}
             >
-              Booking hien dang o trang thai "{booking.status}", nhung FE da mo giao dien nhan / tra theo moc thoi gian
-              cua lich thue de renter co the tiep tuc tra xe dung han.
+              Booking hiện đang ở trạng thái "{booking.status}", nhưng FE đã mở giao diện nhận / trả xe theo mốc thời gian
+              của lịch thuê để renter có thể tiếp tục trả xe đúng hạn.
             </div>
           )}
 
@@ -1284,8 +1284,8 @@ const RentalFlowModal = ({ isOpen, onClose, booking, onSaved }) => {
 
           {!canHandleReceive && !canHandleReturn && (
             <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 18, color: '#6b7280', fontSize: '0.84rem' }}>
-              Booking nay chua den giai doan nhan / tra xe. Khi booking chuyen sang ban giao hoac dang su dung,
-              renter se thay quy trinh checklist tuong ung tai day.
+              Booking này chưa đến giai đoạn nhận / trả xe. Khi booking chuyển sang bàn giao hoặc đang sử dụng,
+              renter sẽ thay quy trình checklist tương ứng tại đây.
             </div>
           )}
         </div>

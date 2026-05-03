@@ -38,7 +38,7 @@ const VehicleManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?._id]);
 
   useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
 

@@ -1,5 +1,29 @@
 import apiClient from './apiClient';
 
+const REVIEW_SUMMARY_TTL_MS = 5 * 60_000;
+const reviewSummaryCache = new Map();
+
+const getSummaryCacheKey = (vehicleId, limit) => `${vehicleId || ''}:${Number(limit || 100)}`;
+
+const getCachedReviewSummary = (vehicleId, limit) => {
+  const cacheKey = getSummaryCacheKey(vehicleId, limit);
+  const cached = reviewSummaryCache.get(cacheKey);
+  if (!cached) return null;
+  if (Date.now() >= cached.expiresAt) {
+    reviewSummaryCache.delete(cacheKey);
+    return null;
+  }
+  return cached.data;
+};
+
+const setCachedReviewSummary = (vehicleId, limit, data) => {
+  const cacheKey = getSummaryCacheKey(vehicleId, limit);
+  reviewSummaryCache.set(cacheKey, {
+    data,
+    expiresAt: Date.now() + REVIEW_SUMMARY_TTL_MS,
+  });
+};
+
 const normalizeReviewSummary = (response) => {
   const reviews = Array.isArray(response?.data) ? response.data : [];
   const reviewCount = Number(response?.pagination?.total ?? reviews.length ?? 0);
@@ -14,6 +38,20 @@ const normalizeReviewSummary = (response) => {
 };
 
 export const reviewService = {
+  invalidateSummaryCache(vehicleId) {
+    if (!vehicleId) {
+      reviewSummaryCache.clear();
+      return;
+    }
+
+    const prefix = `${vehicleId}:`;
+    [...reviewSummaryCache.keys()].forEach((key) => {
+      if (key.startsWith(prefix)) {
+        reviewSummaryCache.delete(key);
+      }
+    });
+  },
+
   /**
    * Get paginated reviews for a vehicle.
    * vehicleId: MongoDB ObjectId string
@@ -45,6 +83,7 @@ export const reviewService = {
    */
   async create(payload) {
     const res = await apiClient.post('/api/reviews/create', payload);
+    this.invalidateSummaryCache(payload?.vehicle_id);
     return res.data.data;
   },
 
@@ -54,12 +93,21 @@ export const reviewService = {
    */
   async update(payload) {
     const res = await apiClient.patch('/api/reviews/update', payload);
+    // Update payload may not carry vehicle_id, so clear all cached summaries to keep UI accurate.
+    this.invalidateSummaryCache(payload?.vehicle_id);
     return res.data.data;
   },
 
   async getSummaryByVehicleId(vehicleId, { limit = 100 } = {}) {
+    const cached = getCachedReviewSummary(vehicleId, limit);
+    if (cached) {
+      return cached;
+    }
+
     const response = await this.getByVehicleId(vehicleId, { page: 1, limit });
-    return normalizeReviewSummary(response);
+    const summary = normalizeReviewSummary(response);
+    setCachedReviewSummary(vehicleId, limit, summary);
+    return summary;
   },
 
   async enrichVehiclesWithSummary(vehicles = [], { limit = 100 } = {}) {
