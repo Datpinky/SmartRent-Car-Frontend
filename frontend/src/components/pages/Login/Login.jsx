@@ -434,7 +434,7 @@ const Login = () => {
 
           {tab === 'register' && (
             <LoginFormField
-              label="Số điện thoại (10 số)"
+              label="Số điệ-n thoại (10 số)"
               name="phone"
               type="tel"
               icon={MdPhone}

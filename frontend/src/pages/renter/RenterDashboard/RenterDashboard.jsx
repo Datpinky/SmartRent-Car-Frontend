@@ -276,7 +276,7 @@ const RenterDashboard = () => {
     const loadDashboard = async () => {
       setLoading(true);
       try {
-        const bookings = await bookingService.getCurrentRoleBookingsDetailed();
+        const bookings = await bookingService.getCachedRoleBookingsDetailed();
         if (!mounted) {
           return;
         }

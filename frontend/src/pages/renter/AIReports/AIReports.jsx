@@ -58,7 +58,7 @@ const AIReports = () => {
     const loadReports = async () => {
       setLoading(true);
       try {
-        const bookings = await bookingService.getCurrentRoleBookingsDetailed();
+        const bookings = await bookingService.getCachedRoleBookingsDetailed();
         if (!mounted) {
           return;
         }

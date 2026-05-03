@@ -88,35 +88,34 @@ export const getBookingFlowState = (booking, fallbackPaymentStatus) => {
       : 'waiting_handover';
 
   const rentalActionLabel = isCompleted
-    ? 'Xem bien ban'
+    ? 'Xem biên bản'
     : status === 'waiting_return_confirmation'
-      ? 'Dang cho xac nhan'
+      ? 'Đang cho xác nhận'
       : canHandleReturn && hasEnded
-        ? 'Tra xe ngay'
+        ? 'Trả xe ngay'
         : status === 'waiting_handover'
-          ? 'Cho showroom ban giao'
+          ? 'Chờ showroom giao xe'
           : canOpenRentalFlow
-            ? 'Nhan / Tra xe'
+            ? 'Nhận / Trả xe'
             : '';
 
   const rentalAccessHint = timeBasedRentalAccess
     ? hasEnded
-      ? 'Da qua han tra xe. Ban co the mo giao dien tra xe ngay.'
-      : 'Da den lich thue. Ban co the mo quy trinh nhan / tra xe.'
+      ? 'Đã quá hạn trả xe. Bạn có thể mở giao diện trả xe ngay.'
+      : 'Đã đến lịch thuê xe. Bạn có thể mở quy trình nhận / trả xe.'
     : '';
 
   const pickupConfirmationHint = !(isAwaitingPickup || isAwaitingShowroomProcessing)
     ? ''
     : requiresRetryPayment
-      ? 'Thanh toan truoc do chua thanh cong. Vui long thanh toan lai de tiep tuc quy trinh nhan xe.'
+      ? 'Thanh toán trước đó chưa thành công. Vui lòng thanh toán lại để tiếp tục quy trình nhận xe.'
       : !hasSuccessfulPayment
-        ? 'Booking dang cho thanh toan. Sau khi payment thanh cong, showroom moi co the ban giao xe.'
+        ? 'Booking đang chờ thanh toán. Sau khi thanh toán thành công, showroom mới có thể giao xe.'
         : isAwaitingShowroomProcessing
-          ? 'Showroom dang xu ly booking va chuan bi ban giao xe. Booking se chuyen sang Cho ban giao khi showroom hoan tat xu ly.'
+          ? 'Showroom đang xử lý booking và chuẩn bị giao xe. Booking sẽ chuyển sang Chờ giao xe khi showroom hoàn tất xử lý.'
           : !pickupReadyByTime && startAt
-            ? `Showroom se hoan tat ban giao khi den moc ${startAt.toLocaleString('vi-VN')}.`
-            : 'Backend hien dang de showroom hoan tat buoc ban giao. Booking se chuyen vao Chuyen di cua toi khi showroom cap nhat da ban giao.';
-
+            ? `Showroom sẽ hoàn tất giao xe khi đến mục ${startAt.toLocaleString('vi-VN')}.`
+            : '';
   return {
     canConfirmPickup,
     canHandleReceive,

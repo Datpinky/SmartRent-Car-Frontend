@@ -16,6 +16,12 @@ const resolveId = (value) => {
   return value._id || value.id || '';
 };
 
+const BOOKING_CACHE_TTL_MS = 45_000;
+let roleBookingsDetailedCache = {
+  data: null,
+  expiresAt: 0,
+};
+
 function normalizeListPayload(raw) {
   if (Array.isArray(raw)) return { items: raw, pagination: null };
   if (raw && Array.isArray(raw.data)) {
@@ -124,15 +130,32 @@ const buildBookingFallback = (booking) => {
   });
 };
 
-const enrichBooking = async (booking) => {
+const enrichBooking = async (booking, preloadedVehicle = undefined, { skipPaymentFetch = false } = {}) => {
   const vehicleId = resolveId(booking?.vehicle_id);
   const showroomId = resolveId(booking?.showroom_id);
   const bookingId = resolveId(booking);
 
+  const vehiclePromise =
+    preloadedVehicle !== undefined
+      ? Promise.resolve(preloadedVehicle)
+      : vehicleId
+        ? vehicleService.getById(vehicleId)
+        : Promise.resolve(null);
+
+  const paymentPromise =
+    !skipPaymentFetch && bookingId
+      ? paymentService.getLatestPaymentByBookingId(bookingId)
+      : Promise.resolve(null);
+
+  const paymentStatePromise =
+    !skipPaymentFetch && bookingId
+      ? paymentService.getPaymentState(bookingId)
+      : Promise.resolve(null);
+
   const [vehicleResult, paymentResult, paymentStateResult] = await Promise.allSettled([
-    vehicleId ? vehicleService.getById(vehicleId) : Promise.resolve(null),
-    bookingId ? paymentService.getLatestPaymentByBookingId(bookingId) : Promise.resolve(null),
-    bookingId ? paymentService.getPaymentState(bookingId) : Promise.resolve(null),
+    vehiclePromise,
+    paymentPromise,
+    paymentStatePromise,
   ]);
 
   const vehicle = vehicleResult.status === 'fulfilled' ? vehicleResult.value : null;
@@ -153,18 +176,42 @@ const enrichBooking = async (booking) => {
   });
 };
 
-const enrichBookingsSafely = async (bookings = []) =>
-  Promise.all(
-    (bookings || []).map(async (booking) => {
+const enrichBookingsSafely = async (bookings = [], { skipPaymentFetch = false } = {}) => {
+  const list = bookings || [];
+
+  // Deduplicate vehicle fetches: collect unique vehicle IDs, fetch each once
+  const uniqueVehicleIds = [...new Set(list.map((b) => resolveId(b?.vehicle_id)).filter(Boolean))];
+
+  const vehicleResults = await Promise.allSettled(
+    uniqueVehicleIds.map((id) => vehicleService.getById(id))
+  );
+
+  const vehicleCache = new Map();
+  uniqueVehicleIds.forEach((id, i) => {
+    vehicleCache.set(id, vehicleResults[i].status === 'fulfilled' ? vehicleResults[i].value : null);
+  });
+
+  return Promise.all(
+    list.map(async (booking) => {
       try {
-        return await enrichBooking(booking);
+        const vehicleId = resolveId(booking?.vehicle_id);
+        const cachedVehicle = vehicleId ? (vehicleCache.get(vehicleId) ?? null) : null;
+        return await enrichBooking(booking, cachedVehicle, { skipPaymentFetch });
       } catch {
         return buildBookingFallback(booking);
       }
     })
   );
+};
 
 export const bookingService = {
+  invalidateBookingCache() {
+    roleBookingsDetailedCache = {
+      data: null,
+      expiresAt: 0,
+    };
+  },
+
   async createBooking(payload = {}) {
     const vehicleId = resolveId(payload.vehicle_id) || resolveId(payload.vehicleId);
     const showroomId =
@@ -196,6 +243,7 @@ export const bookingService = {
 
 
     const res = await apiClient.post('/api/booking/createBooking', body);
+    this.invalidateBookingCache();
     return res.data.data;
   },
 
@@ -229,6 +277,19 @@ export const bookingService = {
     return enrichBookingsSafely(bookings);
   },
 
+  async getCachedRoleBookingsDetailed() {
+    if (roleBookingsDetailedCache.data && Date.now() < roleBookingsDetailedCache.expiresAt) {
+      return roleBookingsDetailedCache.data;
+    }
+
+    const data = await this.getCurrentRoleBookingsDetailed();
+    roleBookingsDetailedCache = {
+      data,
+      expiresAt: Date.now() + BOOKING_CACHE_TTL_MS,
+    };
+    return data;
+  },
+
   async getListBookings(filters = {}) {
     const safeLimit = Math.min(100, Math.max(1, Number(filters.limit || 100)));
     const safePage = Math.max(1, Number(filters.page || 1));
@@ -242,6 +303,12 @@ export const bookingService = {
   async getMyBookingsDetailed(filters = {}) {
     const bookings = await this.getMyBookings(filters);
     return enrichBookingsSafely(bookings);
+  },
+
+  async getMyBookingsForTransactions() {
+    const bookings = await this.getCurrentRoleBookings();
+    // Skip per-booking payment fetch — getMyTransactions will fetch payment lists itself
+    return enrichBookingsSafely(bookings, { skipPaymentFetch: true });
   },
 
   async getBookingById(id) {
@@ -270,7 +337,9 @@ export const bookingService = {
       excludeBookingId,
     });
 
-    return res.data;
+    // Handle both flat `{ isAvailable }` and wrapped `{ data: { isAvailable } }` formats
+    const payload = res.data?.data ?? res.data;
+    return payload;
   },
 
   async getUnavailableDateIntervals(vehicleId, { from, to } = {}) {
@@ -289,6 +358,7 @@ export const bookingService = {
 
   async cancelBooking(id) {
     const res = await apiClient.post(`/api/booking/cancelBookingWithRefund/${id}`);
+    this.invalidateBookingCache();
     return res.data.data;
   },
 
@@ -325,6 +395,7 @@ export const bookingService = {
 
   async updateBookingStatus(id, status) {
     const res = await apiClient.patch(`/api/booking/updateBookingStatus/${id}`, { status });
+    this.invalidateBookingCache();
     return res.data.data;
   },
 

@@ -45,7 +45,7 @@ const PendingShowroomProcessing = () => {
   const loadBookings = async () => {
     setLoading(true);
     try {
-      const data = await bookingService.getCurrentRoleBookingsDetailed();
+      const data = await bookingService.getCachedRoleBookingsDetailed();
       const mapped = (data || [])
         .map(mapRenterBooking)
         .filter((booking) => booking.isAwaitingShowroomProcessing);

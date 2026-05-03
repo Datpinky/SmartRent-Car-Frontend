@@ -111,6 +111,7 @@ const Home = () => {
   const currentSort = useRef('all');
   const availabilityRequestRef = useRef(0);
   const isMountedRef = useRef(true);
+  const syncTimeoutRef = useRef(null);
 
   const syncVisibleCars = async (
     baseVehicles,
@@ -179,8 +180,26 @@ const Home = () => {
     return () => {
       isMountedRef.current = false;
       availabilityRequestRef.current += 1;
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
     };
   }, []);
+
+  const scheduleSyncVisibleCars = (
+    baseVehicles,
+    nextFilters = currentFilters.current,
+    nextSearch = currentSearch.current,
+    nextSort = currentSort.current
+  ) => {
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    syncTimeoutRef.current = setTimeout(() => {
+      void syncVisibleCars(baseVehicles, nextFilters, nextSearch, nextSort);
+    }, 400);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -221,24 +240,24 @@ const Home = () => {
   const handleFilter = (payload) => {
     if (payload === 'all') {
       currentFilters.current = DEFAULT_FILTERS;
-      void syncVisibleCars(allCars, DEFAULT_FILTERS, currentSearch.current, currentSort.current);
+      scheduleSyncVisibleCars(allCars, DEFAULT_FILTERS, currentSearch.current, currentSort.current);
       return;
     }
 
     if (typeof payload === 'object' && payload !== null) {
       currentFilters.current = { ...currentFilters.current, ...payload };
-      void syncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
+      scheduleSyncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
     }
   };
 
   const handleSearch = ({ location, carName, pickupDate = '', returnDate = '' }) => {
     currentSearch.current = { location, carName, pickupDate, returnDate };
-    void syncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
+    scheduleSyncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
   };
 
   const handleSort = (sortValue) => {
     currentSort.current = sortValue;
-    void syncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
+    scheduleSyncVisibleCars(allCars, currentFilters.current, currentSearch.current, currentSort.current);
   };
 
   const loading = loadingVehicles || checkingAvailability;

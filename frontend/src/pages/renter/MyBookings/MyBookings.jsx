@@ -32,7 +32,7 @@ const MyBookings = () => {
   const loadBookings = async () => {
     setLoading(true);
     try {
-      const data = await bookingService.getCurrentRoleBookingsDetailed();
+      const data = await bookingService.getCachedRoleBookingsDetailed();
       setBookings((data || []).map(mapRenterBooking));
       setError('');
     } catch (err) {
