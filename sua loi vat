@@ -1,0 +1,30 @@
+ {/* Confirm Delete Modal */}
+      <Modal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        title="Xác nhận xóa xe"
+        width={420}
+        footer={
+          <>
+            <button className="btn-outline" onClick={() => setConfirmDeleteId(null)}>
+              Hủy
+            </button>
+            <button
+              className="btn-primary"
+              style={{ background: '#ef4444', borderColor: '#ef4444' }}
+              onClick={doDelete}
+            >
+              Xóa xe
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: '#374151', fontSize: '0.9rem', margin: 0 }}>
+          Bạn có chắc muốn xóa xe này không? Hành động này không thể hoàn tác.
+        </p>
+      </Modal>
+    </div>
+  );
+};
+
+export default VehicleManagement;
